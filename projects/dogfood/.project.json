@@ -1,7 +1,14 @@
 {
   "name": "dogfood",
   "idea": "# Build a system for managing creative project work, called Grind.",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-01-25T14:36:29.535Z",
+      "end": "2026-01-25T15:25:45.528Z",
+      "duration": 2955,
+      "rounded": 3600
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
