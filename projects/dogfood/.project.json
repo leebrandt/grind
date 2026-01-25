@@ -1,0 +1,9 @@
+{
+  "name": "dogfood",
+  "idea": "# Build a system for managing creative project work, called Grind.",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
