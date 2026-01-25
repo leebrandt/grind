@@ -1,0 +1,6 @@
+{
+  "billing": {
+    "roundTo": "quarter-hour",
+    "defaultRate": 150
+  }
+}
