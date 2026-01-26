@@ -1,6 +1,7 @@
-import { mkdir, readdir, stat, readFile } from "node:fs/promises";
+import { mkdir, readdir, stat, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { findMainWorktree } from "./workspace.js";
+import type { ProjectConfig } from "../types/index.js";
 
 /**
  * Ensure a directory exists, creating it recursively if needed
@@ -79,4 +80,46 @@ export async function getIdeaByNumber(ideaNumber: number): Promise<{ filename: s
   const content = await readFile(filepath, "utf-8");
   
   return { filename, content };
+}
+
+/**
+ * Read project config from worktree
+ */
+export async function readProjectConfig(
+  workspaceRoot: string,
+  projectName: string
+): Promise<ProjectConfig | null> {
+  const configPath = path.join(
+    workspaceRoot,
+    projectName,
+    "projects",
+    projectName,
+    ".project.json"
+  );
+  
+  try {
+    const content = await readFile(configPath, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write project config to worktree
+ */
+export async function writeProjectConfig(
+  workspaceRoot: string,
+  projectName: string,
+  config: ProjectConfig
+): Promise<void> {
+  const configPath = path.join(
+    workspaceRoot,
+    projectName,
+    "projects",
+    projectName,
+    ".project.json"
+  );
+  
+  await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }

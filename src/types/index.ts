@@ -22,7 +22,7 @@ export interface PublishConfig {
 // Time tracking session
 export interface Session {
   start: string; // ISO datetime
-  end: string; // ISO datetime
+  end: string | null; // ISO datetime, null for active sessions
   duration: number; // seconds
   rounded: number; // rounded seconds
 }

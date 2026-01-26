@@ -1,4 +1,36 @@
-import type { BillingConfig } from "../types/index.js";
+import type { BillingConfig, RoundTo } from "../types/index.js";
+
+/**
+ * Get current ISO timestamp
+ */
+export function getCurrentTimestamp(): string {
+  return new Date().toISOString();
+}
+
+/**
+ * Calculate duration in seconds between two ISO timestamps
+ */
+export function calculateDuration(start: string, end: string): number {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  return Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
+}
+
+/**
+ * Round seconds based on rounding strategy
+ */
+export function roundTimeByStrategy(seconds: number, roundTo: RoundTo): number {
+  const hours = seconds / 3600;
+  
+  switch (roundTo) {
+    case "quarter-hour":
+      return Math.ceil(hours * 4) / 4 * 3600;
+    case "half-hour":
+      return Math.ceil(hours * 2) / 2 * 3600;
+    case "hour":
+      return Math.ceil(hours) * 3600;
+  }
+}
 
 /**
  * Round seconds to the nearest quarter hour (15 min = 900 sec)

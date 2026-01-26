@@ -4,7 +4,7 @@ import { PROJECT_TYPES, isValidProjectType } from "./types/index.js";
 import type { ProjectType } from "./types/index.js";
 import { newIdea, newProject } from "./commands/new.js";
 import { listIdeas, listProjects } from "./commands/list.js";
-import { work } from "./commands/work.js";
+import { workStart, workStop } from "./commands/work.js";
 import { save } from "./commands/save.js";
 import { review } from "./commands/review.js";
 import { finalize } from "./commands/finalize.js";
@@ -89,12 +89,19 @@ listCmd
     await listProjects();
   });
 
-// gd work "project"
+// gd work start/stop "project"
 program
-  .command("work <project>")
-  .description("Start working on a project (starts timer, opens nvim)")
-  .action(async (project: string) => {
-    await work(project);
+  .command("work <action> <project>")
+  .description("Manage work sessions (start/stop)")
+  .action(async (action: string, project: string) => {
+    if (action === "start") {
+      await workStart(project);
+    } else if (action === "stop") {
+      await workStop(project);
+    } else {
+      console.error(`Error: Unknown action '${action}'. Use 'start' or 'stop'.`);
+      process.exit(1);
+    }
   });
 
 // gd save "project"
