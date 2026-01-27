@@ -4,7 +4,7 @@ import { PROJECT_TYPES, isValidProjectType } from "./types/index.js";
 import type { ProjectType } from "./types/index.js";
 import { newIdea, newProject } from "./commands/new.js";
 import { listIdeas, listProjects } from "./commands/list.js";
-import { workStart, workStop } from "./commands/work.js";
+import { workStart } from "./commands/work.js";
 import { save } from "./commands/save.js";
 import { review } from "./commands/review.js";
 import { finalize } from "./commands/finalize.js";
@@ -89,19 +89,12 @@ listCmd
     await listProjects();
   });
 
-// gd work start/stop "project"
+// gd work "project"
 program
-  .command("work <action> <project>")
-  .description("Manage work sessions (start/stop)")
-  .action(async (action: string, project: string) => {
-    if (action === "start") {
-      await workStart(project);
-    } else if (action === "stop") {
-      await workStop(project);
-    } else {
-      console.error(`Error: Unknown action '${action}'. Use 'start' or 'stop'.`);
-      process.exit(1);
-    }
+  .command("work <project>")
+  .description("Start working on a project (starts timer, opens editor)")
+  .action(async (project: string) => {
+    await workStart(project);
   });
 
 // gd save "project"
