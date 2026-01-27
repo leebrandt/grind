@@ -96,7 +96,7 @@ gd save "dogfood"
 
 This adds an timestamp to the "end" value of the open time session, and calculates the time exactly and rounded by the rounding setting in the "billing" section.
 
-It also stages and commits any changes to git. This way I never forget to close a work session's timer and lose track of the time.
+It also stages and commits any changes to git. This way I never forget to close a work session's timer and lose track of the time. It checks to see if there are any changes to commit, first.
 
 
 ## A Dash of Configuration
