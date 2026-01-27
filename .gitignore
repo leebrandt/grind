@@ -1,6 +1,6 @@
 # Bun build artifacts
 *.bun-build
-gd
+grind
 
 # Dependencies
 node_modules/

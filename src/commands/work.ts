@@ -7,7 +7,7 @@ import type { Session } from "../types/index.js";
 
 /**
  * Start working on a project
- * gd work "project-name"
+ * grind work "project-name"
  */
 export async function workStart(projectName: string): Promise<void> {
   // Find workspace root

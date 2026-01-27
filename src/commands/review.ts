@@ -1,6 +1,6 @@
 /**
  * Review a file (placeholder for future LLM integration)
- * gd review "file"
+ * grind review "file"
  */
 export async function review(file: string): Promise<void> {
   console.log(`TODO: Review file "${file}"`);

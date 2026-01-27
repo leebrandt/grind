@@ -16,7 +16,7 @@ export const DEFAULT_GRIND_CONFIG: GrindConfig = {
 
 /**
  * Initialize a grind workspace
- * gd init
+ * grind init
  *
  * Creates:
  * - .grind.repo.git/ (bare repository)
@@ -65,5 +65,5 @@ export async function init(): Promise<void> {
   console.log(`\nWorkspace root: ${cwd}`);
   console.log(`Bare repo:      ${bareRepoPath}`);
   console.log(`Main worktree:  ${mainWorktreePath}`);
-  console.log(`\nNext: cd grind && gd new idea "My first idea"`);
+  console.log(`\nNext: cd grind && grind new idea "My first idea"`);
 }

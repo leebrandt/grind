@@ -16,11 +16,11 @@ import { configList, configGet, configSet } from "./commands/config.js";
 const program = new Command();
 
 program
-  .name("gd")
+  .name("grind")
   .description("CLI tool for managing creative/technical projects from idea to publication")
   .version("0.1.0");
 
-// gd init
+// grind init
 program
   .command("init")
   .description("Initialize a grind workspace (creates ideas/, projects/, .grind.json)")
@@ -28,7 +28,7 @@ program
     await init();
   });
 
-// gd config [key] [value] [-g/--global] [--list]
+// grind config [key] [value] [-g/--global] [--list]
 program
   .command("config [key] [value]")
   .description("Get or set configuration values")
@@ -44,8 +44,8 @@ program
     }
   });
 
-// gd new idea "title" [-t type]
-// gd new project "name" [idea-file] [-t type]
+// grind new idea "title" [-t type]
+// grind new project "name" [idea-file] [-t type]
 const newCmd = program.command("new").description("Create a new idea or project");
 
 newCmd
@@ -62,7 +62,7 @@ newCmd
 
 newCmd
   .command("project <name> <idea-number>")
-  .description("Create a new project from an idea (use number from 'gd list ideas')")
+  .description("Create a new project from an idea (use number from 'grind list ideas')")
   .option("-t, --type <type>", `Project type (${PROJECT_TYPES.join(", ")})`)
   .action(async (name: string, ideaNumber: string, options: { type?: string }) => {
     if (options.type && !isValidProjectType(options.type)) {
@@ -72,7 +72,7 @@ newCmd
     await newProject(name, ideaNumber, { type: options.type as ProjectType | undefined });
   });
 
-// gd list ideas
+// grind list ideas
 const listCmd = program.command("list").description("List ideas or projects");
 
 listCmd
@@ -89,7 +89,7 @@ listCmd
     await listProjects();
   });
 
-// gd work "project"
+// grind work "project"
 program
   .command("work <project>")
   .description("Start working on a project (starts timer, opens editor)")
@@ -97,7 +97,7 @@ program
     await workStart(project);
   });
 
-// gd save "project"
+// grind save "project"
 program
   .command("save <project>")
   .description("Save work on a project (stops timer, commits changes)")
@@ -105,7 +105,7 @@ program
     await save(project);
   });
 
-// gd review "file"
+// grind review "file"
 program
   .command("review <file>")
   .description("Review a file (placeholder for LLM integration)")
@@ -113,7 +113,7 @@ program
     await review(file);
   });
 
-// gd finalize "file"
+// grind finalize "file"
 program
   .command("finalize <file>")
   .description("Finalize a file (placeholder for LLM integration)")
@@ -121,7 +121,7 @@ program
     await finalize(file);
   });
 
-// gd publish "file"
+// grind publish "file"
 program
   .command("publish <file>")
   .description("Publish a file to site repos")
@@ -129,7 +129,7 @@ program
     await publish(file);
   });
 
-// gd promo "project"
+// grind promo "project"
 program
   .command("promo <project>")
   .description("Trigger promo workflow for a project")

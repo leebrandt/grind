@@ -59,7 +59,7 @@ export function getGrindRoot(): string {
 
 /**
  * Get an idea by its number from the ideas directory
- * @param ideaNumber 0-based index from 'gd list ideas'
+ * @param ideaNumber 0-based index from 'grind list ideas'
  * @returns Object with filename and content, or null if not found
  */
 export async function getIdeaByNumber(ideaNumber: number): Promise<{ filename: string; content: string } | null> {

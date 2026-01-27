@@ -1,6 +1,6 @@
 /**
  * Publish a file to site repos
- * gd publish "file"
+ * grind publish "file"
  */
 export async function publish(file: string): Promise<void> {
   console.log(`TODO: Publish file "${file}"`);

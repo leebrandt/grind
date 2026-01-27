@@ -4,7 +4,7 @@ import { findMainWorktree } from "../utils/workspace.js";
 
 /**
  * List all idea files for triage
- * gd list ideas
+ * grind list ideas
  */
 export async function listIdeas(): Promise<void> {
   // Find main worktree
@@ -21,7 +21,7 @@ export async function listIdeas(): Promise<void> {
   files.sort(); // Timestamp filenames sort chronologically
   
   if (files.length === 0) {
-    console.log("No ideas yet. Create one with: gd new idea \"Your idea\"");
+    console.log("No ideas yet. Create one with: grind new idea \"Your idea\"");
     return;
   }
   
@@ -37,7 +37,7 @@ export async function listIdeas(): Promise<void> {
 
 /**
  * List all projects (potential future command)
- * gd list projects
+ * grind list projects
  */
 export async function listProjects(): Promise<void> {
   console.log("TODO: List all projects");

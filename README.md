@@ -1,4 +1,4 @@
-# grind (gd)
+# grind
 
 CLI tool for managing creative/technical projects from idea to publication.
 
@@ -12,7 +12,7 @@ bun install
 bun run build
 
 # Move to PATH (optional)
-sudo mv gd /usr/local/bin/
+sudo mv grind /usr/local/bin/
 ```
 
 ## Usage
@@ -20,45 +20,45 @@ sudo mv gd /usr/local/bin/
 ```bash
 # Initialize a workspace (in ~/work or similar)
 cd ~/work
-gd init
+grind init
 # Creates: .grind.repo.git/ (bare repo) + grind/ (main worktree)
 
 # Work from the main worktree
 cd grind
 
 # Create a new idea
-gd new idea "My brilliant idea"
-gd new idea "Blog post about Rust" -t blog
+grind new idea "My brilliant idea"
+grind new idea "Blog post about Rust" -t blog
 
 # List ideas for triage
-gd list ideas
+grind list ideas
 
-# Create a project from an idea (use idea number from 'gd list ideas')
-gd new project "rust-memory-management" 0 -t blog
+# Create a project from an idea (use idea number from 'grind list ideas')
+grind new project "rust-memory-management" 0 -t blog
 # Creates: ~/work/rust-memory-management/ as a new worktree
 
 # Start working (starts timer, opens nvim)
-gd work rust-memory-management
+grind work rust-memory-management
 
 # Save work (stops timer, commits changes)
-gd save rust-memory-management
+grind save rust-memory-management
 
 # Review/finalize with LLM (future)
-gd review post.md
-gd finalize post.md
+grind review post.md
+grind finalize post.md
 
 # Publish to site repos (future)
-gd publish post.md
+grind publish post.md
 
 # Trigger promo workflow (future)
-gd promo rust-memory-management
+grind promo rust-memory-management
 
 # Configuration
-gd config -g billing.defaultRate 125   # Set workspace default rate
-gd config -g billing.roundTo half-hour # Set workspace rounding
-gd config billing.rate 85              # Set project-specific rate
-gd config -g --list                    # Show workspace config
-gd config --list                       # Show project config
+grind config -g billing.defaultRate 125   # Set workspace default rate
+grind config -g billing.roundTo half-hour # Set workspace rounding
+grind config billing.rate 85              # Set project-specific rate
+grind config -g --list                    # Show workspace config
+grind config --list                       # Show project config
 ```
 
 ## Project Structure
@@ -66,7 +66,7 @@ gd config --list                       # Show project config
 Uses git worktrees to isolate each project while sharing history:
 
 ```
-~/work/                          # workspace root (run gd init here)
+~/work/                          # workspace root (run grind init here)
 ├── .grind.repo.git/             # bare repo (shared git database)
 ├── grind/                       # main worktree (tracks "main" branch)
 │   ├── .grind.json              # workspace config (billing defaults)

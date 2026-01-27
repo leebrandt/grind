@@ -1,6 +1,6 @@
 /**
  * Finalize a file (placeholder for future LLM integration)
- * gd finalize "file"
+ * grind finalize "file"
  */
 export async function finalize(file: string): Promise<void> {
   console.log(`TODO: Finalize file "${file}"`);

@@ -6,7 +6,7 @@ import { gitCommit } from "../utils/git.js";
 
 /**
  * Save work on a project
- * gd save "project"
+ * grind save "project"
  * 
  * - Stops the timer
  * - Commits changes

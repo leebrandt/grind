@@ -5,11 +5,11 @@
   "type": "module",
   "main": "src/index.ts",
   "bin": {
-    "gd": "./gd"
+    "grind": "./grind"
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build src/index.ts --compile --outfile=gd",
+    "build": "bun build src/index.ts --compile --outfile=grind",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

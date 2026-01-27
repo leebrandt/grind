@@ -1,6 +1,6 @@
 /**
  * Trigger promo workflow for a project
- * gd promo "project"
+ * grind promo "project"
  */
 export async function promo(project: string): Promise<void> {
   console.log(`TODO: Trigger promo workflow for "${project}"`);

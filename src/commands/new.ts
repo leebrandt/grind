@@ -10,7 +10,7 @@ import { readGrindConfig } from "../utils/config.js";
 
 /**
  * Create a new idea file
- * gd new idea "title" [-t type]
+ * grind new idea "title" [-t type]
  */
 export async function newIdea(
   title: string,
@@ -19,7 +19,7 @@ export async function newIdea(
   // Find the main worktree (grind/) from anywhere in the workspace
   const mainWorktree = await findMainWorktree(process.cwd());
   if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace. Run 'gd init' first.");
+    console.error("Error: Not in a grind workspace. Run 'grind init' first.");
     process.exit(1);
   }
   
@@ -41,7 +41,7 @@ export async function newIdea(
 
 /**
  * Create a new project from an idea
- * gd new project "name" <idea-number> [-t type]
+ * grind new project "name" <idea-number> [-t type]
  */
 export async function newProject(
   name: string,
@@ -64,14 +64,14 @@ export async function newProject(
   // Parse idea number
   const ideaIndex = parseInt(ideaNumber, 10);
   if (isNaN(ideaIndex)) {
-    console.error("Error: Idea must be a number from 'gd list ideas'");
+    console.error("Error: Idea must be a number from 'grind list ideas'");
     process.exit(1);
   }
   
   // Get idea content
   const idea = await getIdeaByNumber(ideaIndex);
   if (!idea) {
-    console.error(`Error: Idea #${ideaIndex} not found. Run 'gd list ideas' to see available ideas.`);
+    console.error(`Error: Idea #${ideaIndex} not found. Run 'grind list ideas' to see available ideas.`);
     process.exit(1);
   }
   

@@ -1,10 +1,10 @@
 /**
  * Get or set configuration values
  * 
- * gd config [key] [value]           # Project-level (in .time.json)
- * gd config -g [key] [value]        # Workspace-level (in .grind.json)
- * gd config --list                  # Show project config
- * gd config -g --list               # Show workspace config
+ * grind config [key] [value]           # Project-level (in .time.json)
+ * grind config -g [key] [value]        # Workspace-level (in .grind.json)
+ * grind config --list                  # Show project config
+ * grind config -g --list               # Show workspace config
  * 
  * Keys:
  *   billing.roundTo      - quarter-hour | half-hour | hour
