@@ -62,7 +62,7 @@ The number three is the number from the `gd list ideas` call. This creates a fol
 It then commits that and makes a worktree with a folder in the root (as a sibling to "grind") named after the project, in this case: "dogfood". I can then work on that project by running:
 
 ```
-gd work start "dogfood"
+gd work "dogfood"
 ```
 
 This switches me to the working tree, to the "dogfood" folder in "[base]/dogfood/projects", adds a time session to the `.project.json` file:
@@ -91,10 +91,13 @@ It also opens the project in NeoVim (will be configurable later).
 When I am finished, I exit NeoVim and run:
 
 ```
-gd work stop "dogfood"
+gd save "dogfood"
 ```
 
 This adds an timestamp to the "end" value of the open time session, and calculates the time exactly and rounded by the rounding setting in the "billing" section.
+
+It also stages and commits any changes to git. This way I never forget to close a work session's timer and lose track of the time.
+
 
 ## A Dash of Configuration
 
@@ -120,6 +123,8 @@ The `.project.json` in each project folder allows me to override that base billi
 I will eventually add more configurable stuff, like the default editor that opens when you run `gd work start "[project-name]"`, etc.
 
 ## The Next Stage
+
+
 
 Next, I need to add some convenience commands to set config values, like:
 
@@ -153,7 +158,8 @@ gd finalize "blog-post" // sends the final draft of a blog post to my editor AI 
 gd promo "blog-post" // will read settings from .project.json in the blog-post folder which should have published URLs in them and kick off content promotion with make.com 
 ```
 
-## So Far, So Good, So What? (\m/)
+
+## So Far, So Good, So NOW What? (\m/)
 
 I'm liking it so far, and since I am building it myself, I can change it to suit my own workflow. It will definitely make me better at Git. It already has. I didn't know diddly about Git Worktrees, so when I learned about them I realized they might be the perfect fit for this use case. 
 
