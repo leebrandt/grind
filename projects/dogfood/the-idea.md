@@ -143,20 +143,30 @@ For when I figure out nobody will pay my extortionate bill rate.
 I've also got some plans for a few more commands like:
 
 ```
-gd publish -hg "blog-post-project" // for blog posts. copies them to my Human In Progress website (the -h) and to my GMH.services website (the -g)
+gd publish -hg "blog-post-project" 
 ```
 
-```
-gd review "blog-post" // asks my writing AI Agent to review and give me a revised copy
-```
+For blog posts. copies them to my Human In Progress website (the -h) and to my GMH.services website (the -g)
+
 
 ```
-gd finalize "blog-post" // sends the final draft of a blog post to my editor AI agent, so it can learn which of it's recommendations I kept and which ones I didn't
+gd review "blog-post" 
 ```
 
+Asks my writing AI Agent to review and give me a revised copy.
+
+
 ```
-gd promo "blog-post" // will read settings from .project.json in the blog-post folder which should have published URLs in them and kick off content promotion with make.com 
+gd finalize "blog-post"
 ```
+
+Sends the final draft of a blog post to my editor AI agent, so it can learn which of it's recommendations I kept and which ones I didn't
+
+```
+gd promo "blog-post" 
+```
+
+Will read settings from .project.json in the blog-post folder which should have published URLs in them and kick off content promotion with make.com 
 
 
 ## So Far, So Good, So NOW What? (\m/)
