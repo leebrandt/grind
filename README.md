@@ -33,26 +33,25 @@ gd new idea "Blog post about Rust" -t blog
 # List ideas for triage
 gd list ideas
 
-# Create a project (creates sibling worktree)
-gd new project "rust-memory-management" -t blog
+# Create a project from an idea (use idea number from 'gd list ideas')
+gd new project "rust-memory-management" 0 -t blog
 # Creates: ~/work/rust-memory-management/ as a new worktree
 
 # Start working (starts timer, opens nvim)
-cd ../rust-memory-management
-gd work
+gd work rust-memory-management
 
 # Save work (stops timer, commits changes)
-gd save
+gd save rust-memory-management
 
 # Review/finalize with LLM (future)
 gd review post.md
 gd finalize post.md
 
-# Publish to site repos
+# Publish to site repos (future)
 gd publish post.md
 
-# Trigger promo workflow
-gd promo
+# Trigger promo workflow (future)
+gd promo rust-memory-management
 
 # Configuration
 gd config -g billing.defaultRate 125   # Set workspace default rate
@@ -71,16 +70,21 @@ Uses git worktrees to isolate each project while sharing history:
 ├── .grind.repo.git/             # bare repo (shared git database)
 ├── grind/                       # main worktree (tracks "main" branch)
 │   ├── .grind.json              # workspace config (billing defaults)
-│   └── ideas/                   # timestamped markdown files
-│       └── 20260125-my-idea.md
+│   ├── ideas/                   # timestamped markdown files
+│   │   └── 20260125051508.md
+│   └── projects/                # project configs (shared across worktrees)
+│       ├── my-blog-post/
+│       │   └── .project.json    # time tracking & billing config
+│       └── cool-webapp/
+│           └── .project.json
 ├── my-blog-post/                # project worktree (tracks "my-blog-post" branch)
-│   ├── .time.json               # time tracking
-│   ├── .publish.json            # publishing metadata
-│   └── post.md
+│   └── projects/
+│       └── my-blog-post/
+│           └── post.md          # your work files here
 └── cool-webapp/                 # another project worktree
-    ├── .time.json
-    ├── .publish.json
-    └── [project files]
+    └── projects/
+        └── cool-webapp/
+            └── [project files]
 ```
 
 Each project is a git worktree with its own branch, all sharing the same underlying repository.
@@ -98,7 +102,32 @@ Each project is a git worktree with its own branch, all sharing the same underly
 }
 ```
 
+### .project.json
+
+Located in `grind/projects/{project-name}/.project.json` and shared across all worktrees:
+
+```json
+{
+  "name": "rust-memory-management",
+  "idea": "# Blog post about Rust\n\nExplaining memory management...",
+  "time": [
+    {
+      "start": "2024-01-15T10:00:00Z",
+      "end": "2024-01-15T11:30:00Z",
+      "duration": 5400,
+      "rounded": 5400
+    }
+  ],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
+```
+
 ### .publish.json
+
+(Future feature - not yet implemented)
 
 ```json
 {
@@ -107,22 +136,6 @@ Each project is a git worktree with its own branch, all sharing the same underly
   "sites": {
     "hip": { "url": "", "publishedAt": "" },
     "gmh": { "url": "", "publishedAt": "" }
-  }
-}
-```
-
-### .time.json
-
-```json
-{
-  "sessions": [
-    { "start": "2024-01-15T10:00:00Z", "end": "2024-01-15T11:30:00Z", "duration": 5400, "rounded": 5400 }
-  ],
-  "totalSeconds": 5400,
-  "billableHours": 1.5,
-  "billing": {
-    "roundTo": "quarter-hour",
-    "rate": 200
   }
 }
 ```
