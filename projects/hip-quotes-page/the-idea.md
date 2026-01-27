@@ -12,3 +12,5 @@ I will try to hunt down the quote attribution but honestly, I *doubt* some can b
 The point is: It will be a repository of meaningful quotes. Motivational, maybe. Super liberal hippie? For sure. 
 
 BUT: Make them all linkable. Give each one an anchor so that I can share them. So that others can share them.
+
+## The name: Gettin' Hippie With 
