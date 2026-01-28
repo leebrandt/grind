@@ -1,0 +1,9 @@
+{
+  "name": "we-cant-live-like-this",
+  "idea": "# I was just thinking about when I should put my shoes on and take them off to help my sleep cycle. We shouldn't be living like this.",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
