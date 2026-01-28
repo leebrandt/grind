@@ -1,6 +1,6 @@
 import path from "path";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { createWriteStream } from "fs";
+import { PassThrough } from "stream";
 import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import type { ProjectConfig } from "../types/index.js";
@@ -101,43 +101,43 @@ export async function invoiceProject(projectName: string): Promise<void> {
   
   console.log(`\nTotal: ${totalHours.toFixed(2)} hours @ $${config.billing.rate.toFixed(2)}/hr = $${subtotal.toFixed(2)}`);
   
-  // 6. Generate markdown invoice
+  // 6. Generate markdown invoice (in memory)
   const now = new Date();
   const invoiceDate = now.toISOString().split('T')[0];
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // 2026-01-27T14-30-15
   const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days from now
-  
+
   // Build table rows
   const tableRows = Array.from(sessionsByDate.entries())
     .map(([date, data]) => {
       return `| ${date} | ${data.hours.toFixed(2)} | $${config.billing.rate.toFixed(2)} | $${data.amount.toFixed(2)} |`;
     })
     .join('\n');
-  
+
   // Truncate idea for description (first 100 chars or first line)
   const description = config.idea.split('\n')[0].substring(0, 100);
-  
+
   const invoiceMarkdown = `# INVOICE
 
-**Invoice Date**: ${invoiceDate}  
+**Invoice Date**: ${invoiceDate}
 **Invoice ID**: ${timestamp}
 
 ---
 
 ## FROM
-GarageMahal Studios  
-6625 N London Dr  
+GarageMahal Studios
+6625 N London Dr
 Kansas City, MO 65141
 
 ## TO
-Lee Brandt  
-6625 N London Dr  
+Lee Brandt
+6625 N London Dr
 Kansas City, MO 65141
 
 ---
 
 ## PROJECT
-**Name**: ${projectName}  
+**Name**: ${projectName}
 **Description**: ${description}
 
 ---
@@ -148,32 +148,18 @@ Kansas City, MO 65141
 |------|-------|------|--------|
 ${tableRows}
 
-**Subtotal**: $${subtotal.toFixed(2)}  
+**Subtotal**: $${subtotal.toFixed(2)}
 **Total**: $${subtotal.toFixed(2)}
 
 ---
 
-**Payment Terms**: Net 30  
+**Payment Terms**: Net 30
 **Due Date**: ${dueDate}
 `;
-  
-  // 7. Create invoices/<timestamp>/ directory in main worktree
-  const invoiceDir = path.join(
-    mainWorktree,
-    "projects",
-    projectName,
-    "invoices",
-    timestamp
-  );
-  await mkdir(invoiceDir, { recursive: true });
-  
-  // 8. Save markdown file
-  const markdownPath = path.join(invoiceDir, "invoice.md");
-  await writeFile(markdownPath, invoiceMarkdown, "utf-8");
-  
-  // 9. Generate PDF directly using pdfkit
-  const pdfPath = path.join(invoiceDir, "invoice.pdf");
-  await generateInvoicePDF(pdfPath, {
+
+  // 7. Generate PDF to buffer (in memory) - do this BEFORE writing anything
+  console.log(`\nGenerating invoice...`);
+  const pdfBuffer = await generateInvoicePDFBuffer({
     invoiceDate,
     invoiceId: timestamp,
     projectName,
@@ -183,28 +169,42 @@ ${tableRows}
     subtotal,
     dueDate
   });
-  
-  console.log(`\nInvoice generated:`);
-  console.log(`  Markdown: ${markdownPath}`);
-  console.log(`  PDF: ${pdfPath}`);
-  
-  // 10. Mark sessions as invoiced
+
+  // 8. All content generated successfully - now write everything atomically
+  const invoiceDir = path.join(
+    mainWorktree,
+    "projects",
+    projectName,
+    "invoices",
+    timestamp
+  );
+  const markdownPath = path.join(invoiceDir, "invoice.md");
+  const pdfPath = path.join(invoiceDir, "invoice.pdf");
+
+  await mkdir(invoiceDir, { recursive: true });
+  await writeFile(markdownPath, invoiceMarkdown, "utf-8");
+  await writeFile(pdfPath, pdfBuffer);
+
+  // 9. Mark sessions as invoiced (in memory)
   for (const session of config.time) {
     if (session.end !== null && session.invoiced !== true) {
       session.invoiced = true;
     }
   }
-  
-  // 11. Save updated config back to the SAME location we read from
+
+  // 10. Save updated config - this is the final "commit"
   await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+
+  console.log(`\nInvoice generated:`);
+  console.log(`  Markdown: ${markdownPath}`);
+  console.log(`  PDF: ${pdfPath}`);
   console.log(`\nMarked ${unbilledSessions.length} session(s) as invoiced.`);
 }
 
 /**
- * Generate PDF invoice using pdfkit
+ * Generate PDF invoice to a buffer (for atomic writes)
  */
-async function generateInvoicePDF(
-  outputPath: string,
+async function generateInvoicePDFBuffer(
   data: {
     invoiceDate: string;
     invoiceId: string;
@@ -215,23 +215,28 @@ async function generateInvoicePDF(
     subtotal: number;
     dueDate: string;
   }
-): Promise<void> {
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 50 });
-      const stream = createWriteStream(outputPath);
-      
-      doc.pipe(stream);
-      
+      const chunks: Buffer[] = [];
+      const passThrough = new PassThrough();
+
+      passThrough.on('data', (chunk: Buffer) => chunks.push(chunk));
+      passThrough.on('end', () => resolve(Buffer.concat(chunks)));
+      passThrough.on('error', reject);
+
+      doc.pipe(passThrough);
+
       // Header
       doc.fontSize(24).text('INVOICE', { align: 'center' });
       doc.moveDown();
-      
+
       doc.fontSize(10);
       doc.text(`Invoice Date: ${data.invoiceDate}`);
       doc.text(`Invoice ID: ${data.invoiceId}`);
       doc.moveDown(2);
-      
+
       // FROM section
       doc.fontSize(12).text('FROM', { underline: true });
       doc.fontSize(10);
@@ -239,7 +244,7 @@ async function generateInvoicePDF(
       doc.text('6625 N London Dr');
       doc.text('Kansas City, MO 65141');
       doc.moveDown();
-      
+
       // TO section
       doc.fontSize(12).text('TO', { underline: true });
       doc.fontSize(10);
@@ -247,40 +252,40 @@ async function generateInvoicePDF(
       doc.text('6625 N London Dr');
       doc.text('Kansas City, MO 65141');
       doc.moveDown(2);
-      
+
       // PROJECT section
       doc.fontSize(12).text('PROJECT', { underline: true });
       doc.fontSize(10);
       doc.text(`Name: ${data.projectName}`);
       doc.text(`Description: ${data.description}`);
       doc.moveDown(2);
-      
+
       // TIME BREAKDOWN section
       doc.fontSize(12).text('TIME BREAKDOWN', { underline: true });
       doc.moveDown(0.5);
-      
+
       // Table header
       const tableTop = doc.y;
       const col1 = 50;  // Date
       const col2 = 150; // Hours
       const col3 = 250; // Rate
       const col4 = 350; // Amount
-      
+
       doc.fontSize(10).font('Helvetica-Bold');
       doc.text('Date', col1, tableTop);
       doc.text('Hours', col2, tableTop);
       doc.text('Rate', col3, tableTop);
       doc.text('Amount', col4, tableTop);
-      
+
       // Draw line under header
       doc.moveTo(col1, tableTop + 15)
          .lineTo(450, tableTop + 15)
          .stroke();
-      
+
       // Table rows
       doc.font('Helvetica');
       let y = tableTop + 25;
-      
+
       for (const [date, info] of data.sessionsByDate) {
         doc.text(date, col1, y);
         doc.text(info.hours.toFixed(2), col2, y);
@@ -288,23 +293,20 @@ async function generateInvoicePDF(
         doc.text(`$${info.amount.toFixed(2)}`, col4, y);
         y += 20;
       }
-      
+
       // Totals
       doc.moveDown(2);
       doc.font('Helvetica-Bold');
       doc.text(`Subtotal: $${data.subtotal.toFixed(2)}`, col3);
       doc.text(`Total: $${data.subtotal.toFixed(2)}`, col3);
-      
+
       // Footer
       doc.moveDown(3);
       doc.font('Helvetica');
       doc.text('Payment Terms: Net 30');
       doc.text(`Due Date: ${data.dueDate}`);
-      
+
       doc.end();
-      
-      stream.on('finish', () => resolve());
-      stream.on('error', reject);
     } catch (error) {
       reject(error);
     }
