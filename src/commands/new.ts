@@ -35,7 +35,10 @@ export async function newIdea(
   
   // Create file with H1 heading
   await writeFile(filepath, `# ${title}\n`, "utf-8");
-  
+
+  // Commit immediately so project creation doesn't fail due to uncommitted changes
+  await gitCommit(mainWorktree, `Add idea: ${title}`);
+
   console.log(`Created idea: ideas/${filename}`);
 }
 
