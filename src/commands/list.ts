@@ -4,9 +4,12 @@ import { findMainWorktree } from "../utils/workspace.js";
 
 /**
  * List all idea files for triage
- * grind list ideas
+ * grind list ideas [-a|--all] [-r|--rejected]
  */
-export async function listIdeas(): Promise<void> {
+export async function listIdeas(options?: {
+  all?: boolean;
+  rejected?: boolean;
+}): Promise<void> {
   // Find main worktree
   const mainWorktree = await findMainWorktree(process.cwd());
   if (!mainWorktree) {
@@ -17,11 +20,25 @@ export async function listIdeas(): Promise<void> {
   const ideasDir = path.join(mainWorktree, "ideas");
   
   // Get all files, sorted by filename (chronological)
-  const files = await readdir(ideasDir);
+  let files = await readdir(ideasDir);
   files.sort(); // Timestamp filenames sort chronologically
   
+  // Filter based on options
+  if (options?.rejected) {
+    // Show only rejected ideas
+    files = files.filter(file => file.startsWith("rejected-"));
+  } else if (!options?.all) {
+    // Default: show only non-rejected ideas
+    files = files.filter(file => !file.startsWith("rejected-"));
+  }
+  // If options.all is true, show all files (no filtering)
+  
   if (files.length === 0) {
-    console.log("No ideas yet. Create one with: grind new idea \"Your idea\"");
+    if (options?.rejected) {
+      console.log("No rejected ideas.");
+    } else {
+      console.log("No ideas yet. Create one with: grind new idea \"Your idea\"");
+    }
     return;
   }
   
@@ -31,7 +48,11 @@ export async function listIdeas(): Promise<void> {
     const content = await readFile(filepath, "utf-8");
     const title = content.replace(/^#\s*/, "").trim(); // Remove leading # and whitespace
     
-    console.log(`${i}. ${title}`);
+    // Add [REJECTED] prefix for rejected ideas
+    const isRejected = files[i].startsWith("rejected-");
+    const prefix = isRejected ? "[REJECTED] " : "";
+    
+    console.log(`${i}. ${prefix}${title}`);
   }
 }
 

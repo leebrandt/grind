@@ -12,13 +12,18 @@ import { publish } from "./commands/publish.js";
 import { promo } from "./commands/promo.js";
 import { init } from "./commands/init.js";
 import { configList, configGet, configSet } from "./commands/config.js";
+import { rejectIdea } from "./commands/reject.js";
+import { pruneIdeas } from "./commands/prune.js";
+import { publishProject } from "./commands/publish-project.js";
+import { invoiceProject } from "./commands/invoice.js";
+import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
 
 program
   .name("grind")
   .description("CLI tool for managing creative/technical projects from idea to publication")
-  .version("0.1.0");
+  .version(packageJson.version, "-v, --version", "Display version number");
 
 // grind init
 program
@@ -78,8 +83,10 @@ const listCmd = program.command("list").description("List ideas or projects");
 listCmd
   .command("ideas")
   .description("List all idea files for triage")
-  .action(async () => {
-    await listIdeas();
+  .option("-a, --all", "Show all ideas (rejected and non-rejected)")
+  .option("-r, --rejected", "Show only rejected ideas")
+  .action(async (options: { all?: boolean; rejected?: boolean }) => {
+    await listIdeas(options);
   });
 
 listCmd
@@ -101,8 +108,9 @@ program
 program
   .command("save <project>")
   .description("Save work on a project (stops timer, commits changes)")
-  .action(async (project: string) => {
-    await save(project);
+  .option("-q, --quiet", "Use auto-generated commit message (quick save)")
+  .action(async (project: string, options: { quiet?: boolean }) => {
+    await save(project, options);
   });
 
 // grind review "file"
@@ -121,10 +129,21 @@ program
     await finalize(file);
   });
 
-// grind publish "file"
-program
-  .command("publish <file>")
-  .description("Publish a file to site repos")
+// grind publish project <name> [-d|--delete]
+// grind publish file <file> (future - keep existing placeholder)
+const publishCmd = program.command("publish").description("Publish projects or files");
+
+publishCmd
+  .command("project <name>")
+  .description("Merge project branch to main (optionally delete worktree)")
+  .option("-d, --delete", "Delete worktree and branch after merging")
+  .action(async (name: string, options: { delete?: boolean }) => {
+    await publishProject(name, options);
+  });
+
+publishCmd
+  .command("file <file>")
+  .description("Publish a file to site repos (placeholder)")
   .action(async (file: string) => {
     await publish(file);
   });
@@ -135,6 +154,34 @@ program
   .description("Trigger promo workflow for a project")
   .action(async (project: string) => {
     await promo(project);
+  });
+
+// grind reject idea [number]
+const rejectCmd = program.command("reject").description("Reject an idea or project");
+
+rejectCmd
+  .command("idea <number>")
+  .description("Reject an idea (prepends 'rejected-' to filename)")
+  .action(async (number: string) => {
+    await rejectIdea(number);
+  });
+
+// grind prune ideas
+const pruneCmd = program.command("prune").description("Delete rejected ideas or projects");
+
+pruneCmd
+  .command("ideas")
+  .description("Delete all rejected ideas (files starting with 'rejected-')")
+  .action(async () => {
+    await pruneIdeas();
+  });
+
+// grind invoice <project>
+program
+  .command("invoice <project>")
+  .description("Generate invoice for a project")
+  .action(async (project: string) => {
+    await invoiceProject(project);
   });
 
 program.parse();

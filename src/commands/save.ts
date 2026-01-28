@@ -2,16 +2,18 @@ import path from "path";
 import { getWorkspaceRoot } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/files.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
-import { gitCommit } from "../utils/git.js";
+import { gitCommit, gitCommitInteractive } from "../utils/git.js";
 
 /**
  * Save work on a project
- * grind save "project"
+ * grind save "project" [-q|--quiet]
  * 
  * - Stops the timer
  * - Commits changes
+ *   - Default: Opens interactive editor for commit message
+ *   - With -q flag: Uses auto-generated message with warning
  */
-export async function save(projectName: string): Promise<void> {
+export async function save(projectName: string, options?: { quiet?: boolean }): Promise<void> {
   // Find workspace root
   const workspaceRoot = await getWorkspaceRoot(process.cwd());
   if (!workspaceRoot) {
@@ -50,10 +52,18 @@ export async function save(projectName: string): Promise<void> {
   
   // Commit changes in the worktree
   const worktreePath = path.join(workspaceRoot, projectName);
-  const timestamp = new Date().toLocaleString();
-  const commitMessage = `Work Session on ${timestamp}: ${roundedHours}h\n=== WARNING: May contain unfinished work. ===`;
   
   console.log(`Committing changes...`);
-  await gitCommit(worktreePath, commitMessage);
+  
+  if (options?.quiet) {
+    // Quick save with auto-generated message
+    const timestamp = new Date().toLocaleString();
+    const commitMessage = `Work Session on ${timestamp}: ${roundedHours}h\n=== WARNING: May contain unfinished work. ===`;
+    await gitCommit(worktreePath, commitMessage);
+  } else {
+    // Interactive commit - open editor
+    await gitCommitInteractive(worktreePath);
+  }
+  
   console.log(`Changes committed to ${projectName} branch`);
 }

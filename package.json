@@ -1,6 +1,6 @@
 {
   "name": "grind",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "description": "CLI tool for managing creative/technical projects from idea to publication",
   "type": "module",
   "main": "src/index.ts",
@@ -13,11 +13,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "pdfkit": "^0.17.2"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^22.10.0",
+    "@types/pdfkit": "^0.17.4",
     "typescript": "^5.7.0"
   }
 }

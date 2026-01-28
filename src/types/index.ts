@@ -25,6 +25,7 @@ export interface Session {
   end: string | null; // ISO datetime, null for active sessions
   duration: number; // seconds
   rounded: number; // rounded seconds
+  invoiced?: boolean; // true if this session has been billed
 }
 
 // Rounding options

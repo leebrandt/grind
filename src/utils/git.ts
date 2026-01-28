@@ -1,4 +1,5 @@
 import { $ } from "bun";
+import { spawn } from "child_process";
 
 /**
  * Initialize a bare git repository (for use with worktrees)
@@ -13,6 +14,34 @@ export async function gitInit(path: string): Promise<void> {
 export async function gitCommit(path: string, message: string): Promise<void> {
   await $`git -C ${path} add -A`.quiet();
   await $`git -C ${path} commit -m ${message}`.quiet();
+}
+
+/**
+ * Create an interactive git commit (opens editor for message)
+ * Stages all changes first, then opens the configured git editor
+ */
+export async function gitCommitInteractive(path: string): Promise<void> {
+  // Stage all changes first
+  await $`git -C ${path} add -A`.quiet();
+  
+  // Run git commit without -m to open editor
+  return new Promise((resolve, reject) => {
+    const gitProcess = spawn("git", ["-C", path, "commit"], {
+      stdio: "inherit"
+    });
+    
+    gitProcess.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Git commit exited with code ${code}`));
+      }
+    });
+    
+    gitProcess.on("error", (err) => {
+      reject(err);
+    });
+  });
 }
 
 /**

@@ -60,15 +60,24 @@ export function getGrindRoot(): string {
 /**
  * Get an idea by its number from the ideas directory
  * @param ideaNumber 0-based index from 'grind list ideas'
+ * @param includeRejected If true, include rejected ideas (files starting with "rejected-")
  * @returns Object with filename and content, or null if not found
  */
-export async function getIdeaByNumber(ideaNumber: number): Promise<{ filename: string; content: string } | null> {
+export async function getIdeaByNumber(
+  ideaNumber: number,
+  includeRejected: boolean = false
+): Promise<{ filename: string; content: string } | null> {
   const mainWorktree = await findMainWorktree(process.cwd());
   if (!mainWorktree) return null;
   
   const ideasDir = path.join(mainWorktree, "ideas");
-  const files = await readdir(ideasDir);
+  let files = await readdir(ideasDir);
   files.sort();
+  
+  // Filter out rejected ideas unless explicitly requested
+  if (!includeRejected) {
+    files = files.filter(file => !file.startsWith("rejected-"));
+  }
   
   // Use 0-based indexing directly
   if (ideaNumber < 0 || ideaNumber >= files.length) {
