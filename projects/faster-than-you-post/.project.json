@@ -6,7 +6,8 @@
       "start": "2026-01-28T04:50:52.188Z",
       "end": "2026-01-28T04:52:58.570Z",
       "duration": 126,
-      "rounded": 900
+      "rounded": 900,
+      "invoiced": true
     }
   ],
   "billing": {
