@@ -16,6 +16,7 @@ import { rejectIdea } from "./commands/reject.js";
 import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
 import { invoiceProject } from "./commands/invoice.js";
+import { journal } from "./commands/journal.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -182,6 +183,14 @@ program
   .description("Generate invoice for a project")
   .action(async (project: string) => {
     await invoiceProject(project);
+  });
+
+// grind journal
+program
+  .command("journal")
+  .description("Open today's journal entry in nvim")
+  .action(async () => {
+    await journal();
   });
 
 program.parse();
