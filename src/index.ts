@@ -6,10 +6,6 @@ import { newIdea, newProject } from "./commands/new.js";
 import { listIdeas, listProjects } from "./commands/list.js";
 import { workStart } from "./commands/work.js";
 import { save } from "./commands/save.js";
-import { review } from "./commands/review.js";
-import { finalize } from "./commands/finalize.js";
-import { publish } from "./commands/publish.js";
-import { promo } from "./commands/promo.js";
 import { init } from "./commands/init.js";
 import { configList, configGet, configSet } from "./commands/config.js";
 import { rejectIdea } from "./commands/reject.js";
@@ -114,24 +110,7 @@ program
     await save(project, options);
   });
 
-// grind review "file"
-program
-  .command("review <file>")
-  .description("Review a file (placeholder for LLM integration)")
-  .action(async (file: string) => {
-    await review(file);
-  });
-
-// grind finalize "file"
-program
-  .command("finalize <file>")
-  .description("Finalize a file (placeholder for LLM integration)")
-  .action(async (file: string) => {
-    await finalize(file);
-  });
-
 // grind publish project <name> [-d|--delete]
-// grind publish file <file> (future - keep existing placeholder)
 const publishCmd = program.command("publish").description("Publish projects or files");
 
 publishCmd
@@ -140,21 +119,6 @@ publishCmd
   .option("-d, --delete", "Delete worktree and branch after merging")
   .action(async (name: string, options: { delete?: boolean }) => {
     await publishProject(name, options);
-  });
-
-publishCmd
-  .command("file <file>")
-  .description("Publish a file to site repos (placeholder)")
-  .action(async (file: string) => {
-    await publish(file);
-  });
-
-// grind promo "project"
-program
-  .command("promo <project>")
-  .description("Trigger promo workflow for a project")
-  .action(async (project: string) => {
-    await promo(project);
   });
 
 // grind reject idea [number]

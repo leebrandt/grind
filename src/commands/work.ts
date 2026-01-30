@@ -58,9 +58,7 @@ export async function workStart(projectName: string): Promise<void> {
   
   // Open editor in project directory
   const projectDir = path.join(worktreePath, "projects", projectName);
-  //console.log(`Opening editor at: ${projectDir}`);
-  // Note: There is no 'console.cd'. Remove this call; just set cwd in spawn.
-  
+
   // Spawn nvim
   const editor = spawn("nvim", ["."], {
     cwd: projectDir,

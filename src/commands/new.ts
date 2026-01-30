@@ -1,9 +1,9 @@
 import path from "path";
-import { writeFile, unlink } from "node:fs/promises";
+import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { $ } from "bun";
 import type { ProjectType, NewCommandOptions, ProjectConfig } from "../types/index.js";
 import { getTimestampFilename } from "../utils/time.js";
-import { ensureDir, getIdeaByNumber, fileExists } from "../utils/files.js";
+import { getIdeaByNumber, fileExists } from "../utils/files.js";
 import { findMainWorktree, getWorkspaceRoot } from "../utils/workspace.js";
 import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.js";
 import { readGrindConfig } from "../utils/config.js";
@@ -26,7 +26,7 @@ export async function newIdea(
   const ideasDir = path.join(mainWorktree, "ideas");
   
   // Ensure ideas directory exists
-  await ensureDir(ideasDir);
+  await mkdir(ideasDir, { recursive: true });
   
   // Generate timestamped filename
   const timestamp = getTimestampFilename();
@@ -100,7 +100,7 @@ export async function newProject(
   // Step 1: Create .project.json in main worktree's projects/ folder
   console.log(`Creating project in grind/projects/${name}/...`);
   const projectFolderInMain = path.join(mainWorktree, "projects", name);
-  await ensureDir(projectFolderInMain);
+  await mkdir(projectFolderInMain, { recursive: true });
   
   const projectConfig: ProjectConfig = {
     name,

@@ -1,8 +1,8 @@
 import path from "path";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import type { GrindConfig } from "../types/index.js";
 import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit } from "../utils/git.js";
-import { ensureDir, fileExists } from "../utils/files.js";
+import { fileExists } from "../utils/files.js";
 
 /**
  * Default workspace configuration
@@ -49,8 +49,8 @@ export async function init(): Promise<void> {
 
   // 4. Create structure in main worktree
   console.log("Setting up workspace structure...");
-  await ensureDir(path.join(mainWorktreePath, "ideas"));
-  await ensureDir(path.join(mainWorktreePath, "projects"));
+  await mkdir(path.join(mainWorktreePath, "ideas"), { recursive: true });
+  await mkdir(path.join(mainWorktreePath, "projects"), { recursive: true });
   await writeFile(
     path.join(mainWorktreePath, ".grind.json"),
     JSON.stringify(DEFAULT_GRIND_CONFIG, null, 2),
