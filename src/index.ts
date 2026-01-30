@@ -13,6 +13,7 @@ import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
 import { invoiceProject } from "./commands/invoice.js";
 import { journal } from "./commands/journal.js";
+import { status } from "./commands/status.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -155,6 +156,14 @@ program
   .description("Open today's journal entry in nvim")
   .action(async () => {
     await journal();
+  });
+
+// grind status
+program
+  .command("status")
+  .description("Show git status for all worktrees")
+  .action(async () => {
+    await status();
   });
 
 program.parse();

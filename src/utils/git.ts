@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import { spawn } from "child_process";
+import { execSync } from "child_process";
 
 /**
  * Initialize a bare git repository (for use with worktrees)
@@ -23,25 +23,10 @@ export async function gitCommit(path: string, message: string): Promise<void> {
 export async function gitCommitInteractive(path: string): Promise<void> {
   // Stage all changes first
   await $`git -C ${path} add -A`.quiet();
-  
+
   // Run git commit without -m to open editor
-  return new Promise((resolve, reject) => {
-    const gitProcess = spawn("git", ["-C", path, "commit"], {
-      stdio: "inherit"
-    });
-    
-    gitProcess.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Git commit exited with code ${code}`));
-      }
-    });
-    
-    gitProcess.on("error", (err) => {
-      reject(err);
-    });
-  });
+  // execSync properly forwards the TTY for interactive editors like vi
+  execSync(`git -C ${JSON.stringify(path)} commit`, { stdio: "inherit" });
 }
 
 /**
