@@ -1,0 +1,9 @@
+{
+  "name": "hobby-blog-post",
+  "idea": "# My hobbies should be at let as important as my job, right?",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
