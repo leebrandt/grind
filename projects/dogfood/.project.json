@@ -1,7 +1,68 @@
 {
   "name": "dogfood",
   "idea": "# Build a system for managing creative project work, called Grind.",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-01-25T14:36:29.535Z",
+      "end": "2026-01-25T15:25:45.528Z",
+      "duration": 2955,
+      "rounded": 3600
+    },
+    {
+      "start": "2026-01-27T04:27:22.618Z",
+      "end": "2026-01-27T04:33:28.009Z",
+      "duration": 365,
+      "rounded": 900
+    },
+    {
+      "start": "2026-01-27T04:39:05.388Z",
+      "end": "2026-01-27T04:44:12.655Z",
+      "duration": 307,
+      "rounded": 900
+    },
+    {
+      "start": "2026-01-27T06:45:42.856Z",
+      "end": "2026-01-27T06:45:42.856Z",
+      "duration": 0,
+      "rounded": 0
+    },
+    {
+      "start": "2026-01-27T06:56:22.391Z",
+      "end": "2026-01-27T06:58:34.405Z",
+      "duration": 132,
+      "rounded": 900
+    },
+    {
+      "start": "2026-01-27T23:02:05.312Z",
+      "end": "2026-01-27T23:13:22.130Z",
+      "duration": 676,
+      "rounded": 900
+    },
+    {
+      "start": "2026-01-28T02:08:51.130Z",
+      "end": "2026-01-28T02:08:51.130Z",
+      "duration": 0,
+      "rounded": 0
+    },
+    {
+      "start": "2026-01-28T07:17:27.985Z",
+      "end": "2026-01-28T07:55:15.798Z",
+      "duration": 2267,
+      "rounded": 2700
+    },
+    {
+      "start": "2026-01-28T22:24:24.083Z",
+      "end": "2026-01-28T22:26:06.033Z",
+      "duration": 101,
+      "rounded": 900
+    },
+    {
+      "start": "2026-01-31T00:11:49.757Z",
+      "end": "2026-01-31T00:14:22.487Z",
+      "duration": 152,
+      "rounded": 900
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
