@@ -1,7 +1,7 @@
 import path from "path";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { $ } from "bun";
-import type { ProjectType, NewCommandOptions, ProjectConfig } from "../types/index.js";
+import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
 import { getTimestampFilename } from "../utils/time.js";
 import { getIdeaByNumber, fileExists } from "../utils/files.js";
 import { findMainWorktree, getWorkspaceRoot } from "../utils/workspace.js";
@@ -10,11 +10,10 @@ import { readGrindConfig } from "../utils/config.js";
 
 /**
  * Create a new idea file
- * grind new idea "title" [-t type]
+ * grind new idea "title"
  */
 export async function newIdea(
-  title: string,
-  options: NewCommandOptions
+  title: string
 ): Promise<void> {
   // Find the main worktree (grind/) from anywhere in the workspace
   const mainWorktree = await findMainWorktree(process.cwd());
@@ -104,6 +103,7 @@ export async function newProject(
   
   const projectConfig: ProjectConfig = {
     name,
+    ...(options.type && { type: options.type }),
     idea: idea.content.trim(),
     time: [],
     billing: {

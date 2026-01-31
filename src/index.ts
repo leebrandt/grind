@@ -47,20 +47,15 @@ program
     }
   });
 
-// grind new idea "title" [-t type]
-// grind new project "name" [idea-file] [-t type]
+// grind new idea "title"
+// grind new project "name" <idea-number> [-t type]
 const newCmd = program.command("new").description("Create a new idea or project");
 
 newCmd
   .command("idea <title>")
   .description("Create a new idea file")
-  .option("-t, --type <type>", `Project type (${PROJECT_TYPES.join(", ")})`)
-  .action(async (title: string, options: { type?: string }) => {
-    if (options.type && !isValidProjectType(options.type)) {
-      console.error(`Invalid type: ${options.type}. Valid types: ${PROJECT_TYPES.join(", ")}`);
-      process.exit(1);
-    }
-    await newIdea(title, { type: options.type as ProjectType | undefined });
+  .action(async (title: string) => {
+    await newIdea(title);
   });
 
 newCmd

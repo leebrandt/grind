@@ -1,5 +1,5 @@
 // Project types - extend this array to add new types
-export const PROJECT_TYPES = ["blog", "webapp", "video", "song"] as const;
+export const PROJECT_TYPES = ["blog", "webapp", "video", "song", "book"] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
 
 // Site configuration for publishing
@@ -57,6 +57,7 @@ export interface TimeConfig {
 // .project.json schema
 export interface ProjectConfig {
   name: string;
+  type?: ProjectType;
   idea: string;
   time: Session[];
   billing: {
