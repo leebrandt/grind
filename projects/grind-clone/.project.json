@@ -1,0 +1,9 @@
+{
+  "name": "grind-clone",
+  "idea": "# A  command to initialize a local version of a remote grind repo. Creates the --bare repo, etc.",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
