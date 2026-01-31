@@ -61,10 +61,16 @@
       "end": "2026-01-31T00:14:22.487Z",
       "duration": 152,
       "rounded": 900
+    },
+    {
+      "start": "2026-01-31T07:17:32.783Z",
+      "end": "2026-01-31T09:38:47.553Z",
+      "duration": 8474,
+      "rounded": 9000
     }
   ],
   "billing": {
     "roundTo": "quarter-hour",
-    "rate": 150
+    "rate": 120
   }
 }
