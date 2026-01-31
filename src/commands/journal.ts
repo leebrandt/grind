@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { spawn } from "child_process";
 import { findMainWorktree } from "../utils/workspace.js";

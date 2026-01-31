@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import path from "path";
+import path from "node:path";
 import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { hasUncommittedChanges } from "../utils/git.js";

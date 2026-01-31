@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { GrindConfig } from "../types/index.js";
 import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit } from "../utils/git.js";

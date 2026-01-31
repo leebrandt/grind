@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { spawn } from "child_process";
 import { getWorkspaceRoot } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig, fileExists } from "../utils/files.js";

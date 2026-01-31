@@ -28,30 +28,44 @@ cd grind
 
 # Create a new idea
 grind new idea "My brilliant idea"
-grind new idea "Blog post about Rust" -t blog
 
 # List ideas for triage
 grind list ideas
+grind list ideas -a          # Include rejected ideas
+grind list ideas -r          # Show only rejected ideas
+
+# Reject an idea
+grind reject idea 2
+
+# Prune rejected ideas (permanently delete)
+grind prune ideas
 
 # Create a project from an idea (use idea number from 'grind list ideas')
 grind new project "rust-memory-management" 0 -t blog
 # Creates: ~/work/rust-memory-management/ as a new worktree
+
+# List projects
+grind list projects
 
 # Start working (starts timer, opens nvim)
 grind work rust-memory-management
 
 # Save work (stops timer, commits changes)
 grind save rust-memory-management
+grind save rust-memory-management -q  # Quick save with auto-generated commit message
 
-# Review/finalize with LLM (future)
-grind review post.md
-grind finalize post.md
+# Check project status
+grind status rust-memory-management
 
-# Publish to site repos (future)
-grind publish post.md
+# Generate invoice for unbilled sessions
+grind invoice rust-memory-management
 
-# Trigger promo workflow (future)
-grind promo rust-memory-management
+# Open today's journal entry
+grind journal
+
+# Publish project (merge to main)
+grind publish project rust-memory-management
+grind publish project rust-memory-management -d  # Also delete worktree/branch
 
 # Configuration
 grind config -g billing.defaultRate 125   # Set workspace default rate
@@ -109,33 +123,20 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
 ```json
 {
   "name": "rust-memory-management",
+  "type": "blog",
   "idea": "# Blog post about Rust\n\nExplaining memory management...",
   "time": [
     {
       "start": "2024-01-15T10:00:00Z",
       "end": "2024-01-15T11:30:00Z",
       "duration": 5400,
-      "rounded": 5400
+      "rounded": 5400,
+      "invoiced": false
     }
   ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
-  }
-}
-```
-
-### .publish.json
-
-(Future feature - not yet implemented)
-
-```json
-{
-  "projectType": "blog",
-  "slug": "auto-generated-from-title",
-  "sites": {
-    "hip": { "url": "", "publishedAt": "" },
-    "gmh": { "url": "", "publishedAt": "" }
   }
 }
 ```
@@ -146,6 +147,7 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
 - `webapp` - Web applications
 - `video` - Video content
 - `song` - Music/audio content
+- `book` - Books and long-form writing
 
 ## Development
 

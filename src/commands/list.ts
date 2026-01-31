@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { findMainWorktree } from "../utils/workspace.js";
 import type { ProjectConfig } from "../types/index.js";
