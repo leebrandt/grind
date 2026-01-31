@@ -1,6 +1,5 @@
-import path from "path";
+import path from "node:path";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
-import { $ } from "bun";
 import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
 import { getTimestampFilename } from "../utils/time.js";
 import { getIdeaByNumber, fileExists } from "../utils/files.js";

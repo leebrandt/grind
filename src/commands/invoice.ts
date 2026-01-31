@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { PassThrough } from "stream";
 import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
@@ -43,15 +43,12 @@ export async function invoiceProject(projectName: string): Promise<void> {
   );
   
   let configPath: string;
-  let configLocation: 'project' | 'main';
-  
+
   if (await fileExists(projectWorktreeConfigPath)) {
     configPath = projectWorktreeConfigPath;
-    configLocation = 'project';
     console.log(`Reading config from project worktree...`);
   } else if (await fileExists(mainWorktreeConfigPath)) {
     configPath = mainWorktreeConfigPath;
-    configLocation = 'main';
     console.log(`Reading config from main worktree (project worktree not found)...`);
   } else {
     console.error(`Error: Project '${projectName}' not found.`);

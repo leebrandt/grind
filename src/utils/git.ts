@@ -66,27 +66,6 @@ export async function gitAddWorktree(
 }
 
 /**
- * Check if path is inside a git repository
- */
-export async function isGitRepo(path: string): Promise<boolean> {
-  try {
-    await $`git -C ${path} rev-parse --git-dir`.quiet();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Get the current git branch
- */
-export async function getCurrentBranch(path: string): Promise<string> {
-  // TODO: Get current branch name
-  console.log(`TODO: getCurrentBranch(${path})`);
-  return "main";
-}
-
-/**
  * Check if a worktree has uncommitted changes
  */
 export async function hasUncommittedChanges(path: string): Promise<boolean> {

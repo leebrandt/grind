@@ -2,23 +2,6 @@
 export const PROJECT_TYPES = ["blog", "webapp", "video", "song", "book"] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
 
-// Site configuration for publishing
-export interface SiteConfig {
-  url: string;
-  publishedAt: string;
-}
-
-// .publish.json schema
-export interface PublishConfig {
-  projectType: ProjectType;
-  slug: string;
-  sites: {
-    hip?: SiteConfig;
-    gmh?: SiteConfig;
-    [key: string]: SiteConfig | undefined;
-  };
-}
-
 // Time tracking session
 export interface Session {
   start: string; // ISO datetime
@@ -44,14 +27,6 @@ export interface GrindConfig {
     roundTo: RoundTo;
     defaultRate: number;
   };
-}
-
-// .time.json schema
-export interface TimeConfig {
-  sessions: Session[];
-  totalSeconds: number;
-  billableHours: number;
-  billing: BillingConfig;
 }
 
 // .project.json schema

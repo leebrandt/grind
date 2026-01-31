@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { readdir, unlink } from "node:fs/promises";
 import { findMainWorktree } from "../utils/workspace.js";
 import { gitCommit } from "../utils/git.js";

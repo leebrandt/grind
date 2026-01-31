@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { rename } from "node:fs/promises";
 import { findMainWorktree } from "../utils/workspace.js";
 import { getIdeaByNumber } from "../utils/files.js";

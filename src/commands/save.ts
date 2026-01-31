@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { getWorkspaceRoot } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/files.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
