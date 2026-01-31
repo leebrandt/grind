@@ -1,6 +1,6 @@
 import path from "node:path";
 import { getWorkspaceRoot } from "../utils/workspace.js";
-import { readProjectConfig, writeProjectConfig } from "../utils/files.js";
+import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
 import { gitCommit, gitCommitInteractive } from "../utils/git.js";
 

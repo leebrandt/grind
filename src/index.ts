@@ -37,6 +37,16 @@ program
   .description("Get or set configuration values")
   .option("-g, --global", "Use workspace config (.grind.json) instead of project config")
   .option("-l, --list", "List all config values")
+  .addHelpText("after", `
+Settable keys (project-level):
+  type                  blog, webapp, video, song, book
+  billing.roundTo       quarter-hour, half-hour, hour
+  billing.rate          hourly rate (number)
+
+Settable keys (workspace-level, use -g):
+  billing.roundTo       quarter-hour, half-hour, hour
+  billing.defaultRate   default hourly rate (number)
+`)
   .action(async (key: string | undefined, value: string | undefined, options: { global?: boolean; list?: boolean }) => {
     if (options.list || (!key && !value)) {
       await configList(options);

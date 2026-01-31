@@ -2,6 +2,27 @@ import { stat, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileExists } from "./files.js";
 
+/**
+ * Derive the current project name from the working directory.
+ * Returns the directory name immediately under the workspace root,
+ * or null if not inside a project worktree.
+ */
+export async function getCurrentProjectName(): Promise<string | null> {
+  const cwd = process.cwd();
+  const workspaceRoot = await getWorkspaceRoot(cwd);
+  if (!workspaceRoot) return null;
+
+  const relative = path.relative(workspaceRoot, cwd);
+  if (!relative || relative.startsWith("..")) return null;
+
+  const firstSegment = relative.split(path.sep)[0];
+
+  // The "grind" directory is the main worktree, not a project
+  if (firstSegment === "grind" || firstSegment === ".grind.repo.git") return null;
+
+  return firstSegment;
+}
+
 const BARE_REPO_NAME = ".grind.repo.git";
 const MAIN_WORKTREE_NAME = "grind";
 const CONFIG_FILE_NAME = ".grind.json";

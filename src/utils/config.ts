@@ -1,6 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { GrindConfig } from "../types/index.js";
+import type { GrindConfig, ProjectConfig } from "../types/index.js";
 import { DEFAULT_GRIND_CONFIG } from "../commands/init.js";
 
 /**
@@ -16,4 +16,54 @@ export async function readGrindConfig(rootPath: string): Promise<GrindConfig> {
     // Return defaults if file doesn't exist or can't be read
     return DEFAULT_GRIND_CONFIG;
   }
+}
+
+/**
+ * Write workspace config to .grind.json
+ */
+export async function writeGrindConfig(rootPath: string, config: GrindConfig): Promise<void> {
+  const configPath = path.join(rootPath, ".grind.json");
+  await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+}
+
+/**
+ * Read project config from worktree
+ */
+export async function readProjectConfig(
+  workspaceRoot: string,
+  projectName: string
+): Promise<ProjectConfig | null> {
+  const configPath = path.join(
+    workspaceRoot,
+    projectName,
+    "projects",
+    projectName,
+    ".project.json"
+  );
+
+  try {
+    const content = await readFile(configPath, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write project config to worktree
+ */
+export async function writeProjectConfig(
+  workspaceRoot: string,
+  projectName: string,
+  config: ProjectConfig
+): Promise<void> {
+  const configPath = path.join(
+    workspaceRoot,
+    projectName,
+    "projects",
+    projectName,
+    ".project.json"
+  );
+
+  await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }

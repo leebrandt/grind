@@ -1,7 +1,8 @@
 import path from "node:path";
 import { spawn } from "child_process";
 import { getWorkspaceRoot } from "../utils/workspace.js";
-import { readProjectConfig, writeProjectConfig, fileExists } from "../utils/files.js";
+import { fileExists } from "../utils/files.js";
+import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import type { Session } from "../types/index.js";
 
