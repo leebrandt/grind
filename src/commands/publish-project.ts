@@ -6,11 +6,11 @@ import { hasUncommittedChanges } from "../utils/git.js";
 
 /**
  * Publish a project by merging to main
- * grind publish project <name> [-d|--delete]
+ * grind publish project <name> [-d] [-D]
  */
 export async function publishProject(
   projectName: string,
-  options?: { delete?: boolean }
+  options?: { deleteWorktree?: boolean; deleteBranch?: boolean }
 ): Promise<void> {
   // 1. Find workspace root and main worktree
   const workspaceRoot = await getWorkspaceRoot(process.cwd());
@@ -62,19 +62,19 @@ export async function publishProject(
     process.exit(1);
   }
   
-  // 6. If --delete flag: remove worktree and branch
-  if (options?.delete) {
-    console.log("\nCleaning up worktree and branch...");
+  // 6. If -d or -D flag: remove worktree (and optionally branch)
+  if (options?.deleteWorktree || options?.deleteBranch) {
     const bareRepoPath = path.join(workspaceRoot, ".grind.repo.git");
-    
-    // Remove worktree
+
+    console.log("\nCleaning up worktree...");
     await $`git -C ${bareRepoPath} worktree remove ${worktreePath}`.quiet();
     console.log(`  - Removed worktree: ${worktreePath}`);
-    
-    // Delete branch
-    await $`git -C ${bareRepoPath} branch -D ${projectName}`.quiet();
-    console.log(`  - Deleted branch: ${projectName}`);
-    
+
+    if (options?.deleteBranch) {
+      await $`git -C ${bareRepoPath} branch -D ${projectName}`.quiet();
+      console.log(`  - Deleted branch: ${projectName}`);
+    }
+
     console.log(`\nProject '${projectName}' published and archived.`);
   } else {
     console.log(`\nProject '${projectName}' published to main branch.`);

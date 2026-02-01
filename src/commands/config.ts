@@ -20,6 +20,7 @@ import type { RoundTo } from "../types/index.js";
 
 export interface ConfigOptions {
   global?: boolean;
+  project?: string;
   list?: boolean;
 }
 
@@ -119,7 +120,7 @@ export async function configList(options: ConfigOptions): Promise<void> {
     process.exit(1);
   }
 
-  const projectName = options.global ? null : await getCurrentProjectName();
+  const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;
 
   if (useGlobal) {
@@ -162,7 +163,7 @@ export async function configGet(key: string, options: ConfigOptions): Promise<vo
     process.exit(1);
   }
 
-  const projectName = options.global ? null : await getCurrentProjectName();
+  const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;
 
   if (useGlobal) {
@@ -205,7 +206,7 @@ export async function configSet(key: string, value: string, options: ConfigOptio
     process.exit(1);
   }
 
-  const projectName = options.global ? null : await getCurrentProjectName();
+  const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;
 
   if (useGlobal) {

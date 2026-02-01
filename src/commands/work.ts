@@ -8,9 +8,9 @@ import type { Session } from "../types/index.js";
 
 /**
  * Start working on a project
- * grind work "project-name"
+ * grind work "project-name" [-q|--quiet]
  */
-export async function workStart(projectName: string): Promise<void> {
+export async function workStart(projectName: string, options?: { quiet?: boolean }): Promise<void> {
   // Find workspace root
   const workspaceRoot = await getWorkspaceRoot(process.cwd());
   if (!workspaceRoot) {
@@ -56,7 +56,9 @@ export async function workStart(projectName: string): Promise<void> {
   
   console.log(`Started work session on '${projectName}'`);
   console.log(`Time started: ${newSession.start}`);
-  
+
+  if (options?.quiet) return;
+
   // Open editor in project directory
   const projectDir = path.join(worktreePath, "projects", projectName);
 
@@ -65,7 +67,7 @@ export async function workStart(projectName: string): Promise<void> {
     cwd: projectDir,
     stdio: "inherit"
   });
-  
+
   editor.on("close", (code) => {
     if (code !== 0) {
       console.error(`Editor exited with code ${code}`);

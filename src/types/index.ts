@@ -1,5 +1,5 @@
 // Project types - extend this array to add new types
-export const PROJECT_TYPES = ["blog", "webapp", "video", "song", "book"] as const;
+export const PROJECT_TYPES = ["blog", "webapp", "video", "song", "book", "feature", "issue"] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
 
 // Time tracking session

@@ -1,7 +1,11 @@
+import { $ } from "bun";
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
-import { findMainWorktree } from "../utils/workspace.js";
+import { findMainWorktree, findBareRepo } from "../utils/workspace.js";
 import type { ProjectConfig } from "../types/index.js";
+
+const RED = "\x1b[31m";
+const RESET = "\x1b[0m";
 
 /**
  * List all idea files for triage
@@ -73,7 +77,7 @@ function timeAgo(date: Date): string {
 }
 
 /**
- * List all projects with summary info
+ * List active projects (those with a current worktree)
  * grind list projects
  */
 export async function listProjects(): Promise<void> {
@@ -83,30 +87,41 @@ export async function listProjects(): Promise<void> {
     process.exit(1);
   }
 
-  const projectsDir = path.join(mainWorktree, "projects");
-
-  let entries: string[];
-  try {
-    entries = await readdir(projectsDir);
-  } catch {
-    console.log("No projects yet. Create one with: grind new project \"name\" <idea-number>");
-    return;
+  const bareRepo = await findBareRepo(process.cwd());
+  if (!bareRepo) {
+    console.error("Error: Could not find bare repo.");
+    process.exit(1);
   }
 
-  // Filter to directories that contain a .project.json
+  // Get active worktrees from git
+  const result = await $`git -C ${bareRepo} worktree list --porcelain`.quiet();
+  const output = result.stdout.toString();
+
+  // Parse worktree paths, skip bare repo and main worktree
+  const worktreeNames: string[] = [];
+  for (const line of output.split("\n")) {
+    if (!line.startsWith("worktree ")) continue;
+    const worktreePath = line.replace("worktree ", "");
+    const name = path.basename(worktreePath);
+    if (name === "grind" || worktreePath === bareRepo) continue;
+    worktreeNames.push(name);
+  }
+
+  // Load .project.json from each project's own worktree (has latest session data)
+  const workspaceRoot = path.dirname(bareRepo);
   const projects: { config: ProjectConfig; dir: string }[] = [];
-  for (const entry of entries) {
-    const configPath = path.join(projectsDir, entry, ".project.json");
+  for (const name of worktreeNames) {
+    const configPath = path.join(workspaceRoot, name, "projects", name, ".project.json");
     try {
       const content = await readFile(configPath, "utf-8");
-      projects.push({ config: JSON.parse(content), dir: entry });
+      projects.push({ config: JSON.parse(content), dir: name });
     } catch {
       continue;
     }
   }
 
   if (projects.length === 0) {
-    console.log("No projects yet. Create one with: grind new project \"name\" <idea-number>");
+    console.log("No active projects. Create one with: grind new project \"name\" <idea-number>");
     return;
   }
 
@@ -120,12 +135,25 @@ export async function listProjects(): Promise<void> {
     return new Date(aLast).getTime() - new Date(bLast).getTime();
   });
 
-  // Calculate column widths
-  const nameWidth = Math.max(...projects.map(p => p.config.name.length));
-  const typeWidth = Math.max(...projects.map(p => (p.config.type || "—").length));
+  // Calculate column widths (account for header labels)
+  const nameWidth = Math.max("Project".length, ...projects.map(p => p.config.name.length));
+  const typeWidth = Math.max("Type".length, ...projects.map(p => (p.config.type || "—").length));
+  const hoursWidth = 24;
+  const sessionsWidth = 10;
+
+  const DIM = "\x1b[2m";
+  const header = `  ${"Project".padEnd(nameWidth)}  ${"Type".padEnd(typeWidth)}  ${"Hours".padEnd(hoursWidth)}  ${"Sessions".padStart(sessionsWidth)}  Last Worked`;
+  const divider = `  ${"─".repeat(nameWidth)}  ${"─".repeat(typeWidth)}  ${"─".repeat(hoursWidth)}  ${"─".repeat(sessionsWidth)}  ${"─".repeat(11)}`;
+  console.log(`${DIM}${header}${RESET}`);
+  console.log(`${DIM}${divider}${RESET}`);
 
   for (const { config } of projects) {
-    const name = config.name.padEnd(nameWidth);
+    // Check for unsaved work (session with start but no end)
+    const hasOpenSession = config.time.some(s => s.end === null);
+
+    const displayName = hasOpenSession
+      ? `${RED}${config.name.padEnd(nameWidth)}${RESET}`
+      : config.name.padEnd(nameWidth);
     const type = (config.type || "—").padEnd(typeWidth);
 
     const totalSeconds = config.time.reduce((sum, s) => sum + s.rounded, 0);
@@ -141,6 +169,6 @@ export async function listProjects(): Promise<void> {
       ? `${totalHours}h (${unbilledHours}h unbilled)`
       : `${totalHours}h`;
 
-    console.log(`  ${name}  ${type}  ${hoursDisplay.padEnd(24)}  ${String(sessions).padStart(2)} sessions  ${lastWorked}`);
+    console.log(`  ${displayName}  ${type}  ${hoursDisplay.padEnd(hoursWidth)}  ${String(sessions).padStart(sessionsWidth)}  ${lastWorked}`);
   }
 }

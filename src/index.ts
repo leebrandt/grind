@@ -31,11 +31,12 @@ program
     await init();
   });
 
-// grind config [key] [value] [-g/--global] [--list]
+// grind config [key] [value] [-g/--global] [-p/--project] [--list]
 program
   .command("config [key] [value]")
   .description("Get or set configuration values")
   .option("-g, --global", "Use workspace config (.grind.json) instead of project config")
+  .option("-p, --project <name>", "Target a specific project (instead of detecting from cwd)")
   .option("-l, --list", "List all config values")
   .addHelpText("after", `
 Settable keys (project-level):
@@ -47,7 +48,7 @@ Settable keys (workspace-level, use -g):
   billing.roundTo       quarter-hour, half-hour, hour
   billing.defaultRate   default hourly rate (number)
 `)
-  .action(async (key: string | undefined, value: string | undefined, options: { global?: boolean; list?: boolean }) => {
+  .action(async (key: string | undefined, value: string | undefined, options: { global?: boolean; project?: string; list?: boolean }) => {
     if (options.list || (!key && !value)) {
       await configList(options);
     } else if (key && !value) {
@@ -99,12 +100,13 @@ listCmd
     await listProjects();
   });
 
-// grind work "project"
+// grind work "project" [-q|--quiet]
 program
   .command("work <project>")
   .description("Start working on a project (starts timer, opens editor)")
-  .action(async (project: string) => {
-    await workStart(project);
+  .option("-q, --quiet", "Start session without opening editor")
+  .action(async (project: string, options: { quiet?: boolean }) => {
+    await workStart(project, options);
   });
 
 // grind save "project"
@@ -116,14 +118,13 @@ program
     await save(project, options);
   });
 
-// grind publish project <name> [-d|--delete]
-const publishCmd = program.command("publish").description("Publish projects or files");
-
-publishCmd
-  .command("project <name>")
-  .description("Merge project branch to main (optionally delete worktree)")
-  .option("-d, --delete", "Delete worktree and branch after merging")
-  .action(async (name: string, options: { delete?: boolean }) => {
+// grind publish <name> [-d] [-D]
+program
+  .command("publish <name>")
+  .description("Merge project branch to main (optionally delete worktree/branch)")
+  .option("-d, --delete-worktree", "Delete worktree after merging")
+  .option("-D, --delete-branch", "Delete worktree and branch after merging")
+  .action(async (name: string, options: { deleteWorktree?: boolean; deleteBranch?: boolean }) => {
     await publishProject(name, options);
   });
 
