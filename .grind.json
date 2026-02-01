@@ -2,5 +2,13 @@
   "billing": {
     "roundTo": "quarter-hour",
     "defaultRate": 150
-  }
+  },
+  "my": {
+    "name": "Lee Brandt",
+    "company": "GarageMahal Studios",
+    "address": "6625 N London Dr\\nKansas City, MO\\n64151",
+    "email": "lee@garagemahal.studio"
+  },
+  "currency": "USD",
+  "paymentTerms": "Net 30"
 }
