@@ -1,7 +1,14 @@
 {
   "name": "misfortune-of-meaning",
   "idea": "# The Misfortune of Meaning",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-02-01T09:39:12.087Z",
+      "end": "2026-02-01T09:42:06.899Z",
+      "duration": 174,
+      "rounded": 900
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
