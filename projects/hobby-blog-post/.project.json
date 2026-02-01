@@ -1,7 +1,14 @@
 {
   "name": "hobby-blog-post",
   "idea": "# My hobbies should be at let as important as my job, right?",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-02-01T07:14:12.019Z",
+      "end": "2026-02-01T07:20:37.309Z",
+      "duration": 385,
+      "rounded": 900
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
