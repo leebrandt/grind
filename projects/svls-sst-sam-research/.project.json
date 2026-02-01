@@ -4,9 +4,9 @@
   "time": [
     {
       "start": "2026-02-01T02:21:28.459Z",
-      "end": null,
-      "duration": 0,
-      "rounded": 0
+      "end": "2026-02-01T04:59:40.841Z",
+      "duration": 9492,
+      "rounded": 9900
     }
   ],
   "billing": {
