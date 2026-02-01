@@ -5,5 +5,6 @@
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
-  }
+  },
+  "type": "blog"
 }
