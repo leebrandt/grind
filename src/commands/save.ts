@@ -2,12 +2,12 @@ import path from "node:path";
 import { getWorkspaceRoot } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
-import { gitCommit, gitCommitInteractive } from "../utils/git.js";
+import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
 
 /**
  * Save work on a project
  * grind save "project" [-q|--quiet]
- * 
+ *
  * - Stops the timer
  * - Commits changes
  *   - Default: Opens interactive editor for commit message
@@ -27,8 +27,12 @@ export async function save(projectName: string, options?: { quiet?: boolean }): 
   // just stage and commit, no time tracking or billing.
   if (projectName === "grind") {
     console.log("Saving grind worktree...");
-    await gitCommitInteractive(worktreePath);
-    console.log("Changes committed to main branch");
+    if (await hasUncommittedChanges(worktreePath)) {
+      await gitCommitInteractive(worktreePath);
+      console.log("Changes committed to main branch");
+    } else {
+      console.log("No changes to commit.");
+    }
     return;
   }
 
@@ -39,39 +43,43 @@ export async function save(projectName: string, options?: { quiet?: boolean }): 
     process.exit(1);
   }
 
-  // Find active session
+  // Find and stop active session (if any)
   const activeSession = config.time.find(s => s.end === null);
-  if (!activeSession) {
-    console.error(`Error: No active session found for '${projectName}'.`);
-    process.exit(1);
-  }
+  let roundedHours: string | undefined;
 
-  // Stop the session
-  const endTime = getCurrentTimestamp();
-  activeSession.end = endTime;
-  activeSession.duration = calculateDuration(activeSession.start, endTime);
-  activeSession.rounded = roundTimeByStrategy(activeSession.duration, config.billing.roundTo);
+  if (activeSession) {
+    const endTime = getCurrentTimestamp();
+    activeSession.end = endTime;
+    activeSession.duration = calculateDuration(activeSession.start, endTime);
+    activeSession.rounded = roundTimeByStrategy(activeSession.duration, config.billing.roundTo);
 
-  // Write updated config
-  await writeProjectConfig(workspaceRoot, projectName, config);
+    await writeProjectConfig(workspaceRoot, projectName, config);
 
-  const hours = (activeSession.duration / 3600).toFixed(2);
-  const roundedHours = (activeSession.rounded / 3600).toFixed(2);
+    const hours = (activeSession.duration / 3600).toFixed(2);
+    roundedHours = (activeSession.rounded / 3600).toFixed(2);
 
-  console.log(`Stopped work session on '${projectName}'`);
-  console.log(`Duration: ${hours} hours (${roundedHours} hours rounded)`);
-
-  console.log(`Committing changes...`);
-
-  if (options?.quiet) {
-    // Quick save with auto-generated message
-    const timestamp = new Date().toLocaleString();
-    const commitMessage = `Work Session on ${timestamp}: ${roundedHours}h\n=== WARNING: May contain unfinished work. ===`;
-    await gitCommit(worktreePath, commitMessage);
+    console.log(`Stopped work session on '${projectName}'`);
+    console.log(`Duration: ${hours} hours (${roundedHours} hours rounded)`);
   } else {
-    // Interactive commit - open editor
-    await gitCommitInteractive(worktreePath);
+    console.log("No active sessions found.");
   }
 
-  console.log(`Changes committed to ${projectName} branch`);
+  // Commit changes (if any)
+  if (await hasUncommittedChanges(worktreePath)) {
+    console.log(`Committing changes...`);
+
+    if (options?.quiet) {
+      const timestamp = new Date().toLocaleString();
+      const commitMessage = roundedHours
+        ? `Work Session on ${timestamp}: ${roundedHours}h\n=== WARNING: May contain unfinished work. ===`
+        : `Save on ${timestamp}\n=== WARNING: May contain unfinished work. ===`;
+      await gitCommit(worktreePath, commitMessage);
+    } else {
+      await gitCommitInteractive(worktreePath);
+    }
+
+    console.log(`Changes committed to ${projectName} branch`);
+  } else {
+    console.log("No changes to commit.");
+  }
 }

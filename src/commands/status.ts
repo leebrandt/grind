@@ -27,10 +27,17 @@ export async function status(): Promise<void> {
       ? branchLine.replace("branch refs/heads/", "")
       : "detached";
 
-    console.log(`[${branch}]`);
-
     const gitStatus = await $`git -C ${worktreePath} status`.quiet();
-    console.log(gitStatus.stdout.toString().trimEnd().replace(/^/gm, "  "));
+    const statusOutput = gitStatus.stdout.toString().trimEnd();
+    const isClean = statusOutput.includes("nothing to commit, working tree clean");
+
+    const GREEN = "\x1b[32m";
+    const RED_BOLD = "\x1b[1;31m";
+    const RESET = "\x1b[0m";
+
+    const color = isClean ? GREEN : RED_BOLD;
+    console.log(`${color}[${branch}]${RESET}`);
+    console.log(statusOutput.replace(/^/gm, "  "));
     console.log();
   }
 }
