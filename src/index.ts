@@ -52,10 +52,23 @@ Settable keys (project-level):
   type                  blog, webapp, video, song, book
   billing.roundTo       quarter-hour, half-hour, hour
   billing.rate          hourly rate (number)
+  client.contact        client contact person name
+  client.company        client company name
+  client.address        client address
+  client.phone          client phone number
+  client.email          client email address
 
 Settable keys (workspace-level, use -g):
   billing.roundTo       quarter-hour, half-hour, hour
   billing.defaultRate   default hourly rate (number)
+  my.name               your name
+  my.company            your company name
+  my.address            your address
+  my.phone              your phone number
+  my.email              your email address
+  my.taxId              tax ID (ABN/EIN/VAT)
+  currency              currency code (e.g. USD, AUD)
+  paymentTerms          payment terms (e.g. "Net 30")
 `)
   .action(async (key: string | undefined, value: string | undefined, options: { global?: boolean; project?: string; list?: boolean }) => {
     if (options.list || (!key && !value)) {

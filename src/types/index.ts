@@ -21,12 +21,34 @@ export interface BillingConfig {
   rate?: number; // hourly rate, overrides workspace default
 }
 
+// Professional info (displayed on invoices as "FROM")
+export interface ProfessionalInfo {
+  name?: string;
+  company?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  taxId?: string;
+}
+
+// Client info (displayed on invoices as "TO")
+export interface ClientInfo {
+  contact?: string;
+  company?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
 // Workspace-level config (.grind.json)
 export interface GrindConfig {
   billing: {
     roundTo: RoundTo;
     defaultRate: number;
   };
+  my?: ProfessionalInfo;
+  currency?: string;
+  paymentTerms?: string;
 }
 
 // .project.json schema
@@ -39,6 +61,7 @@ export interface ProjectConfig {
     roundTo: RoundTo;
     rate: number;
   };
+  client?: ClientInfo;
 }
 
 // Command option types

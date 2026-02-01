@@ -6,11 +6,27 @@
  * grind config --list                  # Show project config
  * grind config -g --list               # Show workspace config
  *
- * Keys:
- *   billing.roundTo      - quarter-hour | half-hour | hour
- *   billing.rate         - hourly rate (project-level)
- *   billing.defaultRate  - default hourly rate (workspace-level)
- *   type                 - project type (project-level)
+ * Keys (workspace-level, -g):
+ *   billing.roundTo            - quarter-hour | half-hour | hour
+ *   billing.defaultRate        - default hourly rate
+ *   my.name          - your name
+ *   my.company       - your company name
+ *   my.address       - your address
+ *   my.phone         - your phone number
+ *   my.email         - your email address
+ *   my.taxId         - tax ID (ABN/EIN/VAT)
+ *   currency                   - currency code (e.g. USD, AUD)
+ *   paymentTerms               - payment terms (e.g. "Net 30")
+ *
+ * Keys (project-level):
+ *   type                       - project type
+ *   billing.roundTo            - quarter-hour | half-hour | hour
+ *   billing.rate               - hourly rate
+ *   client.contact             - client contact person name
+ *   client.company             - client company name
+ *   client.address             - client address
+ *   client.phone               - client phone number
+ *   client.email               - client email address
  */
 
 import { getWorkspaceRoot, findMainWorktree, getCurrentProjectName } from "../utils/workspace.js";
@@ -24,8 +40,18 @@ export interface ConfigOptions {
   list?: boolean;
 }
 
-const GLOBAL_SETTABLE_KEYS = ["billing.roundTo", "billing.defaultRate"] as const;
-const PROJECT_SETTABLE_KEYS = ["type", "billing.roundTo", "billing.rate"] as const;
+const GLOBAL_SETTABLE_KEYS = [
+  "billing.roundTo", "billing.defaultRate",
+  "my.name", "my.company", "my.address",
+  "my.phone", "my.email", "my.taxId",
+  "currency", "paymentTerms",
+] as const;
+
+const PROJECT_SETTABLE_KEYS = [
+  "type", "billing.roundTo", "billing.rate",
+  "client.contact", "client.company", "client.address",
+  "client.phone", "client.email",
+] as const;
 
 /**
  * Get a nested value from an object using dot notation
@@ -100,7 +126,7 @@ function validateValue(key: string, value: string, isGlobal: boolean): unknown {
     return num;
   }
 
-  // Shouldn't reach here if key was validated
+  // String fields (my.*, client.*, currency, paymentTerms)
   return value;
 }
 
@@ -136,13 +162,19 @@ export async function configList(options: ConfigOptions): Promise<void> {
       process.exit(1);
     }
 
-    // Show type and billing fields
+    // Show type, billing, and client fields
     if (config.type) {
       console.log(`type = ${config.type}`);
     }
     const billingEntries = flattenObject(config.billing, "billing");
     for (const { key, value } of billingEntries) {
       console.log(`${key} = ${value}`);
+    }
+    if (config.client) {
+      const clientEntries = flattenObject(config.client, "client");
+      for (const { key, value } of clientEntries) {
+        console.log(`${key} = ${value}`);
+      }
     }
   }
 }
