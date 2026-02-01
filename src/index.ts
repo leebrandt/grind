@@ -14,6 +14,7 @@ import { publishProject } from "./commands/publish-project.js";
 import { invoiceProject } from "./commands/invoice.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
+import { clone } from "./commands/clone.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -29,6 +30,14 @@ program
   .description("Initialize a grind workspace (creates ideas/, projects/, .grind.json)")
   .action(async () => {
     await init();
+  });
+
+// grind clone <url> [directory]
+program
+  .command("clone <url> [directory]")
+  .description("Clone an existing grind workspace from a remote repository")
+  .action(async (url: string, directory?: string) => {
+    await clone(url, directory);
   });
 
 // grind config [key] [value] [-g/--global] [-p/--project] [--list]
