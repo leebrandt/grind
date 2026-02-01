@@ -21,7 +21,7 @@ What are the most used functions of these... platforms? And how do they stack up
 Give me a blog post run down of this information. Cover as much breadth as possible, but stay fairly shallow. I want to get a good sense of what these tools DO, which one does which function better, and which are the most used?
 
 ### == AI Response ==
-2:38 AMThe Lambda Microservices Tooling Landscape: Serverless, SST, and SAM
+####2:38 AMThe Lambda Microservices Tooling Landscape: Serverless, SST, and SAM
 What Space Are We Even Talking About?
 The generic term is Infrastructure as Code (IaC) for serverless, but more specifically these are serverless development frameworks. They handle:
 
