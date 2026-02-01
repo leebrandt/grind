@@ -10,9 +10,9 @@
     },
     {
       "start": "2026-02-01T08:09:26.154Z",
-      "end": null,
-      "duration": 0,
-      "rounded": 0
+      "end": "2026-02-01T09:10:05.560Z",
+      "duration": 3639,
+      "rounded": 4500
     }
   ],
   "billing": {
