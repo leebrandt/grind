@@ -1,7 +1,14 @@
 {
   "name": "idea-type-work",
   "idea": "# Grind Issue: Add the idea type to the idea listing. Add type: book",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-02-01T05:35:42.023Z",
+      "end": "2026-02-01T05:40:48.484Z",
+      "duration": 306,
+      "rounded": 900
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
