@@ -1,11 +1,18 @@
-#  Grind: A Terminal-First Workflow for Creative Projects
+---
+title: "Building a Personal Operating System for Creative Work, Part II: The Grind CLI"
+excerpt: "I took the concepts from my oh-my-zsh functions and aliases, and built it into a full-on CLI."
+date: "2026-02-02T08:02:42-06:00"
+hero: "content-os.png"
+author: "Lee Brandt"
+tags: ["grind", "systems", "git"]
+---
 
-I've got ideas all the time. In the moment they can seem great, but after I've pondered them for a day or two, I realize it's either a dumb idea, not something I want to pursue, or not something I should do. For example, I had an idea for a cookbook, but I don't really cook. Even if it was a good idea, I probably *shouldn't* be the one to write it.
+A few weeks ago, I wrote a [blog post](https://www.humaninprogress.live/blog/building-a-personal-operating-system-for-creative-work) about some functions and aliases I was using to kinda organize my ideas and work. Well, I took it to the next level.
 
-I needed some way to capture these ideas, regularly triage the ideas and either:
+I needed some way to capture ideas, regularly triage the ideas and either:
 
 * Take that idea and run with it. Start a new project.
-* Donate the idea. If I think it's good, just not for me; put it on the HiP website's "Free Ideas" page.
+* Donate the idea. If I think it's good, just not for me; put it on the [HiP](https://humaninprogress.live) website's "Free Ideas" page.
 * Scrap it. It ain't worth the time. And maybe lay off the Gelato #41.
 
 Then, if I start a project from one of those ideas, I want to track all the work I do on it. Easily get in and grind on a project, track the time I'm spending on the project, create an invoice for the project (if I end up getting paid work), and keep track of it all. Mostly so that I can keep from overcommitting, leaving unfinished projects from great ideas just because I forgot about it.
