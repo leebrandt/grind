@@ -115,8 +115,22 @@ listCmd
     await listIdeas(options);
   });
 
+program.command("ideas")
+  .description("List all idea files for triage")
+  .option("-a, --all", "Show all ideas (rejected and non-rejected)")
+  .option("-r, --rejected", "Show only rejected ideas")
+  .action(async (options: { all?: boolean; rejected?: boolean }) => {
+    await listIdeas(options);
+  });
+
 listCmd
   .command("projects")
+  .description("List all projects")
+  .action(async () => {
+    await listProjects();
+  });
+
+program.command("projects")
   .description("List all projects")
   .action(async () => {
     await listProjects();
