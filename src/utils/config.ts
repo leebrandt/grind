@@ -3,9 +3,6 @@ import path from "node:path";
 import type { GrindConfig, ProjectConfig } from "../types/index.js";
 import { DEFAULT_GRIND_CONFIG } from "../commands/init.js";
 
-/**
- * Read workspace config from .grind.json
- */
 export async function readGrindConfig(rootPath: string): Promise<GrindConfig> {
   const configPath = path.join(rootPath, ".grind.json");
 
@@ -13,22 +10,19 @@ export async function readGrindConfig(rootPath: string): Promise<GrindConfig> {
     const content = await readFile(configPath, "utf-8");
     return JSON.parse(content);
   } catch (error) {
-    // Return defaults if file doesn't exist or can't be read
-    return DEFAULT_GRIND_CONFIG;
+    throw error;
   }
 }
 
-/**
- * Write workspace config to .grind.json
- */
 export async function writeGrindConfig(rootPath: string, config: GrindConfig): Promise<void> {
   const configPath = path.join(rootPath, ".grind.json");
-  await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+  try{
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+  }catch(error){
+    throw error;
+  }
 }
 
-/**
- * Read project config from worktree
- */
 export async function readProjectConfig(
   workspaceRoot: string,
   projectName: string
@@ -49,9 +43,6 @@ export async function readProjectConfig(
   }
 }
 
-/**
- * Write project config to worktree
- */
 export async function writeProjectConfig(
   workspaceRoot: string,
   projectName: string,

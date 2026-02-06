@@ -1,4 +1,3 @@
-import { $ } from "bun";
 import { execSync } from "child_process";
 
 /**
