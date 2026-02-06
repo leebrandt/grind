@@ -50,7 +50,7 @@ const GLOBAL_SETTABLE_KEYS = [
 const PROJECT_SETTABLE_KEYS = [
   "type", "billing.roundTo", "billing.rate",
   "client.contact", "client.company", "client.address",
-  "client.phone", "client.email",
+  "client.phone", "client.email", "repo",
 ] as const;
 
 /**
@@ -175,6 +175,9 @@ export async function configList(options: ConfigOptions): Promise<void> {
       for (const { key, value } of clientEntries) {
         console.log(`${key} = ${value}`);
       }
+    }
+    if (config.repo) {
+      console.log(`repo = ${config.repo}`);
     }
   }
 }

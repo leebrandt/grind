@@ -62,6 +62,7 @@ export interface ProjectConfig {
     rate: number;
   };
   client?: ClientInfo;
+  repo?: string;
 }
 
 // Command option types

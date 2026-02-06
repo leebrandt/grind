@@ -1,11 +1,36 @@
 import path from "node:path";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { execSync } from "node:child_process";
+import { mkdir, writeFile, unlink, readFile } from "node:fs/promises";
+import { $ } from "bun";
 import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
 import { getTimestampFilename } from "../utils/time.js";
 import { getIdeaByNumber, fileExists } from "../utils/files.js";
 import { findMainWorktree, getWorkspaceRoot } from "../utils/workspace.js";
 import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.js";
 import { readGrindConfig } from "../utils/config.js";
+
+/**
+ * Open editor to get a message from the user
+ */
+async function getMessageFromEditor(prompt: string): Promise<string | null> {
+  const tmpFile = path.join(tmpdir(), `grind-${Date.now()}.md`);
+  await writeFile(tmpFile, `\n# ${prompt} (lines starting with # are ignored)\n`, "utf-8");
+
+  const editor = process.env.EDITOR || process.env.VISUAL || "vi";
+  execSync(`${editor} ${tmpFile}`, { stdio: "inherit" });
+
+  const content = await readFile(tmpFile, "utf-8");
+  await unlink(tmpFile);
+
+  const message = content
+    .split("\n")
+    .filter(line => !line.startsWith("#"))
+    .join("\n")
+    .trim();
+
+  return message || null;
+}
 
 /**
  * Create a new idea file
@@ -130,4 +155,82 @@ export async function newProject(
   console.log(`Working directory: ${name}/projects/${name}/`);
   console.log(`Branch: ${name}`);
   console.log(`\nNext: cd ${name}/projects/${name}`);
+}
+
+/**
+ * Create a new idea and GitHub issue
+ * grind new issue <project> [-m "message"]
+ */
+export async function newIssue(
+  projectName: string,
+  options: { message?: string }
+): Promise<void> {
+  let message = options.message;
+  if (!message) {
+    message = await getMessageFromEditor("Enter issue title above") ?? undefined;
+    if (!message) {
+      console.error("Aborted: no message provided.");
+      process.exit(1);
+    }
+  }
+  await newGitHubIssue(projectName, message, "ISSUE");
+}
+
+/**
+ * Create a new idea and GitHub feature request
+ * grind new feature <project> [-m "message"]
+ */
+export async function newFeature(
+  projectName: string,
+  options: { message?: string }
+): Promise<void> {
+  let message = options.message;
+  if (!message) {
+    message = await getMessageFromEditor("Enter feature title above") ?? undefined;
+    if (!message) {
+      console.error("Aborted: no message provided.");
+      process.exit(1);
+    }
+  }
+  await newGitHubIssue(projectName, message, "FEATURE");
+}
+
+async function newGitHubIssue(
+  projectName: string,
+  message: string,
+  prefix: string
+): Promise<void> {
+  const mainWorktree = await findMainWorktree(process.cwd());
+  if (!mainWorktree) {
+    console.error("Error: Not in a grind workspace. Run 'grind init' first.");
+    process.exit(1);
+  }
+
+  const workspaceRoot = await getWorkspaceRoot(process.cwd());
+  if (!workspaceRoot) {
+    console.error("Error: Not in a grind workspace.");
+    process.exit(1);
+  }
+
+  // Read project config from project worktree ({workspace}/{project}/projects/{project}/.project.json)
+  const configPath = path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");
+  let projectConfig: ProjectConfig;
+  try {
+    const content = await readFile(configPath, "utf-8");
+    projectConfig = JSON.parse(content);
+  } catch {
+    console.error(`Error: Project '${projectName}' not found.`);
+    process.exit(1);
+  }
+  if (!projectConfig.repo) {
+    console.error(`Error: No 'repo' configured for project '${projectName}'.`);
+    console.error(`Set it with: grind config -p ${projectName} repo owner/repo`);
+    process.exit(1);
+  }
+
+  // Create GitHub issue
+  const ghTitle = `[${prefix}]: ${message}`;
+  const result = await $`gh issue create --repo ${projectConfig.repo} --title ${ghTitle} --body " "`.quiet();
+  const issueUrl = result.stdout.toString().trim();
+  console.log(`Created GitHub issue: ${issueUrl}`);
 }

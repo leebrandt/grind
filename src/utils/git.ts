@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import { $ } from "bun";
 
 /**
  * Initialize a bare git repository (for use with worktrees)

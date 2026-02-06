@@ -2,7 +2,7 @@
 import { Command } from "commander";
 import { PROJECT_TYPES, isValidProjectType } from "./types/index.js";
 import type { ProjectType } from "./types/index.js";
-import { newIdea, newProject } from "./commands/new.js";
+import { newIdea, newProject, newIssue, newFeature } from "./commands/new.js";
 import { listIdeas, listProjects } from "./commands/list.js";
 import { workStart } from "./commands/work.js";
 import { save } from "./commands/save.js";
@@ -57,6 +57,7 @@ Settable keys (project-level):
   client.address        client address
   client.phone          client phone number
   client.email          client email address
+  repo                  GitHub repository (owner/repo format)
 
 Settable keys (workspace-level, use -g):
   billing.roundTo       quarter-hour, half-hour, hour
@@ -101,6 +102,22 @@ newCmd
       process.exit(1);
     }
     await newProject(name, ideaNumber, { type: options.type as ProjectType | undefined });
+  });
+
+newCmd
+  .command("issue <project>")
+  .description("Create a new idea and GitHub issue for a project")
+  .option("-m, --message <message>", "Issue title/message (opens editor if omitted)")
+  .action(async (project: string, options: { message?: string }) => {
+    await newIssue(project, options);
+  });
+
+newCmd
+  .command("feature <project>")
+  .description("Create a new idea and GitHub feature request for a project")
+  .option("-m, --message <message>", "Feature title/message (opens editor if omitted)")
+  .action(async (project: string, options: { message?: string }) => {
+    await newFeature(project, options);
   });
 
 // grind list ideas
