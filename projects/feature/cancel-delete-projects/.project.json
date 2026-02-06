@@ -1,0 +1,9 @@
+{
+  "name": "feature/cancel-delete-projects",
+  "idea": "# Cancel/Delete Projects",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
