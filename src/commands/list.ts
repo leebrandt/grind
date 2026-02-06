@@ -98,17 +98,18 @@ export async function listProjects(): Promise<void> {
   const output = result.stdout.toString();
 
   // Parse worktree paths, skip bare repo and main worktree
+  const workspaceRoot = path.dirname(bareRepo);
   const worktreeNames: string[] = [];
   for (const line of output.split("\n")) {
     if (!line.startsWith("worktree ")) continue;
     const worktreePath = line.replace("worktree ", "");
-    const name = path.basename(worktreePath);
+    // Use relative path for nested projects like "feature/my-killer-feature"
+    const name = path.relative(workspaceRoot, worktreePath);
     if (name === "grind" || worktreePath === bareRepo) continue;
     worktreeNames.push(name);
   }
 
   // Load .project.json from each project's own worktree (has latest session data)
-  const workspaceRoot = path.dirname(bareRepo);
   const projects: { config: ProjectConfig; dir: string }[] = [];
   for (const name of worktreeNames) {
     const configPath = path.join(workspaceRoot, name, "projects", name, ".project.json");
