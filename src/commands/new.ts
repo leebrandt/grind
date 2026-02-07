@@ -10,6 +10,7 @@ import { findMainWorktree, getWorkspaceRoot } from "../utils/workspace.js";
 import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.js";
 import { readGrindConfig } from "../utils/config.js";
 import { parseRepoUrl } from "../utils/repo.js";
+import { listIdeas } from "./list.js";
 
 /**
  * Open editor to get a message from the user
@@ -156,6 +157,10 @@ export async function newProject(
   console.log(`Working directory: ${name}/projects/${name}/`);
   console.log(`Branch: ${name}`);
   console.log(`\nNext: cd ${name}/projects/${name}`);
+
+  // Relist remaining ideas
+  console.log("\nRemaining ideas:");
+  await listIdeas();
 }
 
 /**
