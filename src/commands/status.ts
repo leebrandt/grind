@@ -45,7 +45,7 @@ async function getIssueCount(repo: string): Promise<string> {
       const issues = JSON.parse(result.stdout.toString().trim());
       return String(issues.length);
     } else {
-      const result = await $`glab issue list --repo ${info.repo} --state opened -F json`.quiet();
+      const result = await $`glab issue list --repo ${info.repo} -O json`.quiet();
       const issues = JSON.parse(result.stdout.toString().trim());
       return String(Array.isArray(issues) ? issues.length : 0);
     }
