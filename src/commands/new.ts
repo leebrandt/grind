@@ -9,6 +9,7 @@ import { getIdeaByNumber, fileExists } from "../utils/files.js";
 import { findMainWorktree, getWorkspaceRoot } from "../utils/workspace.js";
 import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.js";
 import { readGrindConfig } from "../utils/config.js";
+import { parseRepoUrl } from "../utils/repo.js";
 
 /**
  * Open editor to get a message from the user
@@ -173,11 +174,11 @@ export async function newIssue(
       process.exit(1);
     }
   }
-  await newGitHubIssue(projectName, message, "ISSUE");
+  await newRepoIssue(projectName, message, "ISSUE");
 }
 
 /**
- * Create a new idea and GitHub feature request
+ * Create a new idea and feature request on GitHub or GitLab
  * grind new feature <project> [-m "message"]
  */
 export async function newFeature(
@@ -192,10 +193,10 @@ export async function newFeature(
       process.exit(1);
     }
   }
-  await newGitHubIssue(projectName, message, "FEATURE");
+  await newRepoIssue(projectName, message, "FEATURE");
 }
 
-async function newGitHubIssue(
+async function newRepoIssue(
   projectName: string,
   message: string,
   prefix: string
@@ -224,13 +225,30 @@ async function newGitHubIssue(
   }
   if (!projectConfig.repo) {
     console.error(`Error: No 'repo' configured for project '${projectName}'.`);
-    console.error(`Set it with: grind config -p ${projectName} repo owner/repo`);
+    console.error(`Set it with: grind config -p ${projectName} repo git@github.com:owner/repo.git`);
     process.exit(1);
   }
 
-  // Create GitHub issue
-  const ghTitle = `[${prefix}]: ${message}`;
-  const result = await $`gh issue create --repo ${projectConfig.repo} --title ${ghTitle} --body " "`.quiet();
-  const issueUrl = result.stdout.toString().trim();
-  console.log(`Created GitHub issue: ${issueUrl}`);
+  const repoInfo = parseRepoUrl(projectConfig.repo);
+  if (!repoInfo) {
+    console.error(`Error: Unrecognized repo URL: ${projectConfig.repo}`);
+    console.error("Expected GitHub or GitLab URL, e.g.:");
+    console.error("  git@github.com:owner/repo.git");
+    console.error("  git@gitlab.com:owner/repo.git");
+    console.error("  https://github.com/owner/repo");
+    process.exit(1);
+  }
+
+  const title = `[${prefix}]: ${message}`;
+
+  let issueUrl: string;
+  if (repoInfo.platform === "github") {
+    const result = await $`gh issue create --repo ${repoInfo.repo} --title ${title} --body " "`.quiet();
+    issueUrl = result.stdout.toString().trim();
+  } else {
+    const result = await $`glab issue create --repo ${repoInfo.repo} --title ${title} --description " "`.quiet();
+    issueUrl = result.stdout.toString().trim();
+  }
+
+  console.log(`Created issue: ${issueUrl}`);
 }

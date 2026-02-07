@@ -27,12 +27,14 @@
  *   client.address             - client address
  *   client.phone               - client phone number
  *   client.email               - client email address
+ *   repo                       - git remote URL (e.g. git@github.com:owner/repo.git, https://gitlab.com/owner/repo)
  */
 
 import { getWorkspaceRoot, findMainWorktree, getCurrentProjectName } from "../utils/workspace.js";
 import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { ROUND_TO_OPTIONS, PROJECT_TYPES, isValidProjectType } from "../types/index.js";
 import type { RoundTo } from "../types/index.js";
+import { parseRepoUrl } from "../utils/repo.js";
 
 export interface ConfigOptions {
   global?: boolean;
@@ -124,6 +126,19 @@ function validateValue(key: string, value: string, isGlobal: boolean): unknown {
       process.exit(1);
     }
     return num;
+  }
+
+  if (key === "repo") {
+    if (!parseRepoUrl(value)) {
+      console.error(`Invalid repo URL: ${value}`);
+      console.error("Expected a GitHub or GitLab URL, e.g.:");
+      console.error("  git@github.com:owner/repo.git");
+      console.error("  git@gitlab.com:owner/repo.git");
+      console.error("  https://github.com/owner/repo");
+      console.error("  https://gitlab.com/owner/repo");
+      process.exit(1);
+    }
+    return value;
   }
 
   // String fields (my.*, client.*, currency, paymentTerms)
