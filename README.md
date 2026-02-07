@@ -23,6 +23,10 @@ cd ~/work
 grind init
 # Creates: .grind.repo.git/ (bare repo) + grind/ (main worktree)
 
+# Clone an existing grind workspace from a remote
+grind clone git@github.com:user/my-workspace.git
+grind clone git@github.com:user/my-workspace.git my-dir  # Custom directory name
+
 # Work from the main worktree
 cd grind
 
@@ -30,9 +34,9 @@ cd grind
 grind new idea "My brilliant idea"
 
 # List ideas for triage
-grind list ideas
-grind list ideas -a          # Include rejected ideas
-grind list ideas -r          # Show only rejected ideas
+grind list ideas              # or: grind ideas
+grind list ideas -a           # Include rejected ideas
+grind list ideas -r           # Show only rejected ideas
 
 # Reject an idea
 grind reject idea 2
@@ -45,17 +49,18 @@ grind new project "rust-memory-management" 0 -t blog
 # Creates: ~/work/rust-memory-management/ as a new worktree
 
 # List projects
-grind list projects
+grind list projects           # or: grind projects
 
 # Start working (starts timer, opens nvim)
 grind work rust-memory-management
+grind work rust-memory-management -q  # Start session without opening editor
 
 # Save work (stops timer, commits changes)
 grind save rust-memory-management
 grind save rust-memory-management -q  # Quick save with auto-generated commit message
 
-# Check project status
-grind status rust-memory-management
+# Project dashboard (shows all projects with time, commits, issues)
+grind status
 
 # Generate invoice for unbilled sessions
 grind invoice rust-memory-management
@@ -63,14 +68,21 @@ grind invoice rust-memory-management
 # Open today's journal entry
 grind journal
 
+# Create issues/features on GitHub or GitLab (requires 'repo' config)
+grind new issue my-project -m "Bug in login"       # Create issue
+grind new feature my-project -m "Add dark mode"     # Create feature request
+grind new issue my-project                          # Opens editor for message
+
 # Publish project (merge to main)
-grind publish project rust-memory-management
-grind publish project rust-memory-management -d  # Also delete worktree/branch
+grind publish rust-memory-management
+grind publish rust-memory-management -d   # Also delete worktree
+grind publish rust-memory-management -D   # Delete worktree and branch
 
 # Configuration
 grind config -g billing.defaultRate 125   # Set workspace default rate
 grind config -g billing.roundTo half-hour # Set workspace rounding
 grind config billing.rate 85              # Set project-specific rate
+grind config -p my-project repo git@github.com:owner/repo.git  # Set project repo
 grind config -g --list                    # Show workspace config
 grind config --list                       # Show project config
 ```
@@ -112,7 +124,17 @@ Each project is a git worktree with its own branch, all sharing the same underly
   "billing": {
     "roundTo": "quarter-hour",
     "defaultRate": 150
-  }
+  },
+  "my": {
+    "name": "Jane Doe",
+    "company": "Acme LLC",
+    "address": "123 Main St",
+    "phone": "555-1234",
+    "email": "jane@acme.com",
+    "taxId": "12-3456789"
+  },
+  "currency": "USD",
+  "paymentTerms": "Net 30"
 }
 ```
 
@@ -137,7 +159,15 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
-  }
+  },
+  "client": {
+    "contact": "John Smith",
+    "company": "Client Corp",
+    "address": "456 Oak Ave",
+    "phone": "555-5678",
+    "email": "john@clientcorp.com"
+  },
+  "repo": "git@github.com:owner/repo.git"
 }
 ```
 
@@ -148,6 +178,8 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
 - `video` - Video content
 - `song` - Music/audio content
 - `book` - Books and long-form writing
+- `feature` - Feature development
+- `issue` - Issue/bug fix
 
 ## Development
 
@@ -157,4 +189,7 @@ bun run dev -- new idea "test"
 
 # Type check
 bun run typecheck
+
+# Run tests
+bun run test
 ```

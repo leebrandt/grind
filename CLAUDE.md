@@ -9,9 +9,10 @@ bun install              # Install dependencies
 bun run dev -- <args>    # Run CLI in dev mode (e.g., bun run dev -- new idea "test")
 bun run build            # Compile to single binary named 'grind'
 bun run typecheck        # Type check (tsc --noEmit)
+bun run test             # Run tests (jest)
 ```
 
-There are no tests in this project currently.
+Tests use Jest with `ts-jest`. Test files live in `tests/` mirroring the `src/` structure (e.g., `tests/utils/config.test.ts`).
 
 ## Architecture
 
@@ -36,13 +37,15 @@ workspace-root/
 
 **Time tracking:** Sessions are stored as start/end ISO timestamps in `.project.json`. Duration is calculated in seconds and rounded (quarter-hour/half-hour/hour) per `src/utils/time.ts`. Sessions can be marked as invoiced.
 
-**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types.
+**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo) and `repo` (git remote URL) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, and `paymentTerms` fields for invoicing.
 
 **Utilities:**
 - `src/utils/git.ts` — git command wrappers using Bun shell; uses `execSync` for interactive editor spawning
 - `src/utils/config.ts` — JSON config file read/write
 - `src/utils/files.ts` — filesystem helpers
 - `src/utils/workspace.ts` — workspace/worktree location logic
+- `src/utils/repo.ts` — parses git remote URLs (SSH/HTTPS) for GitHub and GitLab into `{ platform, repo }` format
+- `src/utils/time.ts` — timestamp generation, duration calculation, rounding, `timeAgo`/`formatDate` helpers
 
 **Invoicing:** `src/commands/invoice.ts` generates both markdown and PDF (via pdfkit) invoices from tracked time sessions.
 
@@ -53,5 +56,6 @@ workspace-root/
 - Ideas are timestamped markdown files (`YYYYMMDDHHmmss.md`) in `grind/ideas/`
 - Rejected ideas are prefixed with `rejected-` in the filename
 - Error handling uses early-exit pattern with `console.error()` + `process.exit(1)`
-- The `config` command (`src/commands/config.ts`) has TODO stubs — `configList`, `configGet`, and `configSet` are not fully implemented
+- The `config` command (`src/commands/config.ts`) supports `configList`, `configGet`, and `configSet` for both workspace-level (`-g`) and project-level configs
+- Short aliases exist: `grind ideas` = `grind list ideas`, `grind projects` = `grind list projects`
 - All `path` imports use the `node:path` prefix (Node.js built-in module convention)
