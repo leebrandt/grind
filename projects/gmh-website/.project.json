@@ -1,0 +1,9 @@
+{
+  "name": "gmh-website",
+  "idea": "# GMH Services website",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
