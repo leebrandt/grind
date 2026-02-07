@@ -66,6 +66,44 @@ export async function gitAddWorktree(
 }
 
 /**
+ * Get the number of commits on a branch
+ */
+export async function getCommitCount(repoPath: string, branch: string): Promise<number> {
+  try {
+    const result = await $`git -C ${repoPath} rev-list --count ${branch}`.quiet();
+    return parseInt(result.stdout.toString().trim(), 10);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get the date of the first commit on a branch (ISO format)
+ */
+export async function getFirstCommitDate(repoPath: string, branch: string): Promise<string | null> {
+  try {
+    const result = await $`git -C ${repoPath} log ${branch} --reverse --format=%aI`.quiet();
+    const firstLine = result.stdout.toString().trim().split("\n")[0];
+    return firstLine || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the date of the most recent commit on a branch (ISO format)
+ */
+export async function getLastCommitDate(repoPath: string, branch: string): Promise<string | null> {
+  try {
+    const result = await $`git -C ${repoPath} log ${branch} -1 --format=%aI`.quiet();
+    const date = result.stdout.toString().trim();
+    return date || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check if a worktree has uncommitted changes
  */
 export async function hasUncommittedChanges(path: string): Promise<boolean> {

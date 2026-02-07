@@ -220,7 +220,7 @@ program
 // grind status
 program
   .command("status")
-  .description("Show git status for all worktrees")
+  .description("Show project overview")
   .action(async () => {
     await status();
   });

@@ -3,6 +3,7 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { findMainWorktree, findBareRepo } from "../utils/workspace.js";
 import type { ProjectConfig } from "../types/index.js";
+import { timeAgo } from "../utils/time.js";
 
 const RED = "\x1b[31m";
 const RESET = "\x1b[0m";
@@ -59,21 +60,6 @@ export async function listIdeas(options?: {
     
     console.log(`${i}. ${prefix}${title}`);
   }
-}
-
-function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo ago`;
-  const years = Math.floor(months / 12);
-  return `${years}y ago`;
 }
 
 /**
