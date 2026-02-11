@@ -11,6 +11,7 @@ import { configList, configGet, configSet } from "./commands/config.js";
 import { rejectIdea } from "./commands/reject.js";
 import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
+import { cancelProject } from "./commands/cancel.js";
 import { invoiceProject } from "./commands/invoice.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
@@ -179,6 +180,15 @@ program
   .option("-D, --delete-branch", "Delete worktree and branch after merging")
   .action(async (name: string, options: { deleteWorktree?: boolean; deleteBranch?: boolean }) => {
     await publishProject(name, options);
+  });
+
+// grind cancel <name> [--force]
+program
+  .command("cancel <name>")
+  .description("Cancel (abandon) a project — removes worktree, branch, and config")
+  .option("-f, --force", "Force removal even with uncommitted changes")
+  .action(async (name: string, options: { force?: boolean }) => {
+    await cancelProject(name, options);
   });
 
 // grind reject idea [number]
