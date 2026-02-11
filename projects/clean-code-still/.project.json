@@ -1,7 +1,14 @@
 {
   "name": "clean-code-still",
   "idea": "# Do we still need to write *clean code*?",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-02-11T13:49:13.156Z",
+      "end": "2026-02-11T14:03:39.973Z",
+      "duration": 866,
+      "rounded": 900
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
