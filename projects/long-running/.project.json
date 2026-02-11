@@ -1,9 +1,0 @@
-{
-  "name": "long-running",
-  "idea": "# [FEATURE] mark a project as long running, somehow. Then you can add things like a check when publishing and marking to delete the worktree. You can add a",
-  "time": [],
-  "billing": {
-    "roundTo": "quarter-hour",
-    "rate": 150
-  }
-}
