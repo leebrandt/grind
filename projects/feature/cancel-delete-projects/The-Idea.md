@@ -5,7 +5,7 @@ grind reject project-name
 ```
 
 ```
-grind cancel project
+grind cancel project-name
 ```
 
 maybe:
