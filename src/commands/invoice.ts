@@ -4,6 +4,7 @@ import { PassThrough } from "stream";
 import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
 import { readGrindConfig } from "../utils/config.js";
 import { fileExists } from "../utils/files.js";
+import { gitCommit } from "../utils/git.js";
 import type { ProjectConfig, GrindConfig } from "../types/index.js";
 import PDFDocument from "pdfkit";
 
@@ -219,6 +220,9 @@ ${tableRows}
 
   // 11. Save updated config - this is the final "commit"
   await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
+
+  // 12. Commit changes to the project worktree
+  await gitCommit(projectWorktreePath, `Invoice ${timestamp} for ${projectName}`);
 
   console.log(`\nInvoice generated:`);
   console.log(`  Markdown: ${markdownPath}`);
