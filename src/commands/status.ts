@@ -9,6 +9,7 @@ import type { ProjectConfig } from "../types/index.js";
 
 const DIM = "\x1b[2m";
 const RED = "\x1b[31m";
+const GREEN = "\x1b[32m";
 const RESET = "\x1b[0m";
 
 interface ProjectRow {
@@ -20,6 +21,8 @@ interface ProjectRow {
   commits: string;
   lastSession: string;
   lastCommit: string;
+  hasChanges: boolean;
+  hasUnbilled: boolean;
   sortKey: number; // for sorting by last session date
 }
 
@@ -101,11 +104,13 @@ export async function status(): Promise<void> {
   // Build rows in parallel
   const rowPromises = projects.map(async ({ config, name, branch }): Promise<ProjectRow> => {
     // Git queries
-    const [commitCount, firstCommitDate, lastCommitDate, issueCount] = await Promise.all([
+    const worktreePath = path.join(workspaceRoot, name);
+    const [commitCount, firstCommitDate, lastCommitDate, issueCount, hasChanges] = await Promise.all([
       getCommitCount(bareRepo, branch),
       getFirstCommitDate(bareRepo, branch),
       getLastCommitDate(bareRepo, branch),
       config.repo ? getIssueCount(config.repo) : Promise.resolve("—"),
+      $`git -C ${worktreePath} status --porcelain`.quiet().then(r => r.stdout.toString().trim().length > 0).catch(() => false),
     ]);
 
     // Time calculations
@@ -113,6 +118,7 @@ export async function status(): Promise<void> {
     const billedSeconds = config.time.filter(s => s.invoiced).reduce((sum, s) => sum + s.rounded, 0);
     const totalHours = (totalSeconds / 3600).toFixed(1);
     const billedHours = (billedSeconds / 3600).toFixed(1);
+    const hasUnbilled = totalSeconds > billedSeconds;
 
     // Last session
     const sessions = config.time;
@@ -131,6 +137,8 @@ export async function status(): Promise<void> {
       commits: String(commitCount),
       lastSession: lastSessionDisplay,
       lastCommit: lastCommitDate ? timeAgo(new Date(lastCommitDate)) : "never",
+      hasChanges,
+      hasUnbilled,
       sortKey,
     };
   });
@@ -165,10 +173,16 @@ export async function status(): Promise<void> {
   console.log(`${DIM}${divider}${RESET}`);
 
   for (const row of rows) {
-    // Highlight projects with no sessions
-    const nameDisplay = row.sortKey === 0
-      ? `${RED}${row.name.padEnd(cols.name)}${RESET}`
-      : row.name.padEnd(cols.name);
+    // Highlight: red = no sessions or uncommitted changes, green = unbilled hours
+    const paddedName = row.name.padEnd(cols.name);
+    let nameDisplay: string;
+    if (row.sortKey === 0 || row.hasChanges) {
+      nameDisplay = `${RED}${paddedName}${RESET}`;
+    } else if (row.hasUnbilled) {
+      nameDisplay = `${GREEN}${paddedName}${RESET}`;
+    } else {
+      nameDisplay = paddedName;
+    }
 
     console.log(`  ${nameDisplay}  ${row.startDate.padEnd(cols.startDate)}  ${row.hoursWorked.padStart(cols.hoursWorked)}  ${row.hoursBilled.padStart(cols.hoursBilled)}  ${row.issues.padStart(cols.issues)}  ${row.commits.padStart(cols.commits)}  ${row.lastSession.padEnd(cols.lastSession)}  ${row.lastCommit.padEnd(cols.lastCommit)}`);
   }
