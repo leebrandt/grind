@@ -1,4 +1,5 @@
 import { execSync } from "child_process";
+import path from "node:path";
 import { $ } from "bun";
 
 /**
@@ -106,11 +107,30 @@ export async function getLastCommitDate(repoPath: string, branch: string): Promi
 /**
  * Check if a worktree has uncommitted changes
  */
-export async function hasUncommittedChanges(path: string): Promise<boolean> {
+export async function hasUncommittedChanges(worktreePath: string): Promise<boolean> {
   try {
-    const result = await $`git -C ${path} status --porcelain`.quiet();
+    const result = await $`git -C ${worktreePath} status --porcelain`.quiet();
     return result.stdout.toString().trim().length > 0;
   } catch {
     return false;
   }
+}
+
+/**
+ * Get active project worktree names (excludes bare repo and "grind" main worktree)
+ */
+export async function getActiveWorktrees(bareRepo: string, workspaceRoot: string): Promise<string[]> {
+  const result = await $`git -C ${bareRepo} worktree list --porcelain`.quiet();
+  const output = result.stdout.toString();
+
+  const names: string[] = [];
+  for (const line of output.split("\n")) {
+    if (!line.startsWith("worktree ")) continue;
+    const worktreePath = line.replace("worktree ", "");
+    const name = path.relative(workspaceRoot, worktreePath);
+    if (name === "grind" || worktreePath === bareRepo) continue;
+    names.push(name);
+  }
+
+  return names;
 }

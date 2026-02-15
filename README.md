@@ -55,6 +55,13 @@ grind list projects           # or: grind projects
 grind work rust-memory-management
 grind work rust-memory-management -q  # Start session without opening editor
 
+# Open editor without starting a timer
+grind edit rust-memory-management
+
+# Cancel (abandon) a project
+grind cancel rust-memory-management
+grind cancel rust-memory-management -f  # Force even with uncommitted changes
+
 # Save work (stops timer, commits changes)
 grind save rust-memory-management
 grind save rust-memory-management -q  # Quick save with auto-generated commit message
@@ -83,6 +90,7 @@ grind config -g billing.defaultRate 125   # Set workspace default rate
 grind config -g billing.roundTo half-hour # Set workspace rounding
 grind config billing.rate 85              # Set project-specific rate
 grind config -p my-project repo git@github.com:owner/repo.git  # Set project repo
+grind config -p my-project longTerm true                      # Mark as long-running (shows ★)
 grind config -g --list                    # Show workspace config
 grind config --list                       # Show project config
 ```
@@ -167,7 +175,8 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
     "phone": "555-5678",
     "email": "john@clientcorp.com"
   },
-  "repo": "git@github.com:owner/repo.git"
+  "repo": "git@github.com:owner/repo.git",
+  "longTerm": false
 }
 ```
 

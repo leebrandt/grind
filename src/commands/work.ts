@@ -1,6 +1,6 @@
 import path from "node:path";
 import { spawn } from "child_process";
-import { getWorkspaceRoot } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
@@ -11,27 +11,22 @@ import type { Session } from "../types/index.js";
  * grind work "project-name" [-q|--quiet]
  */
 export async function workStart(projectName: string, options?: { quiet?: boolean }): Promise<void> {
-  // Find workspace root
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-  
+  const { workspaceRoot } = await requireWorkspace();
+
   // Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     console.error(`Error: Project '${projectName}' does not exist.`);
     process.exit(1);
   }
-  
+
   // Read project config
   const config = await readProjectConfig(workspaceRoot, projectName);
   if (!config) {
     console.error(`Error: Could not read .project.json for '${projectName}'.`);
     process.exit(1);
   }
-  
+
   // Check for active session and auto-close with 0 duration if found
   const activeSession = config.time.find(s => s.end === null);
   if (activeSession) {
@@ -40,7 +35,7 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
     activeSession.duration = 0;
     activeSession.rounded = 0;
   }
-  
+
   // Add new session
   const newSession: Session = {
     start: getCurrentTimestamp(),
@@ -48,12 +43,12 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
     duration: 0,
     rounded: 0
   };
-  
+
   config.time.push(newSession);
-  
+
   // Write updated config
   await writeProjectConfig(workspaceRoot, projectName, config);
-  
+
   console.log(`Started work session on '${projectName}'`);
   console.log(`Time started: ${newSession.start}`);
 
@@ -74,4 +69,3 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
     }
   });
 }
-

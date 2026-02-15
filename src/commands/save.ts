@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getWorkspaceRoot } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
 import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
@@ -14,12 +14,7 @@ import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils
  *   - With -q flag: Uses auto-generated message with warning
  */
 export async function save(projectName: string, options?: { quiet?: boolean }): Promise<void> {
-  // Find workspace root
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
+  const { workspaceRoot } = await requireWorkspace();
 
   const worktreePath = path.join(workspaceRoot, projectName);
 

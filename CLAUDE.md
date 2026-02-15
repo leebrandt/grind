@@ -37,15 +37,16 @@ workspace-root/
 
 **Time tracking:** Sessions are stored as start/end ISO timestamps in `.project.json`. Duration is calculated in seconds and rounded (quarter-hour/half-hour/hour) per `src/utils/time.ts`. Sessions can be marked as invoiced.
 
-**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo) and `repo` (git remote URL) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, and `paymentTerms` fields for invoicing.
+**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo), `repo` (git remote URL), and `longTerm` (boolean, shows ★ icon) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, and `paymentTerms` fields for invoicing.
 
 **Utilities:**
-- `src/utils/git.ts` — git command wrappers using Bun shell; uses `execSync` for interactive editor spawning
+- `src/utils/git.ts` — git command wrappers using Bun shell; `getActiveWorktrees()` lists project worktrees; uses `execSync` for interactive editor spawning
 - `src/utils/config.ts` — JSON config file read/write
 - `src/utils/files.ts` — filesystem helpers
-- `src/utils/workspace.ts` — workspace/worktree location logic
+- `src/utils/workspace.ts` — workspace/worktree location logic; `requireWorkspace()` returns `{ workspaceRoot, mainWorktree, bareRepo }` or exits with error
 - `src/utils/repo.ts` — parses git remote URLs (SSH/HTTPS) for GitHub and GitLab into `{ platform, repo }` format
 - `src/utils/time.ts` — timestamp generation, duration calculation, rounding, `timeAgo`/`formatDate` helpers
+- `src/utils/colors.ts` — shared ANSI color constants (`DIM`, `RED`, `GREEN`, `RESET`)
 
 **Invoicing:** `src/commands/invoice.ts` generates both markdown and PDF (via pdfkit) invoices from tracked time sessions.
 

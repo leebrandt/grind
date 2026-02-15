@@ -13,6 +13,7 @@ import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
 import { cancelProject } from "./commands/cancel.js";
 import { invoiceProject } from "./commands/invoice.js";
+import { edit } from "./commands/edit.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
@@ -59,6 +60,7 @@ Settable keys (project-level):
   client.phone          client phone number
   client.email          client email address
   repo                  GitHub repository (owner/repo format)
+  longTerm              true/false (mark as long-running project, shows ★)
 
 Settable keys (workspace-level, use -g):
   billing.roundTo       quarter-hour, half-hour, hour
@@ -161,6 +163,14 @@ program
   .option("-q, --quiet", "Start session without opening editor")
   .action(async (project: string, options: { quiet?: boolean }) => {
     await workStart(project, options);
+  });
+
+// grind edit "project"
+program
+  .command("edit <project>")
+  .description("Open nvim in a project's working directory (no time tracking)")
+  .action(async (project: string) => {
+    await edit(project);
   });
 
 // grind save "project"

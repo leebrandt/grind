@@ -1,7 +1,7 @@
 import path from "node:path";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { PassThrough } from "stream";
-import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { readGrindConfig } from "../utils/config.js";
 import { fileExists } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
@@ -16,17 +16,7 @@ export async function invoiceProject(projectName: string): Promise<void> {
   console.log(`Generating invoice for project '${projectName}'...`);
   
   // 1. Find workspace root
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-  
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Could not find main worktree.");
-    process.exit(1);
-  }
+  const { workspaceRoot, mainWorktree } = await requireWorkspace();
   
   // 2. Load workspace config for professional info
   const grindConfig = await readGrindConfig(mainWorktree);

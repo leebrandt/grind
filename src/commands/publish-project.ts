@@ -1,6 +1,6 @@
 import { $ } from "bun";
 import path from "node:path";
-import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { hasUncommittedChanges } from "../utils/git.js";
 
@@ -13,25 +13,15 @@ export async function publishProject(
   options?: { deleteWorktree?: boolean; deleteBranch?: boolean }
 ): Promise<void> {
   // 1. Find workspace root and main worktree
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-  
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Could not find main worktree.");
-    process.exit(1);
-  }
-  
+  const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
+
   // 2. Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     console.error(`Error: Project worktree '${projectName}' does not exist.`);
     process.exit(1);
   }
-  
+
   // 3. Check for uncommitted changes in both worktrees
   if (await hasUncommittedChanges(mainWorktree)) {
     console.error("Error: Main worktree has uncommitted changes. Please commit or stash them first.");
@@ -41,7 +31,7 @@ export async function publishProject(
     console.error(`Error: Project '${projectName}' has uncommitted changes. Please commit or stash them first.`);
     process.exit(1);
   }
-  
+
   // 4. Switch to main branch in grind/ worktree
   try {
     await $`git -C ${mainWorktree} switch main`.quiet();
@@ -49,11 +39,11 @@ export async function publishProject(
     console.error("Error: Could not switch to main branch. Is it checked out in another worktree?");
     process.exit(1);
   }
-  
+
   // 5. Merge project branch into main
   console.log(`Publishing project '${projectName}'...`);
   console.log(`Merging branch '${projectName}' into main...`);
-  
+
   try {
     await $`git -C ${mainWorktree} merge ${projectName}`.quiet();
     console.log("Merge completed successfully.");
@@ -61,17 +51,15 @@ export async function publishProject(
     console.error(`Error: Merge failed. Please resolve conflicts manually in ${mainWorktree}`);
     process.exit(1);
   }
-  
+
   // 6. If -d or -D flag: remove worktree (and optionally branch)
   if (options?.deleteWorktree || options?.deleteBranch) {
-    const bareRepoPath = path.join(workspaceRoot, ".grind.repo.git");
-
     console.log("\nCleaning up worktree...");
-    await $`git -C ${bareRepoPath} worktree remove ${worktreePath}`.quiet();
+    await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
     console.log(`  - Removed worktree: ${worktreePath}`);
 
     if (options?.deleteBranch) {
-      await $`git -C ${bareRepoPath} branch -D ${projectName}`.quiet();
+      await $`git -C ${bareRepo} branch -D ${projectName}`.quiet();
       console.log(`  - Deleted branch: ${projectName}`);
     }
 

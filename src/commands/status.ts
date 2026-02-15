@@ -1,16 +1,12 @@
 import { $ } from "bun";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { findMainWorktree, findBareRepo } from "../utils/workspace.js";
-import { getCommitCount, getFirstCommitDate, getLastCommitDate } from "../utils/git.js";
+import { requireWorkspace } from "../utils/workspace.js";
+import { getCommitCount, getFirstCommitDate, getLastCommitDate, getActiveWorktrees } from "../utils/git.js";
 import { timeAgo, formatDate } from "../utils/time.js";
 import { parseRepoUrl } from "../utils/repo.js";
+import { DIM, RED, GREEN, RESET } from "../utils/colors.js";
 import type { ProjectConfig } from "../types/index.js";
-
-const DIM = "\x1b[2m";
-const RED = "\x1b[31m";
-const GREEN = "\x1b[32m";
-const RESET = "\x1b[0m";
 
 interface ProjectRow {
   name: string;
@@ -59,31 +55,10 @@ async function getIssueCount(repo: string): Promise<string> {
 }
 
 export async function status(): Promise<void> {
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Not in a grind workspace. Run 'grind init' first.");
-    process.exit(1);
-  }
-
-  const bareRepo = await findBareRepo(process.cwd());
-  if (!bareRepo) {
-    console.error("Error: Could not find bare repo.");
-    process.exit(1);
-  }
+  const { workspaceRoot, bareRepo } = await requireWorkspace();
 
   // Get active worktrees from git
-  const result = await $`git -C ${bareRepo} worktree list --porcelain`.quiet();
-  const output = result.stdout.toString();
-
-  const workspaceRoot = path.dirname(bareRepo);
-  const worktreeNames: string[] = [];
-  for (const line of output.split("\n")) {
-    if (!line.startsWith("worktree ")) continue;
-    const worktreePath = line.replace("worktree ", "");
-    const name = path.relative(workspaceRoot, worktreePath);
-    if (name === "grind" || worktreePath === bareRepo) continue;
-    worktreeNames.push(name);
-  }
+  const worktreeNames = await getActiveWorktrees(bareRepo, workspaceRoot);
 
   // Load project configs
   const projects: { config: ProjectConfig; name: string; branch: string }[] = [];

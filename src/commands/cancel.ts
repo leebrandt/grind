@@ -1,7 +1,7 @@
 import { $ } from "bun";
 import path from "node:path";
 import { rm } from "node:fs/promises";
-import { getWorkspaceRoot, findMainWorktree } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
 
@@ -14,17 +14,7 @@ export async function cancelProject(
   options?: { force?: boolean }
 ): Promise<void> {
   // 1. Find workspace root and main worktree
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Could not find main worktree.");
-    process.exit(1);
-  }
+  const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
 
   // 2. Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
@@ -41,15 +31,13 @@ export async function cancelProject(
     process.exit(1);
   }
 
-  const bareRepoPath = path.join(workspaceRoot, ".grind.repo.git");
-
   // 4. Remove the worktree
   console.log(`Cancelling project '${projectName}'...`);
   try {
     if (options?.force) {
-      await $`git -C ${bareRepoPath} worktree remove --force ${worktreePath}`.quiet();
+      await $`git -C ${bareRepo} worktree remove --force ${worktreePath}`.quiet();
     } else {
-      await $`git -C ${bareRepoPath} worktree remove ${worktreePath}`.quiet();
+      await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
     }
     console.log(`  - Removed worktree: ${projectName}/`);
   } catch {
@@ -60,7 +48,7 @@ export async function cancelProject(
 
   // 5. Delete the branch
   try {
-    await $`git -C ${bareRepoPath} branch -D ${projectName}`.quiet();
+    await $`git -C ${bareRepo} branch -D ${projectName}`.quiet();
     console.log(`  - Deleted branch: ${projectName}`);
   } catch {
     console.error(`Warning: Could not delete branch '${projectName}'.`);

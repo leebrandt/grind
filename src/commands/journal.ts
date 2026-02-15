@@ -1,18 +1,14 @@
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { spawn } from "child_process";
-import { findMainWorktree } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 
 /**
  * Open today's journal entry in nvim
  * grind journal
  */
 export async function journal(): Promise<void> {
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
+  const { mainWorktree } = await requireWorkspace();
 
   const journalDir = path.join(mainWorktree, "journal");
   await mkdir(journalDir, { recursive: true });

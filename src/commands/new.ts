@@ -6,7 +6,7 @@ import { $ } from "bun";
 import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
 import { getTimestampFilename } from "../utils/time.js";
 import { getIdeaByNumber, fileExists } from "../utils/files.js";
-import { findMainWorktree, getWorkspaceRoot } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.js";
 import { readGrindConfig } from "../utils/config.js";
 import { parseRepoUrl } from "../utils/repo.js";
@@ -41,12 +41,7 @@ async function getMessageFromEditor(prompt: string): Promise<string | null> {
 export async function newIdea(
   title: string
 ): Promise<void> {
-  // Find the main worktree (grind/) from anywhere in the workspace
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace. Run 'grind init' first.");
-    process.exit(1);
-  }
+  const { mainWorktree } = await requireWorkspace();
   
   const ideasDir = path.join(mainWorktree, "ideas");
   
@@ -76,13 +71,8 @@ export async function newProject(
   ideaNumber: string,
   options: NewCommandOptions
 ): Promise<void> {
-  // Find main worktree first
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-  
+  const { workspaceRoot, mainWorktree } = await requireWorkspace();
+
   // Check for uncommitted changes FIRST - fail fast
   if (await hasUncommittedChanges(mainWorktree)) {
     console.error("Error: You have uncommitted changes in grind/. Please commit them first.");
@@ -105,14 +95,7 @@ export async function newProject(
   
   // Read workspace config
   const grindConfig = await readGrindConfig(mainWorktree);
-  
-  // Find workspace root
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-  
+
   const bareRepoPath = path.join(workspaceRoot, ".grind.repo.git");
   const worktreePath = path.join(workspaceRoot, name);
   
@@ -209,17 +192,7 @@ async function newRepoIssue(
   message: string,
   prefix: string
 ): Promise<void> {
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace. Run 'grind init' first.");
-    process.exit(1);
-  }
-
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
+  const { workspaceRoot } = await requireWorkspace();
 
   // Read project config from project worktree ({workspace}/{project}/projects/{project}/.project.json)
   const configPath = path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");

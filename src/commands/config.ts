@@ -31,7 +31,7 @@
  *   longTerm                   - true | false (mark as long-term project)
  */
 
-import { getWorkspaceRoot, findMainWorktree, getCurrentProjectName } from "../utils/workspace.js";
+import { requireWorkspace, getCurrentProjectName } from "../utils/workspace.js";
 import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { ROUND_TO_OPTIONS, PROJECT_TYPES, isValidProjectType } from "../types/index.js";
 import type { RoundTo } from "../types/index.js";
@@ -158,17 +158,7 @@ function validateValue(key: string, value: string, isGlobal: boolean): unknown {
  * List all config values
  */
 export async function configList(options: ConfigOptions): Promise<void> {
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Not in a grind workspace. Run 'grind init' first.");
-    process.exit(1);
-  }
-
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Could not find main worktree.");
-    process.exit(1);
-  }
+  const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
   const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;
@@ -213,17 +203,7 @@ export async function configList(options: ConfigOptions): Promise<void> {
  * Get a config value
  */
 export async function configGet(key: string, options: ConfigOptions): Promise<void> {
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Not in a grind workspace. Run 'grind init' first.");
-    process.exit(1);
-  }
-
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Could not find main worktree.");
-    process.exit(1);
-  }
+  const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
   const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;
@@ -256,17 +236,7 @@ export async function configGet(key: string, options: ConfigOptions): Promise<vo
  * Set a config value
  */
 export async function configSet(key: string, value: string, options: ConfigOptions): Promise<void> {
-  const workspaceRoot = await getWorkspaceRoot(process.cwd());
-  if (!workspaceRoot) {
-    console.error("Not in a grind workspace. Run 'grind init' first.");
-    process.exit(1);
-  }
-
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Could not find main worktree.");
-    process.exit(1);
-  }
+  const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
   const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;

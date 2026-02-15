@@ -1,4 +1,3 @@
-import { stat, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileExists } from "./files.js";
 
@@ -74,5 +73,31 @@ export async function findMainWorktree(startPath: string): Promise<string | null
   }
 
   return null;
+}
+
+/**
+ * Require workspace context or exit with error.
+ * Returns { workspaceRoot, mainWorktree, bareRepo }.
+ */
+export async function requireWorkspace(): Promise<{
+  workspaceRoot: string;
+  mainWorktree: string;
+  bareRepo: string;
+}> {
+  const workspaceRoot = await getWorkspaceRoot(process.cwd());
+  if (!workspaceRoot) {
+    console.error("Error: Not in a grind workspace.");
+    process.exit(1);
+  }
+
+  const mainWorktree = await findMainWorktree(process.cwd());
+  if (!mainWorktree) {
+    console.error("Error: Could not find main worktree.");
+    process.exit(1);
+  }
+
+  const bareRepo = path.join(workspaceRoot, BARE_REPO_NAME);
+
+  return { workspaceRoot, mainWorktree, bareRepo };
 }
 

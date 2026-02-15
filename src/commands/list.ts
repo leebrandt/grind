@@ -1,12 +1,10 @@
-import { $ } from "bun";
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
-import { findMainWorktree, findBareRepo } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
+import { getActiveWorktrees } from "../utils/git.js";
+import { DIM, RED, RESET } from "../utils/colors.js";
 import type { ProjectConfig } from "../types/index.js";
 import { timeAgo } from "../utils/time.js";
-
-const RED = "\x1b[31m";
-const RESET = "\x1b[0m";
 
 /**
  * List all idea files for triage
@@ -16,19 +14,14 @@ export async function listIdeas(options?: {
   all?: boolean;
   rejected?: boolean;
 }): Promise<void> {
-  // Find main worktree
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-  
+  const { mainWorktree } = await requireWorkspace();
+
   const ideasDir = path.join(mainWorktree, "ideas");
-  
+
   // Get all files, sorted by filename (chronological)
   let files = await readdir(ideasDir);
   files.sort(); // Timestamp filenames sort chronologically
-  
+
   // Filter based on options
   if (options?.rejected) {
     // Show only rejected ideas
@@ -38,7 +31,7 @@ export async function listIdeas(options?: {
     files = files.filter(file => !file.startsWith("rejected-"));
   }
   // If options.all is true, show all files (no filtering)
-  
+
   if (files.length === 0) {
     if (options?.rejected) {
       console.log("No rejected ideas.");
@@ -47,17 +40,17 @@ export async function listIdeas(options?: {
     }
     return;
   }
-  
+
   // Display numbered list
   for (let i = 0; i < files.length; i++) {
     const filepath = path.join(ideasDir, files[i]);
     const content = await readFile(filepath, "utf-8");
     const title = content.replace(/^#\s*/, "").trim(); // Remove leading # and whitespace
-    
+
     // Add [REJECTED] prefix for rejected ideas
     const isRejected = files[i].startsWith("rejected-");
     const prefix = isRejected ? "[REJECTED] " : "";
-    
+
     console.log(`${i}. ${prefix}${title}`);
   }
 }
@@ -67,33 +60,10 @@ export async function listIdeas(options?: {
  * grind list projects
  */
 export async function listProjects(): Promise<void> {
-  const mainWorktree = await findMainWorktree(process.cwd());
-  if (!mainWorktree) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
-  }
-
-  const bareRepo = await findBareRepo(process.cwd());
-  if (!bareRepo) {
-    console.error("Error: Could not find bare repo.");
-    process.exit(1);
-  }
+  const { workspaceRoot, bareRepo } = await requireWorkspace();
 
   // Get active worktrees from git
-  const result = await $`git -C ${bareRepo} worktree list --porcelain`.quiet();
-  const output = result.stdout.toString();
-
-  // Parse worktree paths, skip bare repo and main worktree
-  const workspaceRoot = path.dirname(bareRepo);
-  const worktreeNames: string[] = [];
-  for (const line of output.split("\n")) {
-    if (!line.startsWith("worktree ")) continue;
-    const worktreePath = line.replace("worktree ", "");
-    // Use relative path for nested projects like "feature/my-killer-feature"
-    const name = path.relative(workspaceRoot, worktreePath);
-    if (name === "grind" || worktreePath === bareRepo) continue;
-    worktreeNames.push(name);
-  }
+  const worktreeNames = await getActiveWorktrees(bareRepo, workspaceRoot);
 
   // Load .project.json from each project's own worktree (has latest session data)
   const projects: { config: ProjectConfig; dir: string }[] = [];
@@ -128,7 +98,6 @@ export async function listProjects(): Promise<void> {
   const hoursWidth = 24;
   const sessionsWidth = 10;
 
-  const DIM = "\x1b[2m";
   const header = `  ${"Project".padEnd(nameWidth)}  ${"Type".padEnd(typeWidth)}  ${"Hours".padEnd(hoursWidth)}  ${"Sessions".padStart(sessionsWidth)}  Last Worked`;
   const divider = `  ${"─".repeat(nameWidth)}  ${"─".repeat(typeWidth)}  ${"─".repeat(hoursWidth)}  ${"─".repeat(sessionsWidth)}  ${"─".repeat(11)}`;
   console.log(`${DIM}${header}${RESET}`);
