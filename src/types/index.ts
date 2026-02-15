@@ -63,6 +63,7 @@ export interface ProjectConfig {
   };
   client?: ClientInfo;
   repo?: string;
+  longTerm?: boolean;
 }
 
 // Command option types

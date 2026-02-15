@@ -23,6 +23,7 @@ interface ProjectRow {
   lastCommit: string;
   hasChanges: boolean;
   hasUnbilled: boolean;
+  longTerm: boolean;
   sortKey: number; // for sorting by last session date
 }
 
@@ -139,6 +140,7 @@ export async function status(): Promise<void> {
       lastCommit: lastCommitDate ? timeAgo(new Date(lastCommitDate)) : "never",
       hasChanges,
       hasUnbilled,
+      longTerm: config.longTerm === true,
       sortKey,
     };
   });
@@ -174,16 +176,17 @@ export async function status(): Promise<void> {
 
   for (const row of rows) {
     // Highlight: red = no sessions or uncommitted changes, green = unbilled hours
+    const prefix = row.longTerm ? "★ " : "  ";
     const paddedName = row.name.padEnd(cols.name);
     let nameDisplay: string;
     if (row.sortKey === 0 || row.hasChanges) {
-      nameDisplay = `${RED}${paddedName}${RESET}`;
+      nameDisplay = `${prefix}${RED}${paddedName}${RESET}`;
     } else if (row.hasUnbilled) {
-      nameDisplay = `${GREEN}${paddedName}${RESET}`;
+      nameDisplay = `${prefix}${GREEN}${paddedName}${RESET}`;
     } else {
-      nameDisplay = paddedName;
+      nameDisplay = `${prefix}${paddedName}`;
     }
 
-    console.log(`  ${nameDisplay}  ${row.startDate.padEnd(cols.startDate)}  ${row.hoursWorked.padStart(cols.hoursWorked)}  ${row.hoursBilled.padStart(cols.hoursBilled)}  ${row.issues.padStart(cols.issues)}  ${row.commits.padStart(cols.commits)}  ${row.lastSession.padEnd(cols.lastSession)}  ${row.lastCommit.padEnd(cols.lastCommit)}`);
+    console.log(`${nameDisplay}  ${row.startDate.padEnd(cols.startDate)}  ${row.hoursWorked.padStart(cols.hoursWorked)}  ${row.hoursBilled.padStart(cols.hoursBilled)}  ${row.issues.padStart(cols.issues)}  ${row.commits.padStart(cols.commits)}  ${row.lastSession.padEnd(cols.lastSession)}  ${row.lastCommit.padEnd(cols.lastCommit)}`);
   }
 }

@@ -138,9 +138,10 @@ export async function listProjects(): Promise<void> {
     // Check for unsaved work (session with start but no end)
     const hasOpenSession = config.time.some(s => s.end === null);
 
+    const prefix = config.longTerm ? "★ " : "  ";
     const displayName = hasOpenSession
-      ? `${RED}${config.name.padEnd(nameWidth)}${RESET}`
-      : config.name.padEnd(nameWidth);
+      ? `${prefix}${RED}${config.name.padEnd(nameWidth)}${RESET}`
+      : `${prefix}${config.name.padEnd(nameWidth)}`;
     const type = (config.type || "—").padEnd(typeWidth);
 
     const totalSeconds = config.time.reduce((sum, s) => sum + s.rounded, 0);
@@ -156,6 +157,6 @@ export async function listProjects(): Promise<void> {
       ? `${totalHours}h (${unbilledHours}h unbilled)`
       : `${totalHours}h`;
 
-    console.log(`  ${displayName}  ${type}  ${hoursDisplay.padEnd(hoursWidth)}  ${String(sessions).padStart(sessionsWidth)}  ${lastWorked}`);
+    console.log(`${displayName}  ${type}  ${hoursDisplay.padEnd(hoursWidth)}  ${String(sessions).padStart(sessionsWidth)}  ${lastWorked}`);
   }
 }

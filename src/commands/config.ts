@@ -28,6 +28,7 @@
  *   client.phone               - client phone number
  *   client.email               - client email address
  *   repo                       - git remote URL (e.g. git@github.com:owner/repo.git, https://gitlab.com/owner/repo)
+ *   longTerm                   - true | false (mark as long-term project)
  */
 
 import { getWorkspaceRoot, findMainWorktree, getCurrentProjectName } from "../utils/workspace.js";
@@ -52,7 +53,7 @@ const GLOBAL_SETTABLE_KEYS = [
 const PROJECT_SETTABLE_KEYS = [
   "type", "billing.roundTo", "billing.rate",
   "client.contact", "client.company", "client.address",
-  "client.phone", "client.email", "repo",
+  "client.phone", "client.email", "repo", "longTerm",
 ] as const;
 
 /**
@@ -141,6 +142,14 @@ function validateValue(key: string, value: string, isGlobal: boolean): unknown {
     return value;
   }
 
+  if (key === "longTerm") {
+    if (value !== "true" && value !== "false") {
+      console.error(`Invalid longTerm value: ${value}. Must be true or false.`);
+      process.exit(1);
+    }
+    return value === "true";
+  }
+
   // String fields (my.*, client.*, currency, paymentTerms)
   return value;
 }
@@ -193,6 +202,9 @@ export async function configList(options: ConfigOptions): Promise<void> {
     }
     if (config.repo) {
       console.log(`repo = ${config.repo}`);
+    }
+    if (config.longTerm != null) {
+      console.log(`longTerm = ${config.longTerm}`);
     }
   }
 }
