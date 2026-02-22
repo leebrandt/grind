@@ -17,7 +17,7 @@ import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
 import { cancelProject } from "./commands/cancel.js";
 import { invoiceProject } from "./commands/invoice.js";
-import { edit } from "./commands/edit.js";
+import { editIdea } from "./commands/edit.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
@@ -93,9 +93,9 @@ Settable keys (workspace-level, use -g):
 const newCmd = program.command("new").description("Create a new idea or project");
 
 newCmd
-  .command("idea <title>")
+  .command("idea [title]")
   .description("Create a new idea file")
-  .action(async (title: string) => {
+  .action(async (title?: string) => {
     await newIdea(title);
   });
 
@@ -169,12 +169,14 @@ program
     await workStart(project, options);
   });
 
-// grind edit "project"
-program
-  .command("edit <project>")
-  .description("Open nvim in a project's working directory (no time tracking)")
-  .action(async (project: string) => {
-    await edit(project);
+// grind edit idea <number>
+const editCmd = program.command("edit").description("Open files in editor");
+
+editCmd
+  .command("idea <number>")
+  .description("Open an idea file in $EDITOR")
+  .action(async (number: string) => {
+    await editIdea(number);
   });
 
 // grind save "project"

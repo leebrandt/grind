@@ -3,33 +3,30 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { spawn } from "child_process";
+import { execSync } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
-import { fileExists } from "../utils/files.js";
+import { getIdeaByNumber } from "../utils/files.js";
 
 /**
- * Open nvim in a project's working directory
- * grind edit <project-name>
+ * Open an idea file in $EDITOR
+ * grind edit idea <number>
  */
-export async function edit(projectName: string): Promise<void> {
-  const { workspaceRoot } = await requireWorkspace();
+export async function editIdea(ideaNumber: string): Promise<void> {
+  const { mainWorktree } = await requireWorkspace();
 
-  const worktreePath = path.join(workspaceRoot, projectName);
-  if (!(await fileExists(worktreePath))) {
-    console.error(`Error: Project '${projectName}' does not exist.`);
+  const index = parseInt(ideaNumber, 10);
+  if (isNaN(index)) {
+    console.error("Error: Idea must be a number from 'grind ideas'");
     process.exit(1);
   }
 
-  const projectDir = path.join(worktreePath, "projects", projectName);
+  const idea = await getIdeaByNumber(index);
+  if (!idea) {
+    console.error(`Error: Idea #${index} not found. Run 'grind ideas' to see available ideas.`);
+    process.exit(1);
+  }
 
-  const editor = spawn("nvim", ["."], {
-    cwd: projectDir,
-    stdio: "inherit",
-  });
-
-  editor.on("close", (code) => {
-    if (code !== 0) {
-      console.error(`Editor exited with code ${code}`);
-    }
-  });
+  const filepath = path.join(mainWorktree, "ideas", idea.filename);
+  const editor = process.env.EDITOR || process.env.VISUAL || "vi";
+  execSync(`${editor} ${filepath}`, { stdio: "inherit" });
 }
