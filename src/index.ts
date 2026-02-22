@@ -4,7 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { Command } from "commander";
-import { PROJECT_TYPES, isValidProjectType } from "./types/index.js";
+import { DEFAULT_PROJECT_TYPES, isValidProjectType, getEffectiveProjectTypes } from "./types/index.js";
+import { requireWorkspace } from "./utils/workspace.js";
+import { readGrindConfig } from "./utils/config.js";
 import type { ProjectType } from "./types/index.js";
 import { newIdea, newProject, newIssue, newFeature } from "./commands/new.js";
 import { listIdeas, listProjects } from "./commands/list.js";
@@ -69,6 +71,7 @@ Settable keys (project-level):
 Settable keys (workspace-level, use -g):
   billing.roundTo       quarter-hour, half-hour, hour
   billing.defaultRate   default hourly rate (number)
+  projectTypes          comma-separated list of types (e.g. "blog,webapp,video")
   my.name               your name
   my.company            your company name
   my.address            your address
@@ -102,10 +105,13 @@ newCmd
 newCmd
   .command("project <name> <idea-number>")
   .description("Create a new project from an idea (use number from 'grind list ideas')")
-  .option("-t, --type <type>", `Project type (${PROJECT_TYPES.join(", ")})`)
+  .option("-t, --type <type>", `Project type (${DEFAULT_PROJECT_TYPES.join(", ")})`)
   .action(async (name: string, ideaNumber: string, options: { type?: string }) => {
-    if (options.type && !isValidProjectType(options.type)) {
-      console.error(`Invalid type: ${options.type}. Valid types: ${PROJECT_TYPES.join(", ")}`);
+    const { mainWorktree } = await requireWorkspace();
+    const grindConfig = await readGrindConfig(mainWorktree);
+    const validTypes = getEffectiveProjectTypes(grindConfig);
+    if (options.type && !isValidProjectType(options.type, validTypes)) {
+      console.error(`Invalid type: ${options.type}. Valid types: ${validTypes.join(", ")}`);
       process.exit(1);
     }
     await newProject(name, ideaNumber, { type: options.type as ProjectType | undefined });

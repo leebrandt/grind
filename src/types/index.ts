@@ -2,9 +2,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Project types - extend this array to add new types
-export const PROJECT_TYPES = ["blog", "webapp", "video", "song", "book", "feature", "issue"] as const;
-export type ProjectType = (typeof PROJECT_TYPES)[number];
+// Default project types (used if not overridden in workspace config)
+export const DEFAULT_PROJECT_TYPES = ["blog", "webapp", "video", "song", "book", "feature", "issue"] as const;
+export type ProjectType = (typeof DEFAULT_PROJECT_TYPES)[number];
+
+// Backward compatibility alias
+export const PROJECT_TYPES = DEFAULT_PROJECT_TYPES;
 
 // Time tracking session
 export interface Session {
@@ -50,6 +53,7 @@ export interface GrindConfig {
     roundTo: RoundTo;
     defaultRate: number;
   };
+  projectTypes?: string[]; // Override default project types
   my?: ProfessionalInfo;
   currency?: string;
   paymentTerms?: string;
@@ -58,7 +62,7 @@ export interface GrindConfig {
 // .project.json schema
 export interface ProjectConfig {
   name: string;
-  type?: ProjectType;
+  type?: string; // Can be any custom type defined in workspace config
   idea: string;
   time: Session[];
   billing: {
@@ -72,10 +76,16 @@ export interface ProjectConfig {
 
 // Command option types
 export interface NewCommandOptions {
-  type?: ProjectType;
+  type?: string;
+}
+
+// Get effective project types (from config or defaults)
+export function getEffectiveProjectTypes(config?: { projectTypes?: string[] }): readonly string[] {
+  return config?.projectTypes?.length ? config.projectTypes : DEFAULT_PROJECT_TYPES;
 }
 
 // Validation helper
-export function isValidProjectType(type: string): type is ProjectType {
-  return PROJECT_TYPES.includes(type as ProjectType);
+export function isValidProjectType(type: string, validTypes?: readonly string[]): type is ProjectType {
+  const types = validTypes ?? DEFAULT_PROJECT_TYPES;
+  return types.includes(type);
 }
