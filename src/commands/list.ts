@@ -49,7 +49,8 @@ export async function listIdeas(options?: {
   for (let i = 0; i < files.length; i++) {
     const filepath = path.join(ideasDir, files[i]);
     const content = await readFile(filepath, "utf-8");
-    const title = content.replace(/^#\s*/, "").trim(); // Remove leading # and whitespace
+    const firstHeading = content.split("\n").find(line => line.startsWith("#"));
+    const title = firstHeading ? firstHeading.replace(/^#+\s*/, "").trim() : "(no title)";
 
     // Add [REJECTED] prefix for rejected ideas
     const isRejected = files[i].startsWith("rejected-");

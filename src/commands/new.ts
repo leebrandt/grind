@@ -43,26 +43,37 @@ async function getMessageFromEditor(prompt: string): Promise<string | null> {
  * grind new idea "title"
  */
 export async function newIdea(
-  title: string
+  title?: string
 ): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
-  
+
   const ideasDir = path.join(mainWorktree, "ideas");
-  
-  // Ensure ideas directory exists
   await mkdir(ideasDir, { recursive: true });
-  
-  // Generate timestamped filename
+
+  let fileContent: string;
+  let commitTitle: string;
+
+  if (title) {
+    fileContent = `# ${title}\n`;
+    commitTitle = title;
+  } else {
+    const editorContent = await getMessageFromEditor("First line is the title; add detail below");
+    if (!editorContent) {
+      console.log("Aborted.");
+      return;
+    }
+    const lines = editorContent.split("\n");
+    commitTitle = lines[0].trim();
+    const body = lines.slice(1).join("\n").trim();
+    fileContent = `# ${commitTitle}\n` + (body ? `\n${body}\n` : "");
+  }
+
   const timestamp = getTimestampFilename();
   const filename = `${timestamp}.md`;
   const filepath = path.join(ideasDir, filename);
-  
-  // Create file with H1 heading
-  await writeFile(filepath, `# ${title}\n`, "utf-8");
 
-  // Commit immediately so project creation doesn't fail due to uncommitted changes
-  await gitCommit(mainWorktree, `Add idea: ${title}`);
-
+  await writeFile(filepath, fileContent, "utf-8");
+  await gitCommit(mainWorktree, `Add idea: ${commitTitle}`);
   console.log(`Created idea: ideas/${filename}`);
 }
 
