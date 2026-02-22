@@ -1,0 +1,9 @@
+{
+  "name": "aws-btop",
+  "idea": "# This would be a dashboard of your AWS resources, spend and compute.",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
