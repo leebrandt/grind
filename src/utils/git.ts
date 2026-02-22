@@ -2,36 +2,36 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
 import path from "node:path";
 import { $ } from "bun";
 
 /**
  * Initialize a bare git repository (for use with worktrees)
  */
-export async function gitInit(path: string): Promise<void> {
-  await $`git init --bare ${path}`.quiet();
+export async function gitInit(repoPath: string): Promise<void> {
+  await $`git init --bare ${repoPath}`.quiet();
 }
 
 /**
  * Create a git commit with message (stages all changes first)
  */
-export async function gitCommit(path: string, message: string): Promise<void> {
-  await $`git -C ${path} add -A`.quiet();
-  await $`git -C ${path} commit -m ${message}`.quiet();
+export async function gitCommit(worktreePath: string, message: string): Promise<void> {
+  await $`git -C ${worktreePath} add -A`.quiet();
+  await $`git -C ${worktreePath} commit -m ${message}`.quiet();
 }
 
 /**
  * Create an interactive git commit (opens editor for message)
  * Stages all changes first, then opens the configured git editor
  */
-export async function gitCommitInteractive(path: string): Promise<void> {
+export async function gitCommitInteractive(worktreePath: string): Promise<void> {
   // Stage all changes first
-  await $`git -C ${path} add -A`.quiet();
+  await $`git -C ${worktreePath} add -A`.quiet();
 
   // Run git commit without -m to open editor
   // execSync properly forwards the TTY for interactive editors like vi
-  execSync(`git -C ${JSON.stringify(path)} commit`, { stdio: "inherit" });
+  execSync(`git -C ${JSON.stringify(worktreePath)} commit`, { stdio: "inherit" });
 }
 
 /**

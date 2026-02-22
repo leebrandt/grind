@@ -127,7 +127,7 @@ export async function newProject(
   
   const projectConfig: ProjectConfig = {
     name,
-    ...(options.type && { type: options.type }),
+    type: options.type,
     idea: idea.content.trim(),
     time: [],
     billing: {

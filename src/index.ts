@@ -238,7 +238,7 @@ program
 // grind journal
 program
   .command("journal")
-  .description("Open today's journal entry in nvim")
+  .description("Open today's journal entry in $EDITOR")
   .action(async () => {
     await journal();
   });

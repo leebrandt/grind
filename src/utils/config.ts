@@ -5,26 +5,16 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { GrindConfig, ProjectConfig } from "../types/index.js";
-import { DEFAULT_GRIND_CONFIG } from "../commands/init.js";
 
 export async function readGrindConfig(rootPath: string): Promise<GrindConfig> {
   const configPath = path.join(rootPath, ".grind.json");
-
-  try {
-    const content = await readFile(configPath, "utf-8");
-    return JSON.parse(content);
-  } catch (error) {
-    throw error;
-  }
+  const content = await readFile(configPath, "utf-8");
+  return JSON.parse(content);
 }
 
 export async function writeGrindConfig(rootPath: string, config: GrindConfig): Promise<void> {
   const configPath = path.join(rootPath, ".grind.json");
-  try{
-    await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
-  }catch(error){
-    throw error;
-  }
+  await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
 export async function readProjectConfig(
