@@ -138,16 +138,14 @@ export async function newProject(
   
   const configPath = path.join(projectFolderInMain, ".project.json");
   await writeFile(configPath, JSON.stringify(projectConfig, null, 2), "utf-8");
-  
+  await writeFile(path.join(projectFolderInMain, "the-idea.md"), idea.content, "utf-8");
+
   // Commit to main
   await gitCommit(mainWorktree, `Create project: ${name}`);
-  
+
   // Step 2: Create worktree (inherits projects/{name}/.project.json from main)
   console.log(`Creating project worktree: ${name}/`);
   await gitAddWorktree(bareRepoPath, worktreePath, name);
-  
-  // Copy the original idea into the project worktree
-  await writeFile(path.join(worktreePath, "the-idea.md"), idea.content, "utf-8");
 
   // Step 3: Delete the idea file from main worktree
   const ideaFilePath = path.join(mainWorktree, "ideas", idea.filename);
