@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { spawn } from "child_process";
+import { spawn } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
@@ -61,8 +61,9 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
   // Open editor in project directory
   const projectDir = path.join(worktreePath, "projects", projectName);
 
-  // Spawn nvim
-  const editor = spawn("nvim", ["."], {
+  // Spawn editor
+  const editorCmd = process.env.EDITOR || process.env.VISUAL || "vi";
+  const editor = spawn(editorCmd, ["."], {
     cwd: projectDir,
     stdio: "inherit"
   });

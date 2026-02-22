@@ -9,6 +9,7 @@ import { requireWorkspace } from "../utils/workspace.js";
 import { readGrindConfig } from "../utils/config.js";
 import { fileExists } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
+import { formatDate } from "../utils/time.js";
 import type { ProjectConfig, GrindConfig } from "../types/index.js";
 import PDFDocument from "pdfkit";
 
@@ -74,7 +75,7 @@ export async function invoiceProject(projectName: string): Promise<void> {
   const sessionsByDate = new Map<string, { hours: number; amount: number }>();
   
   for (const session of unbilledSessions) {
-    const date = new Date(session.start).toISOString().split('T')[0];
+    const date = formatDate(session.start);
     const hours = session.rounded / 3600; // Convert seconds to hours
     const amount = hours * config.billing.rate;
     
@@ -99,10 +100,10 @@ export async function invoiceProject(projectName: string): Promise<void> {
   
   // 7. Generate markdown invoice (in memory)
   const now = new Date();
-  const invoiceDate = now.toISOString().split('T')[0];
+  const invoiceDate = formatDate(now.toISOString());
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // 2026-01-27T14-30-15
   const paymentTerms = grindConfig.paymentTerms ?? "Net 30";
-  const dueDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days from now
+  const dueDate = formatDate(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()); // 30 days from now
   const currency = grindConfig.currency ?? "USD";
   const currencySymbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
 

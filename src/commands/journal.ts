@@ -4,7 +4,7 @@
 
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
-import { spawn } from "child_process";
+import { spawn } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 
 /**
@@ -20,7 +20,8 @@ export async function journal(): Promise<void> {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const filePath = path.join(journalDir, `${today}.md`);
 
-  const editor = spawn("nvim", [filePath], {
+  const editorCmd = process.env.EDITOR || process.env.VISUAL || "vi";
+  const editor = spawn(editorCmd, [filePath], {
     stdio: "inherit",
   });
 
