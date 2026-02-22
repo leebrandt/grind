@@ -13,6 +13,7 @@
  * Keys (workspace-level, -g):
  *   billing.roundTo            - quarter-hour | half-hour | hour
  *   billing.defaultRate        - default hourly rate
+ *   projectTypes               - comma-separated list of project types (overrides defaults)
  *   my.name          - your name
  *   my.company       - your company name
  *   my.address       - your address
@@ -37,7 +38,7 @@
 
 import { requireWorkspace, getCurrentProjectName } from "../utils/workspace.js";
 import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
-import { ROUND_TO_OPTIONS, PROJECT_TYPES, isValidProjectType } from "../types/index.js";
+import { ROUND_TO_OPTIONS, DEFAULT_PROJECT_TYPES, isValidProjectType } from "../types/index.js";
 import type { RoundTo } from "../types/index.js";
 import { parseRepoUrl } from "../utils/repo.js";
 
@@ -49,6 +50,7 @@ export interface ConfigOptions {
 
 const GLOBAL_SETTABLE_KEYS = [
   "billing.roundTo", "billing.defaultRate",
+  "projectTypes",
   "my.name", "my.company", "my.address",
   "my.phone", "my.email", "my.taxId",
   "currency", "paymentTerms",
@@ -107,13 +109,26 @@ function flattenObject(obj: Record<string, any>, prefix = ""): { key: string; va
 /**
  * Validate and parse a value for a given config key
  */
-function validateValue(key: string, value: string, isGlobal: boolean): unknown {
+async function validateValue(key: string, value: string, isGlobal: boolean, mainWorktree: string): Promise<unknown> {
   if (key === "type") {
-    if (!isValidProjectType(value)) {
-      console.error(`Invalid type: ${value}. Valid types: ${PROJECT_TYPES.join(", ")}`);
+    const grindConfig = await readGrindConfig(mainWorktree);
+    const validTypes = grindConfig?.projectTypes?.length 
+      ? grindConfig.projectTypes 
+      : DEFAULT_PROJECT_TYPES;
+    if (!isValidProjectType(value, validTypes)) {
+      console.error(`Invalid type: ${value}. Valid types: ${validTypes.join(", ")}`);
       process.exit(1);
     }
     return value;
+  }
+
+  if (key === "projectTypes") {
+    const types = value.split(",").map(t => t.trim()).filter(t => t);
+    if (!types.length) {
+      console.error(`Invalid projectTypes: ${value}. Must be a comma-separated list of types.`);
+      process.exit(1);
+    }
+    return types;
   }
 
   if (key === "billing.roundTo") {
@@ -245,6 +260,8 @@ export async function configSet(key: string, value: string, options: ConfigOptio
   const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
   const useGlobal = options.global || !projectName;
 
+  const grindConfig = await readGrindConfig(mainWorktree);
+
   if (useGlobal) {
     if (!GLOBAL_SETTABLE_KEYS.includes(key as typeof GLOBAL_SETTABLE_KEYS[number])) {
       console.error(`Invalid key for workspace config: ${key}`);
@@ -252,10 +269,9 @@ export async function configSet(key: string, value: string, options: ConfigOptio
       process.exit(1);
     }
 
-    const parsed = validateValue(key, value, true);
-    const config = await readGrindConfig(mainWorktree);
-    setNestedValue(config as Record<string, any>, key, parsed);
-    await writeGrindConfig(mainWorktree, config);
+    const parsed = await validateValue(key, value, true, mainWorktree);
+    setNestedValue(grindConfig as Record<string, any>, key, parsed);
+    await writeGrindConfig(mainWorktree, grindConfig);
     console.log(`${key} = ${parsed}`);
   } else {
     if (!PROJECT_SETTABLE_KEYS.includes(key as typeof PROJECT_SETTABLE_KEYS[number])) {
@@ -264,7 +280,7 @@ export async function configSet(key: string, value: string, options: ConfigOptio
       process.exit(1);
     }
 
-    const parsed = validateValue(key, value, false);
+    const parsed = await validateValue(key, value, false, mainWorktree);
     const config = await readProjectConfig(workspaceRoot, projectName);
     if (!config) {
       console.error(`Could not read config for project: ${projectName}`);

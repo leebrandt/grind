@@ -88,6 +88,7 @@ grind publish rust-memory-management -D   # Delete worktree and branch
 # Configuration
 grind config -g billing.defaultRate 125   # Set workspace default rate
 grind config -g billing.roundTo half-hour # Set workspace rounding
+grind config -g projectTypes "blog,webapp,video,podcast"  # Override project types
 grind config billing.rate 85              # Set project-specific rate
 grind config -p my-project repo git@github.com:owner/repo.git  # Set project repo
 grind config -p my-project longTerm true                      # Mark as long-running (shows ★)
@@ -133,6 +134,7 @@ Each project is a git worktree with its own branch, all sharing the same underly
     "roundTo": "quarter-hour",
     "defaultRate": 150
   },
+  "projectTypes": ["blog", "webapp", "video", "podcast", "saas"],
   "my": {
     "name": "Jane Doe",
     "company": "Acme LLC",
@@ -182,6 +184,7 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
 
 ## Project Types
 
+Default types:
 - `blog` - Blog posts and articles
 - `webapp` - Web applications
 - `video` - Video content
@@ -189,6 +192,8 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
 - `book` - Books and long-form writing
 - `feature` - Feature development
 - `issue` - Issue/bug fix
+
+Override with `grind config -g projectTypes "custom,types,here"`
 
 ## Development
 
