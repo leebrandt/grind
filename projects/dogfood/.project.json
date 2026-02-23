@@ -134,6 +134,12 @@
       "duration": 78,
       "rounded": 900,
       "invoiced": true
+    },
+    {
+      "start": "2026-02-23T00:47:13.859Z",
+      "end": "2026-02-23T01:34:45.887Z",
+      "duration": 2852,
+      "rounded": 3600
     }
   ],
   "billing": {
