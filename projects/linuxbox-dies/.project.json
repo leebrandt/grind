@@ -1,7 +1,14 @@
 {
   "name": "linuxbox-dies",
   "idea": "# Blog post about my morning crash-out. Pepper it with pieces of convo with AI.\n\nDon't be afraid to post some of the nasty shit you said to the AI. Not ALL of it, people will think you're a monster. Just let it get a little gruff.",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-02-23T01:53:42.650Z",
+      "end": "2026-02-23T04:43:51.795Z",
+      "duration": 10209,
+      "rounded": 10800
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
