@@ -19,5 +19,6 @@
     "roundTo": "quarter-hour",
     "rate": 150
   },
-  "repo": "git@gitlab.com:leebrandt/gmh-services.git"
+  "repo": "git@gitlab.com:leebrandt/gmh-services.git",
+  "longTerm": true
 }
