@@ -72,6 +72,7 @@ export interface ProjectConfig {
   client?: ClientInfo;
   repo?: string;
   longTerm?: boolean;
+  publications?: { url: string; publishedAt: string }[];
 }
 
 // Command option types

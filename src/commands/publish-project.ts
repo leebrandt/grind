@@ -7,14 +7,16 @@ import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { hasUncommittedChanges } from "../utils/git.js";
+import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
+import { getCurrentTimestamp } from "../utils/time.js";
 
 /**
  * Publish a project by merging to main
- * grind publish project <name> [-d] [-D]
+ * grind publish project <name> [-d] [-D] [-u <url>]
  */
 export async function publishProject(
   projectName: string,
-  options?: { deleteWorktree?: boolean; deleteBranch?: boolean }
+  options?: { deleteWorktree?: boolean; deleteBranch?: boolean; url?: string }
 ): Promise<void> {
   // 1. Find workspace root and main worktree
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
@@ -36,7 +38,25 @@ export async function publishProject(
     process.exit(1);
   }
 
-  // 4. Switch to main branch in grind/ worktree
+  // 4. If a URL was provided, record the publication in .project.json and commit
+  if (options?.url) {
+    const config = await readProjectConfig(workspaceRoot, projectName);
+    if (!config) {
+      console.error(`Error: Could not read .project.json for project '${projectName}'.`);
+      process.exit(1);
+    }
+
+    config.publications = config.publications ?? [];
+    config.publications.push({ url: options.url, publishedAt: getCurrentTimestamp() });
+    await writeProjectConfig(workspaceRoot, projectName, config);
+
+    const configRelPath = path.join("projects", projectName, ".project.json");
+    await $`git -C ${worktreePath} add ${configRelPath}`.quiet();
+    await $`git -C ${worktreePath} commit -m ${"Record publication: " + options.url}`.quiet();
+    console.log(`  - Recorded publication: ${options.url}`);
+  }
+
+  // 5. Switch to main branch in grind/ worktree
   try {
     await $`git -C ${mainWorktree} switch main`.quiet();
   } catch (error) {
@@ -44,7 +64,7 @@ export async function publishProject(
     process.exit(1);
   }
 
-  // 5. Merge project branch into main
+  // 6. Merge project branch into main
   console.log(`Publishing project '${projectName}'...`);
   console.log(`Merging branch '${projectName}' into main...`);
 
@@ -56,7 +76,7 @@ export async function publishProject(
     process.exit(1);
   }
 
-  // 6. If -d or -D flag: remove worktree (and optionally branch)
+  // 7. If -d or -D flag: remove worktree (and optionally branch)
   if (options?.deleteWorktree || options?.deleteBranch) {
     console.log("\nCleaning up worktree...");
     await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();

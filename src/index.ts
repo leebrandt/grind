@@ -194,13 +194,14 @@ program
     await save(project, options);
   });
 
-// grind publish <name> [-d] [-D]
+// grind publish <name> [-d] [-D] [-u <url>]
 program
   .command("publish <name>")
   .description("Merge project branch to main (optionally delete worktree/branch)")
   .option("-d, --delete-worktree", "Delete worktree after merging")
   .option("-D, --delete-branch", "Delete worktree and branch after merging")
-  .action(async (name: string, options: { deleteWorktree?: boolean; deleteBranch?: boolean }) => {
+  .option("-u, --url <url>", "URL where this project was published")
+  .action(async (name: string, options: { deleteWorktree?: boolean; deleteBranch?: boolean; url?: string }) => {
     await publishProject(name, options);
   });
 
