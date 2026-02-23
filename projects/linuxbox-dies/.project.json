@@ -12,5 +12,11 @@
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
-  }
+  },
+  "publications": [
+    {
+      "url": "https://www.garagemahal.studio/blog/putting-my-linux-box-in-a-blender",
+      "publishedAt": "2026-02-23T04:57:09.556Z"
+    }
+  ]
 }
