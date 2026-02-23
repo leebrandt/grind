@@ -175,5 +175,6 @@
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 120
-  }
+  },
+  "longTerm": true
 }
