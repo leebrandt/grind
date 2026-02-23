@@ -13,5 +13,6 @@
     "roundTo": "quarter-hour",
     "rate": 150
   },
-  "type": "book"
+  "type": "book",
+  "longTerm": true
 }
