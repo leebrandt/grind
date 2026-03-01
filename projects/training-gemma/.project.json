@@ -1,0 +1,9 @@
+{
+  "name": "training-gemma",
+  "idea": "# The refinement of my local Gemma3:27B model",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
