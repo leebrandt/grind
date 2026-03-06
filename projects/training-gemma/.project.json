@@ -1,7 +1,14 @@
 {
   "name": "training-gemma",
   "idea": "# The refinement of my local Gemma3:27B model",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-03-01T00:02:17.680Z",
+      "end": "2026-03-06T23:42:07.735Z",
+      "duration": 517190,
+      "rounded": 517500
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
