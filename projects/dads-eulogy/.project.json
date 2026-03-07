@@ -1,0 +1,9 @@
+{
+  "name": "dads-eulogy",
+  "idea": "# Dad's Eulogy/Obituary",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}
