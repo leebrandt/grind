@@ -1,7 +1,20 @@
 {
   "name": "dads-eulogy",
   "idea": "# Dad's Eulogy/Obituary",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-03-07T05:07:05.410Z",
+      "end": "2026-03-07T05:08:40.933Z",
+      "duration": 95,
+      "rounded": 900
+    },
+    {
+      "start": "2026-03-07T05:17:18.863Z",
+      "end": "2026-03-07T08:23:42.543Z",
+      "duration": 11184,
+      "rounded": 11700
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
