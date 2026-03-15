@@ -139,43 +139,50 @@
       "start": "2026-02-23T00:47:13.859Z",
       "end": "2026-02-23T01:34:45.887Z",
       "duration": 2852,
-      "rounded": 3600
+      "rounded": 3600,
+      "invoiced": true
     },
     {
       "start": "2026-02-23T04:57:37.903Z",
       "end": "2026-02-23T04:57:37.903Z",
       "duration": 0,
-      "rounded": 0
+      "rounded": 0,
+      "invoiced": true
     },
     {
       "start": "2026-02-23T04:58:03.336Z",
       "end": "2026-02-23T04:58:03.336Z",
       "duration": 0,
-      "rounded": 0
+      "rounded": 0,
+      "invoiced": true
     },
     {
       "start": "2026-02-23T05:03:12.094Z",
       "end": "2026-02-23T05:03:12.094Z",
       "duration": 0,
-      "rounded": 0
+      "rounded": 0,
+      "invoiced": true
     },
     {
       "start": "2026-02-23T05:03:26.158Z",
       "end": "2026-02-23T05:03:26.158Z",
       "duration": 0,
-      "rounded": 0
+      "rounded": 0,
+      "invoiced": true
     },
     {
       "start": "2026-02-23T05:04:11.886Z",
       "end": "2026-02-23T05:06:59.203Z",
       "duration": 167,
-      "rounded": 900
+      "rounded": 900,
+      "invoiced": true
     },
     {
       "start": "2026-02-23T06:00:27.283Z",
       "end": "2026-02-23T06:12:42.581Z",
       "duration": 735,
-      "rounded": 900
+      "rounded": 900,
+      "invoiced": true
     }
   ],
   "billing": {
