@@ -1,9 +1,24 @@
 {
   "name": "gmh-website",
   "idea": "# GMH Services website",
-  "time": [],
+  "time": [
+    {
+      "start": "2026-02-07T12:35:40.164Z",
+      "end": "2026-02-07T12:35:40.164Z",
+      "duration": 0,
+      "rounded": 0
+    },
+    {
+      "start": "2026-02-07T13:09:16.659Z",
+      "end": "2026-02-07T13:34:23.896Z",
+      "duration": 1507,
+      "rounded": 1800
+    }
+  ],
   "billing": {
     "roundTo": "quarter-hour",
     "rate": 150
-  }
+  },
+  "repo": "git@gitlab.com:leebrandt/gmh-services.git",
+  "longTerm": true
 }
