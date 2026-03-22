@@ -1,0 +1,9 @@
+{
+  "name": "grndctrl",
+  "idea": "# GRNDCTRL",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}

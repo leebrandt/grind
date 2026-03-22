@@ -1,0 +1,20 @@
+
+# Had a little crash-out this morning. 
+
+Last night, I decided it would be fun to spend the weekend turning my beast of a desktop into an AI/Container playground. I've ben watching a lot of self-hosting videos lately. This may end up being my first step into being the hermit in the hills with a faraday cage in a bunker, but here we go. 
+
+Then I get up this morning and the Linux box has a shit-fit. I think what happened was that the box went to sleep with a YouTube video paused. I think some process didn't get cleaned up, and was hanging the browser from opening. I (stupidly) assumed that restarting would reset any processes, and maybe made it worse when it restarts, has some low-level issue and boots into read-only mode. I lost it a bit. Shouted at AI. Not that it was AI's *fault*, I just went to complain to AI.
+
+### Me:
+I'm a little depressed. I couldn't get my Linux box to open a browser. None of them. I had Brave, Firefox, Chromium.. none of them will open. Firefox would give me an error saying it was already running and to close the other instance of firefox or restart.. and I restarted... several times... no joy.
+
+### (After some troubleshooting back and forth)
+The Linux box will NOT be herer ot piss me off later. I'm done. I was going to create a nice AI/Docker lab on my Mac Studio and use it from my Linux box, but fuck that. If Linux isn't stable enough to just run, fuck it.
+
+### The rest is left to your imagination. But it was bad.
+
+I then decided I was going to go buy a computer on FB Marketplace for like $50 and go all "Office Space" on that motherfucker with a pick axe.
+
+### Then the adult in me finally woke up and realized I needed a break
+
+So I'm gonna have a "Creative Weekend" Not quite as glamorous a name as "Geekend", but it's a work in progress. I'm gonna go play drums for a bit. Probably a long while. Maybe play some guitar or keyboards this evening. Maybe make some songs in Ableton. Forget about the code altogether and see if I can reboot that part of me.

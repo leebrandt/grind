@@ -1,4 +1,4 @@
----
+--
 title: "Building a Personal Operating System for Creative Work, Part II: The Grind CLI"
 excerpt: "I took the concepts from my oh-my-zsh functions and aliases, and built it into a full-on CLI."
 date: "2026-02-02T08:02:42-06:00"

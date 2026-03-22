@@ -1,0 +1,3 @@
+# Blog post about my morning crash-out. Pepper it with pieces of convo with AI.
+
+Don't be afraid to post some of the nasty shit you said to the AI. Not ALL of it, people will think you're a monster. Just let it get a little gruff.
