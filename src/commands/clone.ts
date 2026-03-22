@@ -60,6 +60,9 @@ export async function clone(url: string, directory?: string): Promise<void> {
   // 3. Fix remote fetch refspec (bare clones use wrong refspec that overwrites local branches)
   await $`git -C ${bareRepoPath} config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"`.quiet();
 
+  // 3b. Fetch all branches to populate remote tracking refs
+  await $`git -C ${bareRepoPath} fetch --all`.quiet();
+
   // 4. Verify main branch exists
   try {
     await $`git -C ${bareRepoPath} rev-parse --verify refs/heads/main`.quiet();
