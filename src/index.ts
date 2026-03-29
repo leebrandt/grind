@@ -23,6 +23,7 @@ import { editIdea } from "./commands/edit.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
+import { showIdea } from "./commands/idea.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -256,6 +257,14 @@ program
   .description("Show project overview")
   .action(async () => {
     await status();
+  });
+
+// grind idea <project>
+program
+  .command("idea <project>")
+  .description("Show the original idea file for a project")
+  .action(async (project: string) => {
+    await showIdea(project);
   });
 
 program.parse();
