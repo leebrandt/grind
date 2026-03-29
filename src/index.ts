@@ -24,6 +24,7 @@ import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
 import { showIdea } from "./commands/idea.js";
+import { promoteProject } from "./commands/promote.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -213,6 +214,14 @@ program
   .option("-f, --force", "Force removal even with uncommitted changes")
   .action(async (name: string, options: { force?: boolean }) => {
     await cancelProject(name, options);
+  });
+
+// grind promote <name>
+program
+  .command("promote <name>")
+  .description("Trigger n8n promotion workflow for a published project")
+  .action(async (name: string) => {
+    await promoteProject(name);
   });
 
 // grind reject idea [number]
