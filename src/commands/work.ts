@@ -31,30 +31,28 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
     process.exit(1);
   }
 
-  // Check for active session and auto-close with 0 duration if found
+  // Check for active session - keep it open if exists (orphaned session)
   const activeSession = config.time.find(s => s.end === null);
+
   if (activeSession) {
-    console.log(`Warning: Found unclosed session. Auto-closing with 0 duration.`);
-    activeSession.end = activeSession.start;
-    activeSession.duration = 0;
-    activeSession.rounded = 0;
+    console.log(`Continuing session on '${projectName}'`);
+    console.log(`Session started: ${activeSession.start}`);
+  } else {
+    // Add new session only if no orphaned session
+    const newSession: Session = {
+      start: getCurrentTimestamp(),
+      end: null,
+      duration: 0,
+      rounded: 0
+    };
+    config.time.push(newSession);
+
+    console.log(`Started work session on '${projectName}'`);
+    console.log(`Time started: ${newSession.start}`);
   }
-
-  // Add new session
-  const newSession: Session = {
-    start: getCurrentTimestamp(),
-    end: null,
-    duration: 0,
-    rounded: 0
-  };
-
-  config.time.push(newSession);
 
   // Write updated config
   await writeProjectConfig(workspaceRoot, projectName, config);
-
-  console.log(`Started work session on '${projectName}'`);
-  console.log(`Time started: ${newSession.start}`);
 
   if (options?.quiet) return;
 
