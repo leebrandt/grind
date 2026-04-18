@@ -71,6 +71,7 @@ export interface ProjectConfig {
   };
   client?: ClientInfo;
   repo?: string;
+  code?: string; // Directory containing code (opened by 'grind code')
   longTerm?: boolean;
   publications?: { url: string; publishedAt: string }[];
 }

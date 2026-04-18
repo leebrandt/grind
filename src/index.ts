@@ -20,6 +20,7 @@ import { publishProject } from "./commands/publish-project.js";
 import { cancelProject } from "./commands/cancel.js";
 import { invoiceProject } from "./commands/invoice.js";
 import { editIdea } from "./commands/edit.js";
+import { openCode } from "./commands/code.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
@@ -68,6 +69,7 @@ Settable keys (project-level):
   client.phone          client phone number
   client.email          client email address
   repo                  GitHub repository (owner/repo format)
+  code                  code directory (relative to project, e.g. "src")
   longTerm              true/false (mark as long-running project, shows ★)
 
 Settable keys (workspace-level, use -g):
@@ -185,6 +187,14 @@ editCmd
   .description("Open an idea file in $EDITOR")
   .action(async (number: string) => {
     await editIdea(number);
+  });
+
+// grind code <project>
+program
+  .command("code <project>")
+  .description("Open code editor in project's code directory")
+  .action(async (project: string) => {
+    await openCode(project);
   });
 
 // grind save "project"

@@ -33,6 +33,7 @@
  *   client.phone               - client phone number
  *   client.email               - client email address
  *   repo                       - git remote URL (e.g. git@github.com:owner/repo.git, https://gitlab.com/owner/repo)
+ *   code                       - code directory (relative to project, e.g. "src")
  *   longTerm                   - true | false (mark as long-term project)
  */
 
@@ -59,7 +60,7 @@ const GLOBAL_SETTABLE_KEYS = [
 const PROJECT_SETTABLE_KEYS = [
   "type", "billing.roundTo", "billing.rate",
   "client.contact", "client.company", "client.address",
-  "client.phone", "client.email", "repo", "longTerm",
+  "client.phone", "client.email", "repo", "code", "longTerm",
 ] as const;
 
 /**
@@ -211,6 +212,9 @@ export async function configList(options: ConfigOptions): Promise<void> {
     }
     if (config.repo) {
       console.log(`repo = ${config.repo}`);
+    }
+    if (config.code) {
+      console.log(`code = ${config.code}`);
     }
     if (config.longTerm != null) {
       console.log(`longTerm = ${config.longTerm}`);
