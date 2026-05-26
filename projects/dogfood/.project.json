@@ -196,5 +196,6 @@
     "rate": 120
   },
   "longTerm": true,
-  "code": "/home/lee/@source/grind"
+  "code": "/home/lee/@source/grind",
+  "repo": "git@github.com:leebrandt/grind.git"
 }
