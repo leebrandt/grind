@@ -1,0 +1,31 @@
+{
+  "name": "hip-quotes-page",
+  "idea": "# A favorite quotes/sayings on HiP Website. Go ahead. Get hippie with it.",
+  "time": [
+    {
+      "start": "2026-01-26T04:53:07.556Z",
+      "end": "2026-01-26T05:02:17.044Z",
+      "duration": 549,
+      "rounded": 900,
+      "invoiced": true
+    },
+    {
+      "start": "2026-01-26T05:17:09.547Z",
+      "end": "2026-01-26T05:17:09.547Z",
+      "duration": 0,
+      "rounded": 0,
+      "invoiced": true
+    },
+    {
+      "start": "2026-01-27T04:52:49.142Z",
+      "end": "2026-01-27T06:44:34.877Z",
+      "duration": 6705,
+      "rounded": 7200,
+      "invoiced": true
+    }
+  ],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}

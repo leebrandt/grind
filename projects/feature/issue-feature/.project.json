@@ -1,0 +1,9 @@
+{
+  "name": "feature/issue-feature",
+  "idea": "# [FEATURE]: Add feature/issue command. grind new issue 'this is broke'. Creates Github Issue.",
+  "time": [],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "svls-sst-sam-research",
+  "idea": "# Research Post/Presso on Serverless vs. SST vs. SAM",
+  "time": [
+    {
+      "start": "2026-02-01T02:21:28.459Z",
+      "end": "2026-02-01T04:59:40.841Z",
+      "duration": 9492,
+      "rounded": 9900
+    },
+    {
+      "start": "2026-02-01T08:09:26.154Z",
+      "end": "2026-02-01T09:10:05.560Z",
+      "duration": 3639,
+      "rounded": 4500
+    }
+  ],
+  "billing": {
+    "roundTo": "quarter-hour",
+    "rate": 150
+  },
+  "type": "blog"
+}
