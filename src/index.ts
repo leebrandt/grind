@@ -4,7 +4,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { Command } from "commander";
-import { DEFAULT_PROJECT_TYPES, isValidProjectType, getEffectiveProjectTypes } from "./types/index.js";
+import {
+  DEFAULT_PROJECT_TYPES,
+  isValidProjectType,
+  getEffectiveProjectTypes,
+} from "./types/index.js";
 import { requireWorkspace } from "./utils/workspace.js";
 import { readGrindConfig } from "./utils/config.js";
 import type { ProjectType } from "./types/index.js";
@@ -32,13 +36,17 @@ const program = new Command();
 
 program
   .name("grind")
-  .description("CLI tool for managing creative/technical projects from idea to publication")
+  .description(
+    "CLI tool for managing creative/technical projects from idea to publication",
+  )
   .version(packageJson.version, "-v, --version", "Display version number");
 
 // grind init
 program
   .command("init")
-  .description("Initialize a grind workspace (creates ideas/, projects/, .grind.json)")
+  .description(
+    "Initialize a grind workspace (creates ideas/, projects/, .grind.json)",
+  )
   .action(async () => {
     await init();
   });
@@ -55,10 +63,18 @@ program
 program
   .command("config [key] [value]")
   .description("Get or set configuration values")
-  .option("-g, --global", "Use workspace config (.grind.json) instead of project config")
-  .option("-p, --project <name>", "Target a specific project (instead of detecting from cwd)")
+  .option(
+    "-g, --global",
+    "Use workspace config (.grind.json) instead of project config",
+  )
+  .option(
+    "-p, --project <name>",
+    "Target a specific project (instead of detecting from cwd)",
+  )
   .option("-l, --list", "List all config values")
-  .addHelpText("after", `
+  .addHelpText(
+    "after",
+    `
 Settable keys (project-level):
   type                  blog, webapp, video, song, book
   billing.roundTo       quarter-hour, half-hour, hour
@@ -84,20 +100,29 @@ Settable keys (workspace-level, use -g):
   my.taxId              tax ID (ABN/EIN/VAT)
   currency              currency code (e.g. USD, AUD)
   paymentTerms          payment terms (e.g. "Net 30")
-`)
-  .action(async (key: string | undefined, value: string | undefined, options: { global?: boolean; project?: string; list?: boolean }) => {
-    if (options.list || (!key && !value)) {
-      await configList(options);
-    } else if (key && !value) {
-      await configGet(key, options);
-    } else if (key && value) {
-      await configSet(key, value, options);
-    }
-  });
+`,
+  )
+  .action(
+    async (
+      key: string | undefined,
+      value: string | undefined,
+      options: { global?: boolean; project?: string; list?: boolean },
+    ) => {
+      if (options.list || (!key && !value)) {
+        await configList(options);
+      } else if (key && !value) {
+        await configGet(key, options);
+      } else if (key && value) {
+        await configSet(key, value, options);
+      }
+    },
+  );
 
 // grind new idea "title"
 // grind new project "name" <idea-number> [-t type]
-const newCmd = program.command("new").description("Create a new idea or project");
+const newCmd = program
+  .command("new")
+  .description("Create a new idea or project");
 
 newCmd
   .command("idea [title]")
@@ -108,23 +133,37 @@ newCmd
 
 newCmd
   .command("project <name> <idea-number>")
-  .description("Create a new project from an idea (use number from 'grind list ideas')")
-  .option("-t, --type <type>", `Project type (${DEFAULT_PROJECT_TYPES.join(", ")})`)
-  .action(async (name: string, ideaNumber: string, options: { type?: string }) => {
-    const { mainWorktree } = await requireWorkspace();
-    const grindConfig = await readGrindConfig(mainWorktree);
-    const validTypes = getEffectiveProjectTypes(grindConfig);
-    if (options.type && !isValidProjectType(options.type, validTypes)) {
-      console.error(`Invalid type: ${options.type}. Valid types: ${validTypes.join(", ")}`);
-      process.exit(1);
-    }
-    await newProject(name, ideaNumber, { type: options.type as ProjectType | undefined });
-  });
+  .description(
+    "Create a new project from an idea (use number from 'grind list ideas')",
+  )
+  .option(
+    "-t, --type <type>",
+    `Project type (${DEFAULT_PROJECT_TYPES.join(", ")})`,
+  )
+  .action(
+    async (name: string, ideaNumber: string, options: { type?: string }) => {
+      const { mainWorktree } = await requireWorkspace();
+      const grindConfig = await readGrindConfig(mainWorktree);
+      const validTypes = getEffectiveProjectTypes(grindConfig);
+      if (options.type && !isValidProjectType(options.type, validTypes)) {
+        console.error(
+          `Invalid type: ${options.type}. Valid types: ${validTypes.join(", ")}`,
+        );
+        process.exit(1);
+      }
+      await newProject(name, ideaNumber, {
+        type: options.type as ProjectType | undefined,
+      });
+    },
+  );
 
 newCmd
   .command("issue <project>")
   .description("Create a new idea and GitHub issue for a project")
-  .option("-m, --message <message>", "Issue title/message (opens editor if omitted)")
+  .option(
+    "-m, --message <message>",
+    "Issue title/message (opens editor if omitted)",
+  )
   .action(async (project: string, options: { message?: string }) => {
     await newIssue(project, options);
   });
@@ -132,7 +171,10 @@ newCmd
 newCmd
   .command("feature <project>")
   .description("Create a new idea and GitHub feature request for a project")
-  .option("-m, --message <message>", "Feature title/message (opens editor if omitted)")
+  .option(
+    "-m, --message <message>",
+    "Feature title/message (opens editor if omitted)",
+  )
   .action(async (project: string, options: { message?: string }) => {
     await newFeature(project, options);
   });
@@ -149,7 +191,8 @@ listCmd
     await listIdeas(options);
   });
 
-program.command("ideas")
+program
+  .command("ideas")
   .description("List all idea files for triage")
   .option("-a, --all", "Show all ideas (rejected and non-rejected)")
   .option("-r, --rejected", "Show only rejected ideas")
@@ -164,7 +207,8 @@ listCmd
     await listProjects();
   });
 
-program.command("projects")
+program
+  .command("projects")
   .description("List all projects")
   .action(async () => {
     await listProjects();
@@ -174,7 +218,7 @@ program.command("projects")
 program
   .command("work <project>")
   .description("Start working on a project (starts timer, opens editor)")
-  .option("-q, --quiet", "Start session without opening editor")
+  .option("-q, --quiet", "Open editor without starting a timer")
   .action(async (project: string, options: { quiet?: boolean }) => {
     await workStart(project, options);
   });
@@ -209,18 +253,31 @@ program
 // grind publish <name> [-d] [-D] [-u <url>]
 program
   .command("publish <name>")
-  .description("Merge project branch to main (optionally delete worktree/branch)")
+  .description(
+    "Merge project branch to main (optionally delete worktree/branch)",
+  )
   .option("-d, --delete-worktree", "Delete worktree after merging")
   .option("-D, --delete-branch", "Delete worktree and branch after merging")
   .option("-u, --url <url>", "URL where this project was published")
-  .action(async (name: string, options: { deleteWorktree?: boolean; deleteBranch?: boolean; url?: string }) => {
-    await publishProject(name, options);
-  });
+  .action(
+    async (
+      name: string,
+      options: {
+        deleteWorktree?: boolean;
+        deleteBranch?: boolean;
+        url?: string;
+      },
+    ) => {
+      await publishProject(name, options);
+    },
+  );
 
 // grind cancel <name> [--force]
 program
   .command("cancel <name>")
-  .description("Cancel (abandon) a project — removes worktree, branch, and config")
+  .description(
+    "Cancel (abandon) a project — removes worktree, branch, and config",
+  )
   .option("-f, --force", "Force removal even with uncommitted changes")
   .action(async (name: string, options: { force?: boolean }) => {
     await cancelProject(name, options);
@@ -235,7 +292,9 @@ program
   });
 
 // grind reject idea [number]
-const rejectCmd = program.command("reject").description("Reject an idea or project");
+const rejectCmd = program
+  .command("reject")
+  .description("Reject an idea or project");
 
 rejectCmd
   .command("idea <number>")
@@ -245,7 +304,9 @@ rejectCmd
   });
 
 // grind prune ideas
-const pruneCmd = program.command("prune").description("Delete rejected ideas or projects");
+const pruneCmd = program
+  .command("prune")
+  .description("Delete rejected ideas or projects");
 
 pruneCmd
   .command("ideas")

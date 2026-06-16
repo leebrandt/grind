@@ -24,37 +24,37 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
     process.exit(1);
   }
 
-  // Read project config
-  const config = await readProjectConfig(workspaceRoot, projectName);
-  if (!config) {
-    console.error(`Error: Could not read .project.json for '${projectName}'.`);
-    process.exit(1);
+  if (!options?.quiet) {
+    // Read project config
+    const config = await readProjectConfig(workspaceRoot, projectName);
+    if (!config) {
+      console.error(`Error: Could not read .project.json for '${projectName}'.`);
+      process.exit(1);
+    }
+
+    // Check for active session - keep it open if exists (orphaned session)
+    const activeSession = config.time.find(s => s.end === null);
+
+    if (activeSession) {
+      console.log(`Continuing session on '${projectName}'`);
+      console.log(`Session started: ${activeSession.start}`);
+    } else {
+      // Add new session only if no orphaned session
+      const newSession: Session = {
+        start: getCurrentTimestamp(),
+        end: null,
+        duration: 0,
+        rounded: 0
+      };
+      config.time.push(newSession);
+
+      console.log(`Started work session on '${projectName}'`);
+      console.log(`Time started: ${newSession.start}`);
+    }
+
+    // Write updated config
+    await writeProjectConfig(workspaceRoot, projectName, config);
   }
-
-  // Check for active session - keep it open if exists (orphaned session)
-  const activeSession = config.time.find(s => s.end === null);
-
-  if (activeSession) {
-    console.log(`Continuing session on '${projectName}'`);
-    console.log(`Session started: ${activeSession.start}`);
-  } else {
-    // Add new session only if no orphaned session
-    const newSession: Session = {
-      start: getCurrentTimestamp(),
-      end: null,
-      duration: 0,
-      rounded: 0
-    };
-    config.time.push(newSession);
-
-    console.log(`Started work session on '${projectName}'`);
-    console.log(`Time started: ${newSession.start}`);
-  }
-
-  // Write updated config
-  await writeProjectConfig(workspaceRoot, projectName, config);
-
-  if (options?.quiet) return;
 
   // Open editor in project directory
   const projectDir = path.join(worktreePath, "projects", projectName);
