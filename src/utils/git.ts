@@ -87,7 +87,7 @@ export async function getCommitCount(repoPath: string, branch: string): Promise<
  */
 export async function getFirstCommitDate(repoPath: string, branch: string): Promise<string | null> {
   try {
-    const result = await $`git -C ${repoPath} log ${branch} --reverse --format=%aI`.quiet();
+    const result = await $`git -C ${repoPath} log ${branch} --not main --reverse --format=%aI`.quiet();
     const firstLine = result.stdout.toString().trim().split("\n")[0];
     return firstLine || null;
   } catch {
