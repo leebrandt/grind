@@ -6,6 +6,7 @@ import { $ } from "bun";
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { fileExists } from "../utils/files.js";
+import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 /**
  * Derive a directory name from a git URL
@@ -32,8 +33,7 @@ export async function clone(url: string, directory?: string): Promise<void> {
   const targetDir = path.resolve(dirName);
 
   if (await fileExists(targetDir)) {
-    console.error(`Error: Directory '${dirName}' already exists.`);
-    process.exit(1);
+    throw new GrindUserError(`Directory '${dirName}' already exists.`);
   }
 
   async function cleanup() {
@@ -52,9 +52,8 @@ export async function clone(url: string, directory?: string): Promise<void> {
   try {
     await $`git clone --bare ${url} ${bareRepoPath}`.quiet();
   } catch {
-    console.error("Error: Failed to clone repository. Check that the URL is correct and accessible.");
     await cleanup();
-    process.exit(1);
+    throw new GrindSystemError("Failed to clone repository. Check that the URL is correct and accessible.");
   }
 
   // 3. Fix remote fetch refspec (bare clones use wrong refspec that overwrites local branches)
@@ -67,9 +66,8 @@ export async function clone(url: string, directory?: string): Promise<void> {
   try {
     await $`git -C ${bareRepoPath} rev-parse --verify refs/heads/main`.quiet();
   } catch {
-    console.error("Error: Repository does not have a 'main' branch. Is this a grind workspace?");
     await cleanup();
-    process.exit(1);
+    throw new GrindUserError("Repository does not have a 'main' branch. Is this a grind workspace?");
   }
 
   // 5. Create main worktree (NOT git clone — must be a worktree of the bare repo)
@@ -77,17 +75,15 @@ export async function clone(url: string, directory?: string): Promise<void> {
   try {
     await $`git -C ${bareRepoPath} worktree add ${mainWorktreePath} main`.quiet();
   } catch {
-    console.error("Error: Failed to create main worktree.");
     await cleanup();
-    process.exit(1);
+    throw new GrindSystemError("Failed to create main worktree.");
   }
 
   // 6. Validate this is a grind workspace
   const configPath = path.join(mainWorktreePath, ".grind.json");
   if (!(await fileExists(configPath))) {
-    console.error("Error: Repository does not appear to be a grind workspace (.grind.json not found).");
     await cleanup();
-    process.exit(1);
+    throw new GrindUserError("Repository does not appear to be a grind workspace (.grind.json not found).");
   }
 
   // 7. Restore project worktrees from branches

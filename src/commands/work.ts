@@ -9,6 +9,7 @@ import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import type { Session } from "../types/index.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Start working on a project
@@ -20,16 +21,13 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
   // Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
-    console.error(`Error: Project '${projectName}' does not exist.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' does not exist.`);
   }
 
   if (!options?.quiet) {
-    // Read project config
     const config = await readProjectConfig(workspaceRoot, projectName);
     if (!config) {
-      console.error(`Error: Could not read .project.json for '${projectName}'.`);
-      process.exit(1);
+      throw new GrindUserError(`Could not read .project.json for '${projectName}'.`);
     }
 
     // Check for active session - keep it open if exists (orphaned session)

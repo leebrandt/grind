@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { promoteProject } from "../../src/commands/promote.js";
+import { GrindSystemError } from "../../src/utils/errors.js";
 import * as fs from "node:fs/promises";
 
 jest.mock("node:fs/promises");
@@ -54,7 +55,7 @@ describe("promoteProject", () => {
     expect(mock$).toHaveBeenCalledTimes(1);
   });
 
-  it("should exit with error when curl fails", async () => {
+  it("should throw GrindSystemError when curl fails", async () => {
     mock$.mockImplementation(() => ({
       nothrow: jest.fn().mockResolvedValue({
         stdout: Buffer.from(""),
@@ -64,13 +65,12 @@ describe("promoteProject", () => {
 
     (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(baseProjectConfig));
 
-    await promoteProject(projectName);
-
-    expect(console.error).toHaveBeenCalledWith("Error: Could not reach n8n server.");
-    expect(process.exit).toHaveBeenCalledWith(1);
+    const promise = promoteProject(projectName);
+    await expect(promise).rejects.toThrow(GrindSystemError);
+    await expect(promise).rejects.toThrow("Could not reach n8n server.");
   });
 
-  it("should exit with error when n8n returns non-ok response", async () => {
+  it("should throw GrindSystemError when n8n returns non-ok response", async () => {
     mock$.mockImplementation(() => ({
       nothrow: jest.fn().mockResolvedValue({
         stdout: Buffer.from("error occurred\n500"),
@@ -80,9 +80,8 @@ describe("promoteProject", () => {
 
     (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(baseProjectConfig));
 
-    await promoteProject(projectName);
-
-    expect(console.error).toHaveBeenCalledWith("Error: n8n webhook failed: error occurred");
-    expect(process.exit).toHaveBeenCalledWith(1);
+    const promise = promoteProject(projectName);
+    await expect(promise).rejects.toThrow(GrindSystemError);
+    await expect(promise).rejects.toThrow("n8n webhook failed: error occurred");
   });
 });

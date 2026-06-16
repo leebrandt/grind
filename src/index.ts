@@ -4,6 +4,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { Command } from "commander";
+import { GrindError } from "./utils/errors.js";
 import {
   DEFAULT_PROJECT_TYPES,
   isValidProjectType,
@@ -146,10 +147,10 @@ newCmd
       const grindConfig = await readGrindConfig(mainWorktree);
       const validTypes = getEffectiveProjectTypes(grindConfig);
       if (options.type && !isValidProjectType(options.type, validTypes)) {
-        console.error(
+        throw new GrindError(
           `Invalid type: ${options.type}. Valid types: ${validTypes.join(", ")}`,
+          1,
         );
-        process.exit(1);
       }
       await newProject(name, ideaNumber, {
         type: options.type as ProjectType | undefined,
@@ -347,4 +348,18 @@ program
     await showIdea(project);
   });
 
-program.parse();
+try {
+  await program.parseAsync();
+} catch (error) {
+  if (error instanceof GrindError) {
+    console.error(`Error: ${error.message}`);
+    process.exit(error.exitCode);
+  } else if (error instanceof Error) {
+    console.error(`Unexpected error: ${error.message}`);
+    console.error(error.stack);
+    process.exit(99);
+  } else {
+    console.error("Unexpected error:", error);
+    process.exit(99);
+  }
+}

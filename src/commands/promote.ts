@@ -8,6 +8,7 @@ import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import type { ProjectConfig } from "../types/index.js";
+import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 const N8N_WEBHOOK_URL = "https://gandalf.local:5678/webhook-test/promote";
 
@@ -36,16 +37,14 @@ export async function promoteProject(projectName: string): Promise<void> {
   } else if (await fileExists(mainWorktreeConfigPath)) {
     configPath = mainWorktreeConfigPath;
   } else {
-    console.error(`Error: Project '${projectName}' not found.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' not found.`);
   }
 
   const configContent = await readFile(configPath, "utf-8");
   const config: ProjectConfig = JSON.parse(configContent);
 
   if (!config.publications || config.publications.length === 0) {
-    console.error(`Error: Project '${projectName}' has no publication URLs.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' has no publication URLs.`);
   }
 
   const publicationUrl = config.publications[0].url;
@@ -63,14 +62,12 @@ export async function promoteProject(projectName: string): Promise<void> {
   const responseBody = lines.join("\n");
 
   if (exitCode !== 0) {
-    console.error("Error: Could not reach n8n server.");
-    process.exit(1);
+    throw new GrindSystemError("Could not reach n8n server.");
   }
 
   const httpStatus = parseInt(statusCode || "0", 10);
   if (httpStatus < 200 || httpStatus >= 300) {
-    console.error(`Error: n8n webhook failed: ${responseBody || `HTTP ${httpStatus}`}`);
-    process.exit(1);
+    throw new GrindSystemError(`n8n webhook failed: ${responseBody || `HTTP ${httpStatus}`}`);
   }
 
   console.log("\nn8n response:");

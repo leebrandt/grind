@@ -4,6 +4,7 @@
 
 import path from "node:path";
 import { fileExists } from "./files.js";
+import { GrindUserError } from "./errors.js";
 
 /**
  * Derive the current project name from the working directory.
@@ -90,14 +91,12 @@ export async function requireWorkspace(): Promise<{
 }> {
   const workspaceRoot = await getWorkspaceRoot(process.cwd());
   if (!workspaceRoot) {
-    console.error("Error: Not in a grind workspace.");
-    process.exit(1);
+    throw new GrindUserError("Not in a grind workspace.");
   }
 
   const mainWorktree = await findMainWorktree(process.cwd());
   if (!mainWorktree) {
-    console.error("Error: Could not find main worktree.");
-    process.exit(1);
+    throw new GrindUserError("Could not find main worktree.");
   }
 
   const bareRepo = path.join(workspaceRoot, BARE_REPO_NAME);

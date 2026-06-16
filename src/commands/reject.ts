@@ -7,6 +7,7 @@ import { rename } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { getIdeaByNumber } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Reject an idea by prepending "rejected-" to filename
@@ -18,21 +19,16 @@ export async function rejectIdea(ideaNumber: string): Promise<void> {
   // Parse idea number
   const ideaIndex = parseInt(ideaNumber, 10);
   if (isNaN(ideaIndex)) {
-    console.error("Error: Idea must be a number from 'grind list ideas'");
-    process.exit(1);
+    throw new GrindUserError("Idea must be a number from 'grind list ideas'");
   }
 
-  // Get idea by number (non-rejected only)
   const idea = await getIdeaByNumber(ideaIndex, false);
   if (!idea) {
-    console.error(`Error: Idea #${ideaIndex} not found. Run 'grind list ideas' to see available ideas.`);
-    process.exit(1);
+    throw new GrindUserError(`Idea #${ideaIndex} not found. Run 'grind list ideas' to see available ideas.`);
   }
 
-  // Check if already rejected (shouldn't happen, but safety check)
   if (idea.filename.startsWith("rejected-")) {
-    console.error(`Error: Idea #${ideaIndex} is already rejected.`);
-    process.exit(1);
+    throw new GrindUserError(`Idea #${ideaIndex} is already rejected.`);
   }
 
   // Create new filename with "rejected-" prefix
