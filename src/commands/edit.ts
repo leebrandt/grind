@@ -6,6 +6,7 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 import { getIdeaByNumber } from "../utils/files.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Open an idea file in $EDITOR
@@ -16,14 +17,12 @@ export async function editIdea(ideaNumber: string): Promise<void> {
 
   const index = parseInt(ideaNumber, 10);
   if (isNaN(index)) {
-    console.error("Error: Idea must be a number from 'grind ideas'");
-    process.exit(1);
+    throw new GrindUserError("Idea must be a number from 'grind ideas'");
   }
 
   const idea = await getIdeaByNumber(index);
   if (!idea) {
-    console.error(`Error: Idea #${index} not found. Run 'grind ideas' to see available ideas.`);
-    process.exit(1);
+    throw new GrindUserError(`Idea #${index} not found. Run 'grind ideas' to see available ideas.`);
   }
 
   const filepath = path.join(mainWorktree, "ideas", idea.filename);

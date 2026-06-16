@@ -15,6 +15,7 @@ import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.j
 import { readGrindConfig } from "../utils/config.js";
 import { parseRepoUrl } from "../utils/repo.js";
 import { listIdeas } from "./list.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Open editor to get a message from the user
@@ -90,22 +91,17 @@ export async function newProject(
 
   // Check for uncommitted changes FIRST - fail fast
   if (await hasUncommittedChanges(mainWorktree)) {
-    console.error("Error: You have uncommitted changes in grind/. Please commit them first.");
-    process.exit(1);
+    throw new GrindUserError("You have uncommitted changes in grind/. Please commit them first.");
   }
   
-  // Parse idea number
   const ideaIndex = parseInt(ideaNumber, 10);
   if (isNaN(ideaIndex)) {
-    console.error("Error: Idea must be a number from 'grind list ideas'");
-    process.exit(1);
+    throw new GrindUserError("Idea must be a number from 'grind list ideas'");
   }
   
-  // Get idea content
   const idea = await getIdeaByNumber(ideaIndex);
   if (!idea) {
-    console.error(`Error: Idea #${ideaIndex} not found. Run 'grind list ideas' to see available ideas.`);
-    process.exit(1);
+    throw new GrindUserError(`Idea #${ideaIndex} not found. Run 'grind list ideas' to see available ideas.`);
   }
   
   // Read workspace config
@@ -116,8 +112,7 @@ export async function newProject(
   
   // Check if worktree directory already exists
   if (await fileExists(worktreePath)) {
-    console.error(`Error: Directory '${name}' already exists.`);
-    process.exit(1);
+    throw new GrindUserError(`Directory '${name}' already exists.`);
   }
   
   // Step 1: Create .project.json in main worktree's projects/ folder
@@ -174,8 +169,7 @@ export async function newIssue(
   if (!message) {
     message = await getMessageFromEditor("Enter issue title above") ?? undefined;
     if (!message) {
-      console.error("Aborted: no message provided.");
-      process.exit(1);
+      throw new GrindUserError("Aborted: no message provided.");
     }
   }
   await newRepoIssue(projectName, message, "ISSUE");
@@ -193,8 +187,7 @@ export async function newFeature(
   if (!message) {
     message = await getMessageFromEditor("Enter feature title above") ?? undefined;
     if (!message) {
-      console.error("Aborted: no message provided.");
-      process.exit(1);
+      throw new GrindUserError("Aborted: no message provided.");
     }
   }
   await newRepoIssue(projectName, message, "FEATURE");
@@ -214,23 +207,24 @@ async function newRepoIssue(
     const content = await readFile(configPath, "utf-8");
     projectConfig = JSON.parse(content);
   } catch {
-    console.error(`Error: Project '${projectName}' not found.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' not found.`);
   }
   if (!projectConfig.repo) {
-    console.error(`Error: No 'repo' configured for project '${projectName}'.`);
-    console.error(`Set it with: grind config -p ${projectName} repo git@github.com:owner/repo.git`);
-    process.exit(1);
+    throw new GrindUserError(
+      `No 'repo' configured for project '${projectName}'.\n` +
+      `Set it with: grind config -p ${projectName} repo git@github.com:owner/repo.git`
+    );
   }
 
   const repoInfo = parseRepoUrl(projectConfig.repo);
   if (!repoInfo) {
-    console.error(`Error: Unrecognized repo URL: ${projectConfig.repo}`);
-    console.error("Expected GitHub or GitLab URL, e.g.:");
-    console.error("  git@github.com:owner/repo.git");
-    console.error("  git@gitlab.com:owner/repo.git");
-    console.error("  https://github.com/owner/repo");
-    process.exit(1);
+    throw new GrindUserError(
+      `Unrecognized repo URL: ${projectConfig.repo}\n` +
+      "Expected GitHub or GitLab URL, e.g.:\n" +
+      "  git@github.com:owner/repo.git\n" +
+      "  git@gitlab.com:owner/repo.git\n" +
+      "  https://github.com/owner/repo"
+    );
   }
 
   const title = `[${prefix}]: ${message}`;

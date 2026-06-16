@@ -8,6 +8,7 @@ import { rm } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
+import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 /**
  * Cancel (abandon) a project
@@ -23,16 +24,16 @@ export async function cancelProject(
   // 2. Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
-    console.error(`Error: Project worktree '${projectName}' does not exist.`);
-    process.exit(1);
+    throw new GrindUserError(`Project worktree '${projectName}' does not exist.`);
   }
 
   // 3. Detect if user is inside the project worktree
   const cwd = process.cwd();
   if (cwd === worktreePath || cwd.startsWith(worktreePath + path.sep)) {
-    console.error(`Error: You are inside this project's worktree.`);
-    console.error(`Please cd to your workspace root first: cd ${workspaceRoot}`);
-    process.exit(1);
+    throw new GrindUserError(
+      `You are inside this project's worktree.\n` +
+      `Please cd to your workspace root first: cd ${workspaceRoot}`
+    );
   }
 
   // 4. Remove the worktree
@@ -45,9 +46,10 @@ export async function cancelProject(
     }
     console.log(`  - Removed worktree: ${projectName}/`);
   } catch {
-    console.error(`Error: Could not remove worktree. It may have uncommitted changes.`);
-    console.error(`Use --force to remove anyway.`);
-    process.exit(1);
+    throw new GrindSystemError(
+      "Could not remove worktree. It may have uncommitted changes.\n" +
+      "Use --force to remove anyway."
+    );
   }
 
   // 5. Delete the branch

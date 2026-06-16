@@ -42,6 +42,7 @@ import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfi
 import { ROUND_TO_OPTIONS, DEFAULT_PROJECT_TYPES, isValidProjectType } from "../types/index.js";
 import type { RoundTo } from "../types/index.js";
 import { parseRepoUrl } from "../utils/repo.js";
+import { GrindUserError } from "../utils/errors.js";
 
 export interface ConfigOptions {
   global?: boolean;
@@ -117,8 +118,7 @@ async function validateValue(key: string, value: string, isGlobal: boolean, main
       ? grindConfig.projectTypes 
       : DEFAULT_PROJECT_TYPES;
     if (!isValidProjectType(value, validTypes)) {
-      console.error(`Invalid type: ${value}. Valid types: ${validTypes.join(", ")}`);
-      process.exit(1);
+      throw new GrindUserError(`Invalid type: ${value}. Valid types: ${validTypes.join(", ")}`);
     }
     return value;
   }
@@ -126,16 +126,14 @@ async function validateValue(key: string, value: string, isGlobal: boolean, main
   if (key === "projectTypes") {
     const types = value.split(",").map(t => t.trim()).filter(t => t);
     if (!types.length) {
-      console.error(`Invalid projectTypes: ${value}. Must be a comma-separated list of types.`);
-      process.exit(1);
+      throw new GrindUserError(`Invalid projectTypes: ${value}. Must be a comma-separated list of types.`);
     }
     return types;
   }
 
   if (key === "billing.roundTo") {
     if (!ROUND_TO_OPTIONS.includes(value as RoundTo)) {
-      console.error(`Invalid roundTo value: ${value}. Valid options: ${ROUND_TO_OPTIONS.join(", ")}`);
-      process.exit(1);
+      throw new GrindUserError(`Invalid roundTo value: ${value}. Valid options: ${ROUND_TO_OPTIONS.join(", ")}`);
     }
     return value;
   }
@@ -143,29 +141,28 @@ async function validateValue(key: string, value: string, isGlobal: boolean, main
   if (key === "billing.rate" || key === "billing.defaultRate") {
     const num = Number(value);
     if (isNaN(num) || num <= 0) {
-      console.error(`Invalid rate: ${value}. Must be a positive number.`);
-      process.exit(1);
+      throw new GrindUserError(`Invalid rate: ${value}. Must be a positive number.`);
     }
     return num;
   }
 
   if (key === "repo") {
     if (!parseRepoUrl(value)) {
-      console.error(`Invalid repo URL: ${value}`);
-      console.error("Expected a GitHub or GitLab URL, e.g.:");
-      console.error("  git@github.com:owner/repo.git");
-      console.error("  git@gitlab.com:owner/repo.git");
-      console.error("  https://github.com/owner/repo");
-      console.error("  https://gitlab.com/owner/repo");
-      process.exit(1);
+      throw new GrindUserError(
+        `Invalid repo URL: ${value}\n` +
+        "Expected a GitHub or GitLab URL, e.g.:\n" +
+        "  git@github.com:owner/repo.git\n" +
+        "  git@gitlab.com:owner/repo.git\n" +
+        "  https://github.com/owner/repo\n" +
+        "  https://gitlab.com/owner/repo"
+      );
     }
     return value;
   }
 
   if (key === "longTerm") {
     if (value !== "true" && value !== "false") {
-      console.error(`Invalid longTerm value: ${value}. Must be true or false.`);
-      process.exit(1);
+      throw new GrindUserError(`Invalid longTerm value: ${value}. Must be true or false.`);
     }
     return value === "true";
   }
@@ -192,8 +189,7 @@ export async function configList(options: ConfigOptions): Promise<void> {
   } else {
     const config = await readProjectConfig(workspaceRoot, projectName);
     if (!config) {
-      console.error(`Could not read config for project: ${projectName}`);
-      process.exit(1);
+      throw new GrindUserError(`Could not read config for project: ${projectName}`);
     }
 
     // Show type, billing, and client fields
@@ -235,21 +231,18 @@ export async function configGet(key: string, options: ConfigOptions): Promise<vo
     const config = await readGrindConfig(mainWorktree);
     const value = getNestedValue(config as Record<string, any>, key);
     if (value === undefined) {
-      console.error(`Key not found: ${key}`);
-      process.exit(1);
+      throw new GrindUserError(`Key not found: ${key}`);
     }
     console.log(value);
   } else {
     const config = await readProjectConfig(workspaceRoot, projectName);
     if (!config) {
-      console.error(`Could not read config for project: ${projectName}`);
-      process.exit(1);
+      throw new GrindUserError(`Could not read config for project: ${projectName}`);
     }
 
     const value = getNestedValue(config as Record<string, any>, key);
     if (value === undefined) {
-      console.error(`Key not found: ${key}`);
-      process.exit(1);
+      throw new GrindUserError(`Key not found: ${key}`);
     }
     console.log(value);
   }
@@ -268,9 +261,10 @@ export async function configSet(key: string, value: string, options: ConfigOptio
 
   if (useGlobal) {
     if (!GLOBAL_SETTABLE_KEYS.includes(key as typeof GLOBAL_SETTABLE_KEYS[number])) {
-      console.error(`Invalid key for workspace config: ${key}`);
-      console.error(`Valid keys: ${GLOBAL_SETTABLE_KEYS.join(", ")}`);
-      process.exit(1);
+      throw new GrindUserError(
+        `Invalid key for workspace config: ${key}\n` +
+        `Valid keys: ${GLOBAL_SETTABLE_KEYS.join(", ")}`
+      );
     }
 
     const parsed = await validateValue(key, value, true, mainWorktree);
@@ -279,16 +273,16 @@ export async function configSet(key: string, value: string, options: ConfigOptio
     console.log(`${key} = ${parsed}`);
   } else {
     if (!PROJECT_SETTABLE_KEYS.includes(key as typeof PROJECT_SETTABLE_KEYS[number])) {
-      console.error(`Invalid key for project config: ${key}`);
-      console.error(`Valid keys: ${PROJECT_SETTABLE_KEYS.join(", ")}`);
-      process.exit(1);
+      throw new GrindUserError(
+        `Invalid key for project config: ${key}\n` +
+        `Valid keys: ${PROJECT_SETTABLE_KEYS.join(", ")}`
+      );
     }
 
     const parsed = await validateValue(key, value, false, mainWorktree);
     const config = await readProjectConfig(workspaceRoot, projectName);
     if (!config) {
-      console.error(`Could not read config for project: ${projectName}`);
-      process.exit(1);
+      throw new GrindUserError(`Could not read config for project: ${projectName}`);
     }
 
     setNestedValue(config as Record<string, any>, key, parsed);

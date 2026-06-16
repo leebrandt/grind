@@ -9,6 +9,7 @@ import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import type { Session } from "../types/index.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Open code editor in project's code directory & start work session
@@ -20,32 +21,26 @@ export async function openCode(projectName: string): Promise<void> {
   // Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
-    console.error(`Error: Project '${projectName}' does not exist.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' does not exist.`);
   }
 
-  // Read project config
   const config = await readProjectConfig(workspaceRoot, projectName);
   if (!config) {
-    console.error(`Error: Could not read .project.json for '${projectName}'.`);
-    process.exit(1);
+    throw new GrindUserError(`Could not read .project.json for '${projectName}'.`);
   }
 
   if (!config.code) {
-    console.error(
-      `Error: No code directory set for '${projectName}'. Run:\n  grind config -p ${projectName} code <directory>`
+    throw new GrindUserError(
+      `No code directory set for '${projectName}'. Run:\n  grind config -p ${projectName} code <directory>`
     );
-    process.exit(1);
   }
 
-  // Resolve code directory path before starting session
   const codeDir = path.isAbsolute(config.code)
     ? config.code
     : path.join(worktreePath, config.code);
 
   if (!(await fileExists(codeDir))) {
-    console.error(`Error: Code directory '${codeDir}' does not exist.`);
-    process.exit(1);
+    throw new GrindUserError(`Code directory '${codeDir}' does not exist.`);
   }
 
   // Check for active session and auto-close with 0 duration if found

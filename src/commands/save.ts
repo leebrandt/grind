@@ -7,6 +7,7 @@ import { requireWorkspace } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
 import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Save work on a project
@@ -38,8 +39,7 @@ export async function save(projectName: string, options?: { quiet?: boolean }): 
   // Read project config
   const config = await readProjectConfig(workspaceRoot, projectName);
   if (!config) {
-    console.error(`Error: Could not read .project.json for '${projectName}'.`);
-    process.exit(1);
+    throw new GrindUserError(`Could not read .project.json for '${projectName}'.`);
   }
 
   // Find and stop active session (if any)

@@ -7,6 +7,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import type { GrindConfig } from "../types/index.js";
 import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit } from "../utils/git.js";
 import { fileExists } from "../utils/files.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Default workspace configuration
@@ -35,8 +36,7 @@ export async function init(): Promise<void> {
 
   // Check if already initialized
   if (await fileExists(bareRepoPath)) {
-    console.error("Error: Grind workspace already initialized (.grind.repo.git exists)");
-    process.exit(1);
+    throw new GrindUserError("Grind workspace already initialized (.grind.repo.git exists)");
   }
 
   // 1. Create bare repo

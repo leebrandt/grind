@@ -12,6 +12,7 @@ import { gitCommit } from "../utils/git.js";
 import { formatDate } from "../utils/time.js";
 import type { ProjectConfig, GrindConfig } from "../types/index.js";
 import PDFDocument from "pdfkit";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
  * Generate invoice for a project
@@ -51,8 +52,7 @@ export async function invoiceProject(projectName: string): Promise<void> {
     configPath = mainWorktreeConfigPath;
     console.log(`Reading config from main worktree (project worktree not found)...`);
   } else {
-    console.error(`Error: Project '${projectName}' not found.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' not found.`);
   }
   
   // 4. Load project config
@@ -66,7 +66,7 @@ export async function invoiceProject(projectName: string): Promise<void> {
   
   if (unbilledSessions.length === 0) {
     console.log("No unbilled sessions found.");
-    process.exit(0);
+    return;
   }
   
   console.log(`\nFound ${unbilledSessions.length} unbilled session(s):`);

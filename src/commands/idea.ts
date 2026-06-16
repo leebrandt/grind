@@ -5,6 +5,7 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
+import { GrindUserError } from "../utils/errors.js";
 
 export async function showIdea(projectName: string): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
@@ -15,7 +16,6 @@ export async function showIdea(projectName: string): Promise<void> {
     const content = await readFile(ideaPath, "utf-8");
     console.log(content);
   } catch {
-    console.error(`Error: No idea file found at ${ideaPath}`);
-    process.exit(1);
+    throw new GrindUserError(`No idea file found at ${ideaPath}`);
   }
 }
