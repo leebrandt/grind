@@ -9,6 +9,7 @@ import { fileExists } from "../utils/files.js";
 import { hasUncommittedChanges } from "../utils/git.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
+import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 /**
  * Publish a project by merging to main
@@ -24,26 +25,22 @@ export async function publishProject(
   // 2. Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
-    console.error(`Error: Project worktree '${projectName}' does not exist.`);
-    process.exit(1);
+    throw new GrindUserError(`Project worktree '${projectName}' does not exist.`);
   }
 
   // 3. Check for uncommitted changes in both worktrees
   if (await hasUncommittedChanges(mainWorktree)) {
-    console.error("Error: Main worktree has uncommitted changes. Please commit or stash them first.");
-    process.exit(1);
+    throw new GrindUserError("Main worktree has uncommitted changes. Please commit or stash them first.");
   }
   if (await hasUncommittedChanges(worktreePath)) {
-    console.error(`Error: Project '${projectName}' has uncommitted changes. Please commit or stash them first.`);
-    process.exit(1);
+    throw new GrindUserError(`Project '${projectName}' has uncommitted changes. Please commit or stash them first.`);
   }
 
   // 4. If a URL was provided, record the publication in .project.json and commit
   if (options?.url) {
     const config = await readProjectConfig(workspaceRoot, projectName);
     if (!config) {
-      console.error(`Error: Could not read .project.json for project '${projectName}'.`);
-      process.exit(1);
+      throw new GrindUserError(`Could not read .project.json for project '${projectName}'.`);
     }
 
     config.publications = config.publications ?? [];
@@ -59,9 +56,8 @@ export async function publishProject(
   // 5. Switch to main branch in grind/ worktree
   try {
     await $`git -C ${mainWorktree} switch main`.quiet();
-  } catch (error) {
-    console.error("Error: Could not switch to main branch. Is it checked out in another worktree?");
-    process.exit(1);
+  } catch {
+    throw new GrindSystemError("Could not switch to main branch. Is it checked out in another worktree?");
   }
 
   // 6. Merge project branch into main
@@ -71,9 +67,8 @@ export async function publishProject(
   try {
     await $`git -C ${mainWorktree} merge ${projectName}`.quiet();
     console.log("Merge completed successfully.");
-  } catch (error) {
-    console.error(`Error: Merge failed. Please resolve conflicts manually in ${mainWorktree}`);
-    process.exit(1);
+  } catch {
+    throw new GrindSystemError(`Merge failed. Please resolve conflicts manually in ${mainWorktree}`);
   }
 
   // 7. If -d or -D flag: remove worktree (and optionally branch)
