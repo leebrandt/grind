@@ -6,8 +6,8 @@ import { $ } from "bun";
 import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
-import { hasUncommittedChanges } from "../utils/git.js";
-import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
+import { getDefaultBranch, hasUncommittedChanges } from "../utils/git.js";
+import { readGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
@@ -53,16 +53,20 @@ export async function publishProject(
     console.log(`  - Recorded publication: ${options.url}`);
   }
 
-  // 5. Switch to main branch in grind/ worktree
+  // 5. Determine default branch name
+  const config = await readGrindConfig(mainWorktree);
+  const defaultBranch = await getDefaultBranch(bareRepo, config);
+
+  // 6. Switch to default branch in grind/ worktree
   try {
-    await $`git -C ${mainWorktree} switch main`.quiet();
+    await $`git -C ${mainWorktree} switch ${defaultBranch}`.quiet();
   } catch {
-    throw new GrindSystemError("Could not switch to main branch. Is it checked out in another worktree?");
+    throw new GrindSystemError(`Could not switch to ${defaultBranch} branch. Is it checked out in another worktree?`);
   }
 
-  // 6. Merge project branch into main
+  // 7. Merge project branch into default branch
   console.log(`Publishing project '${projectName}'...`);
-  console.log(`Merging branch '${projectName}' into main...`);
+  console.log(`Merging branch '${projectName}' into ${defaultBranch}...`);
 
   try {
     await $`git -C ${mainWorktree} merge ${projectName}`.quiet();
@@ -71,7 +75,7 @@ export async function publishProject(
     throw new GrindSystemError(`Merge failed. Please resolve conflicts manually in ${mainWorktree}`);
   }
 
-  // 7. If -d or -D flag: remove worktree (and optionally branch)
+  // 8. If -d or -D flag: remove worktree (and optionally branch)
   if (options?.deleteWorktree || options?.deleteBranch) {
     console.log("\nCleaning up worktree...");
     await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
@@ -84,7 +88,7 @@ export async function publishProject(
 
     console.log(`\nProject '${projectName}' published and archived.`);
   } else {
-    console.log(`\nProject '${projectName}' published to main branch.`);
+    console.log(`\nProject '${projectName}' published to ${defaultBranch} branch.`);
     console.log("Worktree and branch preserved for future work.");
   }
 }

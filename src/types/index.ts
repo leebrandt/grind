@@ -53,6 +53,7 @@ export interface GrindConfig {
     roundTo: RoundTo;
     defaultRate: number;
   };
+  defaultBranch?: string; // Custom default branch name (default: "main")
   projectTypes?: string[]; // Override default project types
   my?: ProfessionalInfo;
   currency?: string;
