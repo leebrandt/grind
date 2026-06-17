@@ -24,7 +24,7 @@ import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
 import { cancelProject } from "./commands/cancel.js";
 import { invoiceProject } from "./commands/invoice.js";
-import { editIdea } from "./commands/edit.js";
+import { editIdea, editProject } from "./commands/edit.js";
 import { openCode } from "./commands/code.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
@@ -215,17 +215,26 @@ program
     await listProjects();
   });
 
-// grind work "project" [-q|--quiet]
+// grind work <project> [-c] [-q] [-s]
 program
   .command("work <project>")
   .description("Start working on a project (starts timer, opens editor)")
+  .option("-c, --code", "Open code directory instead of project directory")
   .option("-q, --quiet", "Open editor without starting a timer")
-  .action(async (project: string, options: { quiet?: boolean }) => {
-    await workStart(project, options);
-  });
+  .option("-s, --save", "Save work (end timer, commit)")
+  .action(
+    async (
+      project: string,
+      options: { code?: boolean; quiet?: boolean; save?: boolean },
+    ) => {
+      await workStart(project, options);
+    },
+  );
 
-// grind edit idea <number>
-const editCmd = program.command("edit").description("Open files in editor");
+// grind edit [target] — opens project writing dir or idea
+const editCmd = program
+  .command("edit [target]")
+  .description("Open a project or idea in editor");
 
 editCmd
   .command("idea <number>")
@@ -233,6 +242,14 @@ editCmd
   .action(async (number: string) => {
     await editIdea(number);
   });
+
+editCmd.action(async (target?: string) => {
+  if (!target) {
+    editCmd.help();
+  } else {
+    await editProject(target);
+  }
+});
 
 // grind code <project>
 program
@@ -242,14 +259,20 @@ program
     await openCode(project);
   });
 
-// grind save "project"
+// grind save "project" [-q] [-t <hours>]
 program
   .command("save <project>")
   .description("Save work on a project (stops timer, commits changes)")
   .option("-q, --quiet", "Use auto-generated commit message (quick save)")
-  .action(async (project: string, options: { quiet?: boolean }) => {
-    await save(project, options);
-  });
+  .option(
+    "-t, --time <hours>",
+    "Backfill: set session end time to start + N hours",
+  )
+  .action(
+    async (project: string, options: { quiet?: boolean; time?: string }) => {
+      await save(project, options);
+    },
+  );
 
 // grind publish <name> [-d] [-D] [-u <url>]
 program

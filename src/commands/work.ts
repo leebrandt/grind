@@ -6,55 +6,65 @@ import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
-import { getCurrentTimestamp } from "../utils/time.js";
-import type { Session } from "../types/index.js";
+import { getActiveSession, startSession } from "../utils/session.js";
 import { GrindUserError } from "../utils/errors.js";
 import { openEditorDetached } from "../utils/editor.js";
+import { save } from "./save.js";
 
-/**
- * Start working on a project
- * grind work "project-name" [-q|--quiet]
- */
-export async function workStart(projectName: string, options?: { quiet?: boolean }): Promise<void> {
+export async function workStart(
+  projectName: string,
+  options?: { code?: boolean; quiet?: boolean; save?: boolean },
+): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
-  // Verify project worktree exists
   const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     throw new GrindUserError(`Project '${projectName}' does not exist.`);
   }
 
-  if (!options?.quiet) {
-    const config = await readProjectConfig(workspaceRoot, projectName);
-    if (!config) {
-      throw new GrindUserError(`Could not read .project.json for '${projectName}'.`);
+  if (options?.save) {
+    if (options.code || options.quiet) {
+      throw new GrindUserError("Cannot combine -s with -c or -q flags.");
     }
+    await save(projectName, options);
+    return;
+  }
 
-    // Check for active session - keep it open if exists (orphaned session)
-    const activeSession = config.time.find(s => s.end === null);
+  const config = await readProjectConfig(workspaceRoot, projectName);
+  if (!config) {
+    throw new GrindUserError(`Could not read .project.json for '${projectName}'.`);
+  }
 
+  let targetDir: string;
+  if (options?.code) {
+    if (!config.code) {
+      throw new GrindUserError(
+        `No code directory set for '${projectName}'. Run:\n  grind config -p ${projectName} code <directory>`,
+      );
+    }
+    targetDir = path.isAbsolute(config.code)
+      ? config.code
+      : path.join(worktreePath, config.code);
+    if (!(await fileExists(targetDir))) {
+      throw new GrindUserError(`Code directory '${targetDir}' does not exist.`);
+    }
+  } else {
+    targetDir = path.join(worktreePath, "projects", projectName);
+  }
+
+  if (!options?.quiet) {
+    const activeSession = getActiveSession(config);
     if (activeSession) {
       console.log(`Continuing session on '${projectName}'`);
       console.log(`Session started: ${activeSession.start}`);
     } else {
-      // Add new session only if no orphaned session
-      const newSession: Session = {
-        start: getCurrentTimestamp(),
-        end: null,
-        duration: 0,
-        rounded: 0
-      };
-      config.time.push(newSession);
-
+      const newSession = startSession(config);
       console.log(`Started work session on '${projectName}'`);
       console.log(`Time started: ${newSession.start}`);
     }
 
-    // Write updated config
     await writeProjectConfig(workspaceRoot, projectName, config);
   }
 
-  // Open editor in project directory
-  const projectDir = path.join(worktreePath, "projects", projectName);
-  openEditorDetached(projectDir);
+  await openEditorDetached(targetDir);
 }

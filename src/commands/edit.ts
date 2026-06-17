@@ -7,6 +7,7 @@ import { requireWorkspace } from "../utils/workspace.js";
 import { getIdeaByNumber } from "../utils/files.js";
 import { GrindUserError } from "../utils/errors.js";
 import { openEditor } from "../utils/editor.js";
+import { workStart } from "./work.js";
 
 /**
  * Open an idea file in $EDITOR
@@ -27,4 +28,12 @@ export async function editIdea(ideaNumber: string): Promise<void> {
 
   const filepath = path.join(mainWorktree, "ideas", idea.filename);
   await openEditor(filepath);
+}
+
+/**
+ * Open a project's writing directory in editor (no timer)
+ * grind edit <project>
+ */
+export async function editProject(projectName: string): Promise<void> {
+  await workStart(projectName, { quiet: true });
 }
