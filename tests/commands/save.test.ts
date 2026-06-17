@@ -1,4 +1,13 @@
 import { save } from "../../src/commands/save.js";
+import { GrindUserError } from "../../src/utils/errors.js";
+
+const mockReadProjectConfig = jest.fn();
+const mockWriteProjectConfig = jest.fn().mockResolvedValue(undefined);
+const mockGetActiveSession = jest.fn();
+const mockEndSession = jest.fn();
+const mockGitCommit = jest.fn().mockResolvedValue(undefined);
+const mockGitCommitInteractive = jest.fn().mockResolvedValue(undefined);
+const mockHasUncommittedChanges = jest.fn().mockResolvedValue(true);
 
 jest.mock("../../src/utils/workspace.js", () => ({
   requireWorkspace: jest.fn().mockResolvedValue({
@@ -6,29 +15,26 @@ jest.mock("../../src/utils/workspace.js", () => ({
   }),
 }));
 jest.mock("../../src/utils/config.js", () => ({
-  readProjectConfig: jest
-    .fn()
-    .mockResolvedValue({
-      name: "test-project",
-      idea: "Test",
-      time: [],
-      billing: { roundTo: "quarter-hour", rate: 150 },
-    }),
-  writeProjectConfig: jest.fn().mockResolvedValue(undefined),
+  readProjectConfig: (...args: unknown[]) => mockReadProjectConfig(...args),
+  writeProjectConfig: (...args: unknown[]) => mockWriteProjectConfig(...args),
 }));
 jest.mock("../../src/utils/session.js", () => ({
-  getActiveSession: jest.fn().mockReturnValue(null),
-  endSession: jest.fn().mockReturnValue(undefined),
+  getActiveSession: (...args: unknown[]) => mockGetActiveSession(...args),
+  endSession: (...args: unknown[]) => mockEndSession(...args),
 }));
 jest.mock("../../src/utils/git.js", () => ({
-  gitCommit: jest.fn().mockResolvedValue(undefined),
-  gitCommitInteractive: jest.fn().mockResolvedValue(undefined),
-  hasUncommittedChanges: jest.fn().mockResolvedValue(true),
+  gitCommit: (...args: unknown[]) => mockGitCommit(...args),
+  gitCommitInteractive: (...args: unknown[]) => mockGitCommitInteractive(...args),
+  hasUncommittedChanges: (...args: unknown[]) => mockHasUncommittedChanges(...args),
 }));
 jest.mock("../../src/utils/prompts.js");
 
-import { confirmOrExit } from "../../src/utils/prompts.js";
-import { gitCommitInteractive, gitCommit } from "../../src/utils/git.js";
+const baseConfig = {
+  name: "test-project",
+  idea: "Test",
+  time: [],
+  billing: { roundTo: "quarter-hour", rate: 150 },
+};
 
 describe("save", () => {
   const projectName = "test-project";
@@ -36,21 +42,79 @@ describe("save", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(console, "log").mockImplementation(() => {});
+    mockReadProjectConfig.mockResolvedValue(baseConfig);
+    mockGetActiveSession.mockReturnValue(null);
+    mockEndSession.mockReturnValue(undefined);
   });
 
-  it("should auto-commit with generated message when yes flag is true", async () => {
-    await save(projectName, { yes: true });
-    expect(gitCommitInteractive).not.toHaveBeenCalled();
-    expect(gitCommit).toHaveBeenCalledTimes(1);
-    expect(gitCommit).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.stringContaining("Save"),
-    );
+  describe("auto-commit behavior", () => {
+    it("should auto-commit with generated message when yes flag is true", async () => {
+      await save(projectName, { yes: true });
+      expect(mockGitCommitInteractive).not.toHaveBeenCalled();
+      expect(mockGitCommit).toHaveBeenCalledTimes(1);
+      expect(mockGitCommit).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining("Save"),
+      );
+    });
+
+    it("should open interactive commit when no quiet or yes flag", async () => {
+      await save(projectName);
+      expect(mockGitCommitInteractive).toHaveBeenCalledTimes(1);
+      expect(mockGitCommit).not.toHaveBeenCalled();
+    });
   });
 
-  it("should open interactive commit when no quiet or yes flag", async () => {
-    await save(projectName);
-    expect(gitCommitInteractive).toHaveBeenCalledTimes(1);
-    expect(gitCommit).not.toHaveBeenCalled();
+  describe("backfill time (-t flag)", () => {
+    it("should throw GrindUserError when -t is not a positive number", async () => {
+      await expect(save(projectName, { time: "0" })).rejects.toThrow(GrindUserError);
+      await expect(save(projectName, { time: "0" })).rejects.toThrow(
+        "Backfill time (-t) must be a positive number",
+      );
+    });
+
+    it("should throw GrindUserError when -t is negative", async () => {
+      await expect(save(projectName, { time: "-1" })).rejects.toThrow(GrindUserError);
+    });
+
+    it("should throw GrindUserError when -t is NaN", async () => {
+      await expect(save(projectName, { time: "abc" })).rejects.toThrow(GrindUserError);
+    });
+
+    it("should calculate endTime based on active session start and -t hours", async () => {
+      mockGetActiveSession.mockReturnValue({
+        start: "2024-01-15T10:00:00Z",
+        end: null,
+        duration: 0,
+        rounded: 0,
+      });
+      mockEndSession.mockReturnValue({
+        start: "2024-01-15T10:00:00Z",
+        end: "2024-01-15T12:30:00Z",
+        duration: 9000,
+        rounded: 9000,
+      });
+      await save(projectName, { time: "2.5" });
+      expect(mockEndSession).toHaveBeenCalledWith(
+        expect.any(Object),
+        "2024-01-15T12:30:00.000Z",
+      );
+    });
+
+    it("should still save when -t is given but no active session", async () => {
+      mockGetActiveSession.mockReturnValue(null);
+      await save(projectName, { time: "1" });
+      expect(mockEndSession).toHaveBeenCalled();
+    });
+  });
+
+  describe("error handling", () => {
+    it("should throw when project config cannot be read", async () => {
+      mockReadProjectConfig.mockResolvedValue(null);
+      await expect(save(projectName)).rejects.toThrow(GrindUserError);
+      await expect(save(projectName)).rejects.toThrow(
+        "Could not read .project.json for 'test-project'",
+      );
+    });
   });
 });
