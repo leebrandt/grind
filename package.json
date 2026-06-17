@@ -1,6 +1,6 @@
 {
   "name": "grind",
-  "version": "0.6.85",
+  "version": "0.6.86",
   "description": "CLI tool for managing creative/technical projects from idea to publication",
   "type": "module",
   "main": "src/index.ts",

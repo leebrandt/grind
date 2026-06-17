@@ -2,11 +2,64 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { getFirstCommitDate } from "../../src/utils/git.ts";
+import { getDefaultBranch, getFirstCommitDate } from "../../src/utils/git.ts";
+import type { GrindConfig } from "../../src/types/index.js";
 
 jest.mock("bun");
 
 const mock$ = jest.requireMock("bun").$ as jest.Mock;
+
+describe("getDefaultBranch", () => {
+  const bareRepoPath = "/fake/repo.git";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mock$.mockImplementation(() => ({
+      quiet: jest.fn().mockResolvedValue({ stdout: Buffer.from("") }),
+    }));
+  });
+
+  it("returns config value when set", async () => {
+    const config: GrindConfig = {
+      billing: { roundTo: "quarter-hour", defaultRate: 150 },
+      defaultBranch: "trunk",
+    };
+    const result = await getDefaultBranch(bareRepoPath, config);
+    expect(result).toBe("trunk");
+  });
+
+  it("falls back to detected branch from git symbolic-ref", async () => {
+    mock$.mockImplementation(() => ({
+      quiet: jest.fn().mockResolvedValue({
+        stdout: Buffer.from("refs/heads/develop\n"),
+      }),
+    }));
+    const result = await getDefaultBranch(bareRepoPath);
+    expect(result).toBe("develop");
+  });
+
+  it("falls back to main when neither config nor symbolic-ref is available", async () => {
+    mock$.mockImplementation(() => ({
+      quiet: jest.fn().mockRejectedValue(new Error("not a git repository")),
+    }));
+    const result = await getDefaultBranch(bareRepoPath);
+    expect(result).toBe("main");
+  });
+
+  it("prioritizes config over git symbolic-ref", async () => {
+    const config: GrindConfig = {
+      billing: { roundTo: "quarter-hour", defaultRate: 150 },
+      defaultBranch: "primary",
+    };
+    mock$.mockImplementation(() => ({
+      quiet: jest.fn().mockResolvedValue({
+        stdout: Buffer.from("refs/heads/main\n"),
+      }),
+    }));
+    const result = await getDefaultBranch(bareRepoPath, config);
+    expect(result).toBe("primary");
+  });
+});
 
 describe("getFirstCommitDate", () => {
   const repoPath = "/fake/repo.git";

@@ -5,7 +5,7 @@
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { GrindConfig } from "../types/index.js";
-import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit } from "../utils/git.js";
+import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit, getDefaultBranch } from "../utils/git.js";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError } from "../utils/errors.js";
 
@@ -43,15 +43,19 @@ export async function init(): Promise<void> {
   console.log("Creating bare repository...");
   await gitInit(bareRepoPath);
 
-  // 2. Create initial commit (required for worktrees)
+  // 2. Determine default branch name
+  const defaultBranch = await getDefaultBranch(bareRepoPath);
+  console.log(`Using branch '${defaultBranch}' as default...`);
+
+  // 3. Create initial commit (required for worktrees)
   console.log("Creating initial commit...");
-  await gitInitialCommit(bareRepoPath);
+  await gitInitialCommit(bareRepoPath, defaultBranch);
 
-  // 3. Add main worktree
+  // 4. Add main worktree
   console.log("Creating main worktree (grind/)...");
-  await gitAddWorktree(bareRepoPath, mainWorktreePath, "main");
+  await gitAddWorktree(bareRepoPath, mainWorktreePath, defaultBranch);
 
-  // 4. Create structure in main worktree
+  // 5. Create structure in main worktree
   console.log("Setting up workspace structure...");
   await mkdir(path.join(mainWorktreePath, "ideas"), { recursive: true });
   await mkdir(path.join(mainWorktreePath, "projects"), { recursive: true });
@@ -61,7 +65,7 @@ export async function init(): Promise<void> {
     "utf-8"
   );
 
-  // 5. Commit the structure
+  // 6. Commit the structure
   console.log("Committing initial structure...");
   await gitCommit(mainWorktreePath, "Initialize grind workspace");
 
