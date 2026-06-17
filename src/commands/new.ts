@@ -3,8 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { tmpdir } from "node:os";
-import { execSync } from "node:child_process";
 import { mkdir, writeFile, unlink, readFile } from "node:fs/promises";
 import { $ } from "bun";
 import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
@@ -17,19 +15,10 @@ import { parseRepoUrl } from "../utils/repo.js";
 import { listIdeas } from "./list.js";
 import { GrindUserError } from "../utils/errors.js";
 import { getIdeasDirPath, getBareRepoPath, getProjectWorktreePath, getProjectConfigDirPath, getProjectConfigPath } from "../utils/paths.js";
+import { editTempFile } from "../utils/editor.js";
 
-/**
- * Open editor to get a message from the user
- */
 async function getMessageFromEditor(prompt: string): Promise<string | null> {
-  const tmpFile = path.join(tmpdir(), `grind-${Date.now()}.md`);
-  await writeFile(tmpFile, `\n# ${prompt} (lines starting with # are ignored)\n`, "utf-8");
-
-  const editor = process.env.EDITOR || process.env.VISUAL || "vi";
-  execSync(`${editor} ${tmpFile}`, { stdio: "inherit" });
-
-  const content = await readFile(tmpFile, "utf-8");
-  await unlink(tmpFile);
+  const content = await editTempFile("grind", `\n# ${prompt} (lines starting with # are ignored)\n`);
 
   const message = content
     .split("\n")

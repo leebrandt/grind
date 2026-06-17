@@ -17,6 +17,12 @@ sudo mv grind /usr/local/bin/
 
 ## Usage
 
+All commands that open an editor respect `$EDITOR` or `$VISUAL` (fallback: `vi`).
+Set your preferred editor in your shell config, e.g.:
+```bash
+export EDITOR=nvim    # or code, emacs, etc.
+```
+
 ```bash
 # Initialize a workspace (in ~/work or similar)
 cd ~/work

@@ -4,9 +4,9 @@
 
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
-import { spawn } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 import { getJournalDirPath } from "../utils/paths.js";
+import { openEditorDetached } from "../utils/editor.js";
 
 /**
  * Open today's journal entry in nvim
@@ -21,14 +21,5 @@ export async function journal(): Promise<void> {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const filePath = path.join(journalDir, `${today}.md`);
 
-  const editorCmd = process.env.EDITOR || process.env.VISUAL || "vi";
-  const editor = spawn(editorCmd, [filePath], {
-    stdio: "inherit",
-  });
-
-  editor.on("close", (code) => {
-    if (code !== 0) {
-      console.error(`Editor exited with code ${code}`);
-    }
-  });
+  openEditorDetached(filePath);
 }

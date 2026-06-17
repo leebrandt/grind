@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
@@ -11,6 +10,7 @@ import { getCurrentTimestamp } from "../utils/time.js";
 import type { Session } from "../types/index.js";
 import { GrindUserError } from "../utils/errors.js";
 import { getProjectWorktreePath, getProjectFilesPath } from "../utils/paths.js";
+import { openEditorDetached } from "../utils/editor.js";
 
 /**
  * Start working on a project
@@ -57,17 +57,5 @@ export async function workStart(projectName: string, options?: { quiet?: boolean
 
   // Open editor in project directory
   const projectDir = getProjectFilesPath(workspaceRoot, projectName);
-
-  // Spawn editor
-  const editorCmd = process.env.EDITOR || process.env.VISUAL || "vi";
-  const editor = spawn(editorCmd, ["."], {
-    cwd: projectDir,
-    stdio: "inherit"
-  });
-
-  editor.on("close", (code) => {
-    if (code !== 0) {
-      console.error(`Editor exited with code ${code}`);
-    }
-  });
+  openEditorDetached(projectDir);
 }
