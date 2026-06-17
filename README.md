@@ -51,20 +51,35 @@ grind new project "rust-memory-management" 0 -t blog
 # List projects
 grind list projects           # or: grind projects
 
-# Start working (starts timer, opens nvim)
+# Start working (starts timer, opens editor)
 grind work rust-memory-management
-grind work rust-memory-management -q  # Start session without opening editor
+grind work rust-memory-management -c  # Open code directory instead of project directory
+grind work rust-memory-management -q  # Open editor without starting a timer
+grind work rust-memory-management -s  # Save work (end timer, commit, push)
 
 # Open editor without starting a timer
-grind edit rust-memory-management
+grind edit rust-memory-management       # Open project writing directory
+grind edit idea 2                        # Open an idea file in $EDITOR
+
+# Open code editor in project's code directory (no timer)
+grind code rust-memory-management
 
 # Cancel (abandon) a project
 grind cancel rust-memory-management
 grind cancel rust-memory-management -f  # Force even with uncommitted changes
+grind cancel rust-memory-management -y  # Skip confirmation prompt
 
 # Save work (stops timer, commits changes)
 grind save rust-memory-management
 grind save rust-memory-management -q  # Quick save with auto-generated commit message
+grind save rust-memory-management -t 2.5  # Backfill: end session at start + 2.5h
+grind save rust-memory-management -y  # Skip interactive commit (same as -q)
+
+# Show project info
+grind show rust-memory-management          # Print the idea
+grind show rust-memory-management -s       # Show session details
+grind show rust-memory-management -b       # Show billing summary
+grind show rust-memory-management --config # Show raw config JSON
 
 # Project dashboard (shows all projects with time, commits, issues)
 grind status
@@ -72,25 +87,26 @@ grind status
 # Generate invoice for unbilled sessions
 grind invoice rust-memory-management
 
-# Open today's journal entry
-grind journal
-
 # Create issues/features on GitHub or GitLab (requires 'repo' config)
 grind new issue my-project -m "Bug in login"       # Create issue
 grind new feature my-project -m "Add dark mode"     # Create feature request
 grind new issue my-project                          # Opens editor for message
 
-# Publish project (merge to main)
+# Publish project (merge to default branch)
 grind publish rust-memory-management
-grind publish rust-memory-management -d   # Also delete worktree
-grind publish rust-memory-management -D   # Delete worktree and branch
+grind publish rust-memory-management -d   # Also delete worktree (prompts for confirmation)
+grind publish rust-memory-management -D   # Delete worktree and branch (prompts for confirmation)
+grind publish rust-memory-management -D -y  # Skip confirmation prompt
+grind publish rust-memory-management -u https://example.com/post  # Record publication URL
 
 # Configuration
 grind config -g billing.defaultRate 125   # Set workspace default rate
 grind config -g billing.roundTo half-hour # Set workspace rounding
 grind config -g projectTypes "blog,webapp,video,podcast"  # Override project types
+grind config -g defaultBranch main        # Set custom default branch name
 grind config billing.rate 85              # Set project-specific rate
 grind config -p my-project repo git@github.com:owner/repo.git  # Set project repo
+grind config -p my-project code src                          # Set code directory
 grind config -p my-project longTerm true                      # Mark as long-running (shows ★)
 grind config -g --list                    # Show workspace config
 grind config --list                       # Show project config
@@ -103,8 +119,8 @@ Uses git worktrees to isolate each project while sharing history:
 ```
 ~/work/                          # workspace root (run grind init here)
 ├── .grind.repo.git/             # bare repo (shared git database)
-├── grind/                       # main worktree (tracks "main" branch)
-│   ├── .grind.json              # workspace config (billing defaults)
+├── grind/                       # main worktree (default branch)
+│   ├── .grind.json              # workspace config (billing defaults, defaultBranch, projectTypes, professional info)
 │   ├── ideas/                   # timestamped markdown files
 │   │   └── 20260125051508.md
 │   └── projects/                # project configs (shared across worktrees)
@@ -135,6 +151,7 @@ Each project is a git worktree with its own branch, all sharing the same underly
     "defaultRate": 150
   },
   "projectTypes": ["blog", "webapp", "video", "podcast", "saas"],
+  "defaultBranch": "main",
   "my": {
     "name": "Jane Doe",
     "company": "Acme LLC",
@@ -178,7 +195,14 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
     "email": "john@clientcorp.com"
   },
   "repo": "git@github.com:owner/repo.git",
-  "longTerm": false
+  "code": "src",
+  "longTerm": false,
+  "publications": [
+    {
+      "url": "https://example.com/my-post",
+      "publishedAt": "2024-01-20T10:00:00Z"
+    }
+  ]
 }
 ```
 
