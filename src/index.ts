@@ -30,7 +30,6 @@ import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
 import { showProject } from "./commands/show.js";
-import { promoteProject } from "./commands/promote.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -40,7 +39,10 @@ program
   .description(
     "CLI tool for managing creative/technical projects from idea to publication",
   )
-  .version(packageJson.version, "-v, --version", "Display version number");
+  .version(packageJson.version, "-v, --version", "Display version number")
+  .on("command:*", () => {
+    program.help({ error: true });
+  });
 
 // grind init
 program
@@ -315,14 +317,6 @@ program
       await cancelProject(name, options);
     },
   );
-
-// grind promote <name>
-program
-  .command("promote <name>")
-  .description("Trigger n8n promotion workflow for a published project")
-  .action(async (name: string) => {
-    await promoteProject(name);
-  });
 
 // grind reject idea [number]
 const rejectCmd = program
