@@ -29,7 +29,7 @@ import { openCode } from "./commands/code.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
-import { showIdea } from "./commands/idea.js";
+import { showProject } from "./commands/show.js";
 import { promoteProject } from "./commands/promote.js";
 import packageJson from "../package.json" with { type: "json" };
 
@@ -363,12 +363,15 @@ program
     await status();
   });
 
-// grind idea <project>
+// grind show <project>
 program
-  .command("idea <project>")
-  .description("Show the original idea file for a project")
-  .action(async (project: string) => {
-    await showIdea(project);
+  .command("show <project>")
+  .description("Show project info (default: idea). Flags: --sessions, --billing, --config")
+  .option("-s, --sessions", "Show session details")
+  .option("-b, --billing", "Show billing summary")
+  .option("-c, --config", "Show project config")
+  .action(async (project: string, options: { sessions?: boolean; billing?: boolean; config?: boolean }) => {
+    await showProject(project, options);
   });
 
 try {
