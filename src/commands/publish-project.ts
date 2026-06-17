@@ -9,15 +9,16 @@ import { fileExists } from "../utils/files.js";
 import { getDefaultBranch, hasUncommittedChanges } from "../utils/git.js";
 import { readGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
+import { confirmOrExit } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 /**
  * Publish a project by merging to main
- * grind publish project <name> [-d] [-D] [-u <url>]
+ * grind publish project <name> [-d] [-D] [-u <url>] [-y]
  */
 export async function publishProject(
   projectName: string,
-  options?: { deleteWorktree?: boolean; deleteBranch?: boolean; url?: string }
+  options?: { deleteWorktree?: boolean; deleteBranch?: boolean; url?: string; yes?: boolean }
 ): Promise<void> {
   // 1. Find workspace root and main worktree
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
@@ -78,6 +79,13 @@ export async function publishProject(
   // 8. If -d or -D flag: remove worktree (and optionally branch)
   if (options?.deleteWorktree || options?.deleteBranch) {
     console.log("\nCleaning up worktree...");
+
+    let deletePrompt = `Delete worktree for '${projectName}'?`;
+    if (options?.deleteBranch) {
+      deletePrompt += " This will also delete the branch.";
+    }
+    await confirmOrExit(deletePrompt, options?.yes ?? false);
+
     await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
     console.log(`  - Removed worktree: ${worktreePath}`);
 
