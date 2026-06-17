@@ -14,20 +14,18 @@ const mockUnlink = fs.unlink as jest.Mock;
 const mockSpawn = childProcess.spawn as jest.Mock;
 
 let mockOn: jest.Mock;
-let mockUnref: jest.Mock;
 
 function setupHandlers(code: number) {
   mockOn.mockImplementation((event: string, handler: (arg: unknown) => void) => {
     if (event === "close") handler(code);
-    return { on: mockOn, unref: mockUnref };
+    return { on: mockOn };
   });
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockOn = jest.fn();
-  mockUnref = jest.fn();
-  mockSpawn.mockReturnValue({ on: mockOn, unref: mockUnref });
+  mockSpawn.mockReturnValue({ on: mockOn });
   setupHandlers(0);
   mockWriteFile.mockResolvedValue(undefined);
   mockReadFile.mockResolvedValue("hello world");
@@ -63,7 +61,7 @@ describe("openEditor", () => {
   it("should reject on spawn error", async () => {
     mockOn.mockImplementation((event: string, handler: (err: Error) => void) => {
       if (event === "error") handler(new Error("ENOENT"));
-      return { on: mockOn, unref: mockUnref };
+      return { on: mockOn };
     });
     const { openEditor } = await import("../../src/utils/editor.js");
     await expect(openEditor("/some/file.md")).rejects.toThrow("Failed to open editor");
@@ -71,15 +69,11 @@ describe("openEditor", () => {
 });
 
 describe("openEditorDetached", () => {
-  it("should spawn with detached and unref", async () => {
+  it("should spawn the editor and return immediately", async () => {
     const { openEditorDetached, EDITOR } = await import("../../src/utils/editor.js");
     await openEditorDetached("/some/file.md");
 
-    expect(mockSpawn).toHaveBeenCalledWith(EDITOR, ["/some/file.md"], {
-      stdio: "inherit",
-      detached: true,
-    });
-    expect(mockUnref).toHaveBeenCalled();
+    expect(mockSpawn).toHaveBeenCalledWith(EDITOR, ["/some/file.md"], { stdio: "inherit" });
   });
 
   it("should return a resolved promise", async () => {

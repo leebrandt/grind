@@ -27,14 +27,7 @@ export function openEditor(filePath: string): Promise<void> {
 }
 
 export function openEditorDetached(filePath: string): Promise<void> {
-  const child = spawn(EDITOR, [filePath], {
-    stdio: "inherit",
-    detached: true,
-  });
-  child.unref();
-  child.on("error", (err) => {
-    console.error(`Failed to open editor: ${err.message}`);
-  });
+  spawn(EDITOR, [filePath], { stdio: "inherit" });
   return Promise.resolve();
 }
 
