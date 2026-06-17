@@ -14,6 +14,15 @@ bun run test             # Run tests (jest)
 
 Tests use Jest with `ts-jest`. Test files live in `tests/` mirroring the `src/` structure (e.g., `tests/utils/config.test.ts`).
 
+## Unit Testing Conventions
+
+1. **Pure functions get pure tests**: `time.ts`, `errors.ts`, `types/index.ts` — test inputs/outputs, no mocking needed
+2. **Utility functions that interact with git/fs**: Mock at the bun shell or fs level only (`jest.mock("bun")` / `jest.mock("node:fs/promises")`), not at the module level
+3. **Commands that use utilities**: Test the utility logic, not the glue. If a command file is thin enough (delegating to utils), testing the util covers the behavior
+4. **No process.exit in tests**: Catch thrown `GrindError` and assert on message + exit code
+5. **Snapshot testing**: For formatted output (table layouts in list, status), use Jest snapshots to catch unintended display changes
+6. **Test file location**: Mirror `src/` structure in `tests/` (existing convention), e.g. `tests/utils/config.test.ts`
+
 ## Architecture
 
 **Runtime:** TypeScript on Bun. Compiles to a single standalone binary via `bun build --compile`. Uses Bun's shell (`$` from "bun") for running git commands.
