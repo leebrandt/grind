@@ -29,8 +29,7 @@ import { openCode } from "./commands/code.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
-import { showIdea } from "./commands/idea.js";
-import { promoteProject } from "./commands/promote.js";
+import { showProject } from "./commands/show.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -40,7 +39,10 @@ program
   .description(
     "CLI tool for managing creative/technical projects from idea to publication",
   )
-  .version(packageJson.version, "-v, --version", "Display version number");
+  .version(packageJson.version, "-v, --version", "Display version number")
+  .on("command:*", () => {
+    program.help({ error: true });
+  });
 
 // grind init
 program
@@ -307,14 +309,6 @@ program
     await cancelProject(name, options);
   });
 
-// grind promote <name>
-program
-  .command("promote <name>")
-  .description("Trigger n8n promotion workflow for a published project")
-  .action(async (name: string) => {
-    await promoteProject(name);
-  });
-
 // grind reject idea [number]
 const rejectCmd = program
   .command("reject")
@@ -363,12 +357,15 @@ program
     await status();
   });
 
-// grind idea <project>
+// grind show <project>
 program
-  .command("idea <project>")
-  .description("Show the original idea file for a project")
-  .action(async (project: string) => {
-    await showIdea(project);
+  .command("show <project>")
+  .description("Show project info (default: idea). Flags: --sessions, --billing, --config")
+  .option("-s, --sessions", "Show session details")
+  .option("-b, --billing", "Show billing summary")
+  .option("-c, --config", "Show project config")
+  .action(async (project: string, options: { sessions?: boolean; billing?: boolean; config?: boolean }) => {
+    await showProject(project, options);
   });
 
 try {
