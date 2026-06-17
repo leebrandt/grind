@@ -1,18 +1,18 @@
-#  Grind: A Terminal-First Workflow for Creative Projects
+# Grind: A Terminal-First Workflow for Creative Projects
 
-I've got ideas all the time. In the moment they can seem great, but after I've pondered them for a day or two, I realize it's either a dumb idea, not something I want to pursue, or not something I should do. For example, I had an idea for a cookbook, but I don't really cook. Even if it was a good idea, I probably *shouldn't* be the one to write it.
+I've got ideas all the time. In the moment they can seem great, but after I've pondered them for a day or two, I realize it's either a dumb idea, not something I want to pursue, or not something I should do. For example, I had an idea for a cookbook, but I don't really cook. Even if it was a good idea, I probably _shouldn't_ be the one to write it.
 
 I needed some way to capture these ideas, regularly triage the ideas and either:
 
-* Take that idea and run with it. Start a new project.
-* Donate the idea. If I think it's good, just not for me; put it on the HiP website's "Free Ideas" page.
-* Scrap it. It ain't worth the time. And maybe lay off the Gelato #41.
+- Take that idea and run with it. Start a new project.
+- Donate the idea. If I think it's good, just not for me; put it on the HiP website's "Free Ideas" page.
+- Scrap it. It ain't worth the time. And maybe lay off the Gelato #41.
 
 Then, if I start a project from one of those ideas, I want to track all the work I do on it. Easily get in and grind on a project, track the time I'm spending on the project, create an invoice for the project (if I end up getting paid work), and keep track of it all. Mostly so that I can keep from overcommitting, leaving unfinished projects from great ideas just because I forgot about it.
 
-I want it to be a command-line tool. I love the idea of staying in the terminal for as much of what I do as possible. Not just because I think it makes me look like a computer hacking wizard, but because when I narrow my focus to the terminal, it starts my mind down the path of narrowing my focus. Making it easier for me to get into that 'flow state' that we all seek, where the world around you just fades away and you're just 'in it'. 
+I want it to be a command-line tool. I love the idea of staying in the terminal for as much of what I do as possible. Not just because I think it makes me look like a computer hacking wizard, but because when I narrow my focus to the terminal, it starts my mind down the path of narrowing my focus. Making it easier for me to get into that 'flow state' that we all seek, where the world around you just fades away and you're just 'in it'.
 
-I'm hoping this system will facilitate getting into that place. The movie *Soul*'s **Astral Plane**. The easier my system can help me get there, the better.
+I'm hoping this system will facilitate getting into that place. The movie _Soul_'s **Astral Plane**. The easier my system can help me get there, the better.
 
 Here goes nothing...
 
@@ -110,20 +110,20 @@ This adds a timestamp to the "end" value of the open time session, and calculate
 
 It also stages and commits any changes to git. This way I never forget to close a work session's timer and lose track of the time. It checks to see if there are any changes to commit, first.
 
-## Did You Say, "Git *Worktrees*"? WTF Is That?
+## Did You Say, "Git _Worktrees_"? WTF Is That?
 
 I've got to make a whole separate blog post about Git worktrees, but it is changing how I see and use Git. Here are the basics of how they fit in to the Grind CLI.
 
 Worktrees are separate folders that are "tied" to a work branch. That's basically it.
 
-The `grind init` command creates a *bare* repository called `.grind.repo.git`. This is *just* the stuff that would be in the `.git` folder in a regular git repo. It helps coordinate all the changes between worktrees. It also creates a Git worktree named `grind` right next to it. This is the source of truth. Your 'main' branch.
+The `grind init` command creates a _bare_ repository called `.grind.repo.git`. This is _just_ the stuff that would be in the `.git` folder in a regular git repo. It helps coordinate all the changes between worktrees. It also creates a Git worktree named `grind` right next to it. This is the source of truth. Your 'main' branch.
 
-As I `grind new project my-project 2`, grind creates a new worktree with a folder that is a sibling to the `grind` and `.grind.repo.git` folders. 
+As I `grind new project my-project 2`, grind creates a new worktree with a folder that is a sibling to the `grind` and `.grind.repo.git` folders.
 
 I'm just sitting in the root workspace directory (wherever I ran `grind init`), and running `grind [command]`.
 
 ```
-grind ideas   // lists the current idea pool 
+grind ideas   // lists the current idea pool
 
 grind projects // list all my current projects
 
@@ -131,7 +131,7 @@ grind work my-project   // starts a work timer and opens NVIM in the project dir
 
 grind save my-project   // saves all my work and stops the timer
 
-grind publish my-project    // currently merges the worktree branch back into main 
+grind publish my-project    // currently merges the worktree branch back into main
 ```
 
 Each time I start a `new project` Grind creates a new worktree with the project name in a directory that is a sibling to my main worktree and the bare repo.
@@ -163,7 +163,6 @@ The `.project.json` in each project folder allows me to override that base billi
 
 I will eventually add more configurable stuff, like the default editor that opens when you run `grind work start "[project-name]"`, etc.
 
-
 ## Seeing Where I'm At (AKA Not Overcommitting)
 
 To keep me from overcommitting, I am adding some listing commands, like:
@@ -182,7 +181,6 @@ This lists all the current projects with some information about the project, lik
   svls-sst-sam-research          blog  4.0h (4.0h unbilled)              2  22h ago
   dogfood                        —     10.5h (10.5h unbilled)           18  40m ago
 ```
-
 
 This is the kind of information that can help me decide to continue or drop a project. It also lets me know I have four projects currently in flight. I probably shouldn't take on any more personal projects. I'm not going to build in a hard WIP limit right now, but if I start seeing ten projects in flight, that might be something I have to consider.
 
@@ -217,19 +215,18 @@ I also added a `grind status` command that lists the state the projects are in: 
 
 This lets me know I have work pending on my dogfood project (which is me using and developing the Grind CLI). I can run a `grind save dogfood` and it will stop the timer and commit those changes. For now...
 
-
 ## Coming Up, On Next Week's Episode Of Lost Causes
 
 I've also got some plans for a few more commands like:
 
 ```
-grind publish -hg "blog-post-project" 
+grind publish -hg "blog-post-project"
 ```
 
 For blog posts. Will copy them to my [Human In Progress](https://www.humaninprogress.live/) website (the -h) and to my [GarageMahal Studios](https://www.garagemahal.studio/) website (the -g).
 
 ```
-grind review "blog-post" 
+grind review "blog-post"
 ```
 
 Asks my writing AI Agent to review and give me a revised copy.
@@ -241,19 +238,17 @@ grind finalize "blog-post"
 Sends the final draft of a blog post to my editor AI agent, so it can learn which of its recommendations I kept and which ones I didn't.
 
 ```
-grind promo "blog-post" 
+grind promo "blog-post"
 ```
 
 Will read settings from .project.json in the blog-post folder which should have published URLs in them and kick off content promotion cycle with make.com.
 
-
 ## So Far, So Good, So NOW What?
 
-I'm liking it so far, and since I am building it myself, I can change it to suit my own workflow. It will definitely make me better at Git. It already has. I didn't know diddly about Git Worktrees, so when I learned about them I realized they might be the perfect fit for this use case. 
+I'm liking it so far, and since I am building it myself, I can change it to suit my own workflow. It will definitely make me better at Git. It already has. I didn't know diddly about Git Worktrees, so when I learned about them I realized they might be the perfect fit for this use case.
 
 I'm also writing the CLI in TypeScript with Bun, which has been a blast. Way easier than I expected (I let Opus 4.5 scaffold the project so I didn't have to go through the "how do you set up Bun" phase).
 
 Stay tuned for more tales from the weird side.
 
-
-
+Adding top the idea
