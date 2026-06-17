@@ -4,7 +4,7 @@
 
 import * as fs from "node:fs/promises";
 import path from "node:path";  
-import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfig } from "../../src/utils/config.ts";
+import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfig, resolveProjectConfig } from "../../src/utils/config.ts";
 
 jest.mock("node:fs/promises");
 
@@ -70,6 +70,57 @@ describe('grind config utilities', () => {
 
     it("should read the config from .project.json in the project workspace", () => {
       expect(fs.readFile).toHaveBeenCalledWith(projectConfigPath, "utf-8");
+    });
+  });
+
+  describe('the resolveProjectConfig function', () => {
+    const project = "my-project";
+    const projectWorktreeConfigPath = path.join(rootPath, project, "projects", project, ".project.json");
+    const mainWorktreeConfigPath = path.join(rootPath, "grind", "projects", project, ".project.json");
+    const projectConfig = {
+      name: project,
+      idea: "test idea",
+      time: [],
+      billing: { roundTo: "quarter-hour", rate: 150 }
+    };
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should return config from project worktree when it exists', async () => {
+      (fs.stat as jest.Mock).mockImplementation((p: string) =>
+        p === projectWorktreeConfigPath ? Promise.resolve() : Promise.reject(new Error("not found"))
+      );
+      (fs.readFile as jest.Mock).mockImplementation((p: string) =>
+        p === projectWorktreeConfigPath ? Promise.resolve(JSON.stringify(projectConfig)) : Promise.reject(new Error("not found"))
+      );
+
+      const result = await resolveProjectConfig(rootPath, project);
+      expect(result).not.toBeNull();
+      expect(result!.config.name).toBe(project);
+      expect(result!.sourcePath).toBe(projectWorktreeConfigPath);
+    });
+
+    it('should fall back to main worktree when project worktree does not exist', async () => {
+      (fs.stat as jest.Mock).mockImplementation((p: string) =>
+        p === mainWorktreeConfigPath ? Promise.resolve() : Promise.reject(new Error("not found"))
+      );
+      (fs.readFile as jest.Mock).mockImplementation((p: string) =>
+        p === mainWorktreeConfigPath ? Promise.resolve(JSON.stringify(projectConfig)) : Promise.reject(new Error("not found"))
+      );
+
+      const result = await resolveProjectConfig(rootPath, project);
+      expect(result).not.toBeNull();
+      expect(result!.config.name).toBe(project);
+      expect(result!.sourcePath).toBe(mainWorktreeConfigPath);
+    });
+
+    it('should return null when neither location has a config', async () => {
+      (fs.stat as jest.Mock).mockRejectedValue(new Error("not found"));
+
+      const result = await resolveProjectConfig(rootPath, project);
+      expect(result).toBeNull();
     });
   });
 
