@@ -5,6 +5,7 @@
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { $ } from "bun";
+import type { GrindConfig } from "../types/index.js";
 
 /**
  * Initialize a bare git repository (for use with worktrees)
@@ -35,10 +36,33 @@ export async function gitCommitInteractive(worktreePath: string): Promise<void> 
 }
 
 /**
+ * Resolve the default branch name for the workspace.
+ * Resolution order: explicit config > detected from bare repo > "main"
+ */
+export async function getDefaultBranch(
+  bareRepoPath: string,
+  config?: GrindConfig
+): Promise<string> {
+  if (config?.defaultBranch) {
+    return config.defaultBranch;
+  }
+
+  try {
+    const result = await $`git -C ${bareRepoPath} symbolic-ref HEAD`.quiet();
+    const ref = result.stdout.toString().trim();
+    if (ref.startsWith("refs/heads/")) {
+      return ref.substring("refs/heads/".length);
+    }
+  } catch {}
+
+  return "main";
+}
+
+/**
  * Create initial empty commit in a bare repo (required before adding worktrees)
  * Uses low-level git plumbing commands since bare repos have no working tree
  */
-export async function gitInitialCommit(repoPath: string): Promise<void> {
+export async function gitInitialCommit(repoPath: string, branchName: string = "main"): Promise<void> {
   // Create empty tree object
   const treeResult = await $`git -C ${repoPath} hash-object -t tree /dev/null`.quiet();
   const treeHash = treeResult.stdout.toString().trim();
@@ -47,8 +71,8 @@ export async function gitInitialCommit(repoPath: string): Promise<void> {
   const commitResult = await $`git -C ${repoPath} commit-tree ${treeHash} -m "Initial commit"`.quiet();
   const commitHash = commitResult.stdout.toString().trim();
 
-  // Update main branch to point to commit
-  await $`git -C ${repoPath} update-ref refs/heads/main ${commitHash}`.quiet();
+  // Update branch to point to commit
+  await $`git -C ${repoPath} update-ref refs/heads/${branchName} ${commitHash}`.quiet();
 }
 
 /**
