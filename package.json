@@ -1,10 +1,6 @@
 {
   "name": "grind",
-<<<<<<< HEAD
   "version": "0.7.0",
-=======
-  "version": "0.6.82",
->>>>>>> 0db134c (Shared project config resolution utility — eliminate duplicate worktree-fallback logic (closes #28))
   "description": "CLI tool for managing creative/technical projects from idea to publication",
   "type": "module",
   "main": "src/index.ts",
