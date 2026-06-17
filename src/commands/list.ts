@@ -6,6 +6,7 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { DIM, RED, RESET } from "../utils/colors.js";
+import { getIdeasDirPath } from "../utils/paths.js";
 import { timeAgo } from "../utils/time.js";
 import { collectProjects } from "../utils/project.js";
 import type { ProjectConfig } from "../types/index.js";
@@ -21,7 +22,7 @@ export async function listIdeas(options?: {
 }): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
-  const ideasDir = path.join(mainWorktree, "ideas");
+  const ideasDir = getIdeasDirPath(mainWorktree);
 
   // Get all files, sorted by filename (chronological)
   let files = await readdir(ideasDir);

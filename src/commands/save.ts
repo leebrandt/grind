@@ -2,19 +2,19 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getActiveSession, endSession } from "../utils/session.js";
 import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
 import { GrindUserError } from "../utils/errors.js";
+import { getProjectWorktreePath } from "../utils/paths.js";
 
 export async function save(
   projectName: string,
   options?: { quiet?: boolean; time?: string; yes?: boolean },
 ): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
-  const worktreePath = path.join(workspaceRoot, projectName);
+  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
 
   if (projectName === "grind") {
     console.log("Saving grind worktree...");

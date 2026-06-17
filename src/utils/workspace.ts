@@ -5,6 +5,7 @@
 import path from "node:path";
 import { fileExists } from "./files.js";
 import { GrindUserError } from "./errors.js";
+import { getMainWorktreePath, getGrindConfigPath, getBareRepoPath } from "./paths.js";
 
 /**
  * Derive the current project name from the working directory.
@@ -70,8 +71,8 @@ export async function findMainWorktree(startPath: string): Promise<string | null
   const workspaceRoot = await getWorkspaceRoot(startPath);
   if (!workspaceRoot) return null;
 
-  const mainWorktreePath = path.join(workspaceRoot, MAIN_WORKTREE_NAME);
-  const configPath = path.join(mainWorktreePath, CONFIG_FILE_NAME);
+  const mainWorktreePath = getMainWorktreePath(workspaceRoot);
+  const configPath = getGrindConfigPath(mainWorktreePath);
 
   if (await fileExists(configPath)) {
     return mainWorktreePath;
@@ -99,7 +100,7 @@ export async function requireWorkspace(): Promise<{
     throw new GrindUserError("Could not find main worktree.");
   }
 
-  const bareRepo = path.join(workspaceRoot, BARE_REPO_NAME);
+  const bareRepo = getBareRepoPath(workspaceRoot);
 
   return { workspaceRoot, mainWorktree, bareRepo };
 }

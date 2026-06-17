@@ -2,12 +2,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { GrindConfig } from "../types/index.js";
 import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit, getDefaultBranch } from "../utils/git.js";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError } from "../utils/errors.js";
+import {
+  getBareRepoPath,
+  getMainWorktreePath,
+  getIdeasDirPath,
+  getProjectsDirPath,
+  getGrindConfigPath,
+} from "../utils/paths.js";
 
 /**
  * Default workspace configuration
@@ -31,8 +37,8 @@ export const DEFAULT_GRIND_CONFIG: GrindConfig = {
  */
 export async function init(): Promise<void> {
   const cwd = process.cwd();
-  const bareRepoPath = path.join(cwd, ".grind.repo.git");
-  const mainWorktreePath = path.join(cwd, "grind");
+  const bareRepoPath = getBareRepoPath(cwd);
+  const mainWorktreePath = getMainWorktreePath(cwd);
 
   // Check if already initialized
   if (await fileExists(bareRepoPath)) {
@@ -57,10 +63,10 @@ export async function init(): Promise<void> {
 
   // 5. Create structure in main worktree
   console.log("Setting up workspace structure...");
-  await mkdir(path.join(mainWorktreePath, "ideas"), { recursive: true });
-  await mkdir(path.join(mainWorktreePath, "projects"), { recursive: true });
+  await mkdir(getIdeasDirPath(mainWorktreePath), { recursive: true });
+  await mkdir(getProjectsDirPath(mainWorktreePath), { recursive: true });
   await writeFile(
-    path.join(mainWorktreePath, ".grind.json"),
+    getGrindConfigPath(mainWorktreePath),
     JSON.stringify(DEFAULT_GRIND_CONFIG, null, 2),
     "utf-8"
   );

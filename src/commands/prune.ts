@@ -7,6 +7,7 @@ import { readdir, unlink } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { gitCommit } from "../utils/git.js";
 import { confirmOrExit } from "../utils/prompts.js";
+import { getIdeasDirPath } from "../utils/paths.js";
 
 /**
  * Prune rejected ideas by deleting them
@@ -15,7 +16,7 @@ import { confirmOrExit } from "../utils/prompts.js";
 export async function pruneIdeas(options?: { yes?: boolean }): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
-  const ideasDir = path.join(mainWorktree, "ideas");
+  const ideasDir = getIdeasDirPath(mainWorktree);
 
   // Get all files
   const files = await readdir(ideasDir);

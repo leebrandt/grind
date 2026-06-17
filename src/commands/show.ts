@@ -1,8 +1,8 @@
-import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { readProjectConfig } from "../utils/config.js";
 import { GrindUserError } from "../utils/errors.js";
+import { getProjectIdeaFilePath } from "../utils/paths.js";
 
 export interface ShowOptions {
   sessions?: boolean;
@@ -63,7 +63,7 @@ export async function showProject(projectName: string, options: ShowOptions = {}
     return;
   }
 
-  const ideaPath = path.join(workspaceRoot, projectName, "projects", projectName, "the-idea.md");
+  const ideaPath = getProjectIdeaFilePath(workspaceRoot, projectName);
   try {
     const content = await readFile(ideaPath, "utf-8");
     console.log(content);

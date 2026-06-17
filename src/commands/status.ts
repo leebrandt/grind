@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { $ } from "bun";
-import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { getCommitCount, getFirstCommitDate, getLastCommitDate } from "../utils/git.js";
 import { timeAgo, formatDate } from "../utils/time.js";

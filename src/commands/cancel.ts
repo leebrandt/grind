@@ -10,6 +10,7 @@ import { fileExists } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
 import { confirmOrExit } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
+import { getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
 
 /**
  * Cancel (abandon) a project
@@ -23,7 +24,7 @@ export async function cancelProject(
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
 
   // 2. Verify project worktree exists
-  const worktreePath = path.join(workspaceRoot, projectName);
+  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     throw new GrindUserError(`Project worktree '${projectName}' does not exist.`);
   }
@@ -68,7 +69,7 @@ export async function cancelProject(
   }
 
   // 6. Delete project config from main worktree
-  const projectConfigDir = path.join(mainWorktree, "projects", projectName);
+  const projectConfigDir = getProjectDirInMainPath(mainWorktree, projectName);
   if (await fileExists(projectConfigDir)) {
     await rm(projectConfigDir, { recursive: true });
     await gitCommit(mainWorktree, `Cancel project: ${projectName}`);

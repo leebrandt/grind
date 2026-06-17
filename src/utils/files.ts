@@ -5,6 +5,7 @@
 import { readdir, stat, readFile } from "node:fs/promises";
 import path from "node:path";
 import { findMainWorktree } from "./workspace.js";
+import { getIdeasDirPath } from "./paths.js";
 
 /**
  * Check if a file or directory exists
@@ -31,7 +32,7 @@ export async function getIdeaByNumber(
   const mainWorktree = await findMainWorktree(process.cwd());
   if (!mainWorktree) return null;
 
-  const ideasDir = path.join(mainWorktree, "ideas");
+  const ideasDir = getIdeasDirPath(mainWorktree);
   let files = await readdir(ideasDir);
   files.sort();
 
