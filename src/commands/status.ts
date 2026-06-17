@@ -11,7 +11,6 @@ import { timeAgo, formatDate } from "../utils/time.js";
 import { parseRepoUrl } from "../utils/repo.js";
 import { DIM, RED, GREEN, RESET } from "../utils/colors.js";
 import type { ProjectConfig } from "../types/index.js";
-import { getProjectConfigPath, getProjectWorktreePath } from "../utils/paths.js";
 
 interface ProjectRow {
   name: string;
@@ -68,7 +67,7 @@ export async function status(): Promise<void> {
   // Load project configs
   const projects: { config: ProjectConfig; name: string; branch: string }[] = [];
   for (const name of worktreeNames) {
-    const configPath = getProjectConfigPath(workspaceRoot, name);
+    const configPath = path.join(workspaceRoot, name, "projects", name, ".project.json");
     try {
       const content = await readFile(configPath, "utf-8");
       projects.push({ config: JSON.parse(content), name, branch: name });
@@ -85,7 +84,7 @@ export async function status(): Promise<void> {
   // Build rows in parallel
   const rowPromises = projects.map(async ({ config, name, branch }): Promise<ProjectRow> => {
     // Git queries
-    const worktreePath = getProjectWorktreePath(workspaceRoot, name);
+    const worktreePath = path.join(workspaceRoot, name);
     const [commitCount, firstCommitDate, lastCommitDate, issueCount, hasChanges] = await Promise.all([
       getCommitCount(bareRepo, branch),
       getFirstCommitDate(bareRepo, branch),

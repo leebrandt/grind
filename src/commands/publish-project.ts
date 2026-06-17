@@ -10,7 +10,6 @@ import { hasUncommittedChanges } from "../utils/git.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { getProjectWorktreePath } from "../utils/paths.js";
 
 /**
  * Publish a project by merging to main
@@ -24,7 +23,7 @@ export async function publishProject(
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
 
   // 2. Verify project worktree exists
-  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
+  const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     throw new GrindUserError(`Project worktree '${projectName}' does not exist.`);
   }

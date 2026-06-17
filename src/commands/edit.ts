@@ -3,10 +3,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { execSync } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 import { getIdeaByNumber } from "../utils/files.js";
 import { GrindUserError } from "../utils/errors.js";
+import { openEditor } from "../utils/editor.js";
 
 /**
  * Open an idea file in $EDITOR
@@ -26,6 +26,5 @@ export async function editIdea(ideaNumber: string): Promise<void> {
   }
 
   const filepath = path.join(mainWorktree, "ideas", idea.filename);
-  const editor = process.env.EDITOR || process.env.VISUAL || "vi";
-  execSync(`${editor} ${filepath}`, { stdio: "inherit" });
+  await openEditor(filepath);
 }

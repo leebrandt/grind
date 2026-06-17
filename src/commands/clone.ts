@@ -7,7 +7,6 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { getBareRepoPath, getMainWorktreePath, getGrindConfigPath, getProjectWorktreePath } from "../utils/paths.js";
 
 /**
  * Derive a directory name from a git URL
@@ -41,8 +40,8 @@ export async function clone(url: string, directory?: string): Promise<void> {
     try { await $`rm -rf ${targetDir}`.quiet(); } catch {}
   }
 
-  const bareRepoPath = getBareRepoPath(targetDir);
-  const mainWorktreePath = getMainWorktreePath(targetDir);
+  const bareRepoPath = path.join(targetDir, ".grind.repo.git");
+  const mainWorktreePath = path.join(targetDir, "grind");
 
   // 1. Create target directory
   console.log(`Creating workspace directory: ${dirName}/`);
@@ -81,7 +80,7 @@ export async function clone(url: string, directory?: string): Promise<void> {
   }
 
   // 6. Validate this is a grind workspace
-  const configPath = getGrindConfigPath(mainWorktreePath);
+  const configPath = path.join(mainWorktreePath, ".grind.json");
   if (!(await fileExists(configPath))) {
     await cleanup();
     throw new GrindUserError("Repository does not appear to be a grind workspace (.grind.json not found).");
@@ -94,7 +93,7 @@ export async function clone(url: string, directory?: string): Promise<void> {
   if (branches.length > 0) {
     console.log(`\nRestoring ${branches.length} project worktree(s)...`);
     for (const branch of branches) {
-      const worktreePath = getProjectWorktreePath(targetDir, branch);
+      const worktreePath = path.join(targetDir, branch);
       try {
         await $`git -C ${bareRepoPath} worktree add ${worktreePath} ${branch}`.quiet();
         console.log(`  - ${branch}/`);

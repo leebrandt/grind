@@ -8,7 +8,6 @@ import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp, calculateDuration, roundTimeByStrategy } from "../utils/time.js";
 import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
 import { GrindUserError } from "../utils/errors.js";
-import { getProjectWorktreePath } from "../utils/paths.js";
 
 /**
  * Save work on a project
@@ -22,7 +21,7 @@ import { getProjectWorktreePath } from "../utils/paths.js";
 export async function save(projectName: string, options?: { quiet?: boolean }): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
-  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
+  const worktreePath = path.join(workspaceRoot, projectName);
 
   // The 'grind' worktree is the main worktree with no .project.json —
   // just stage and commit, no time tracking or billing.

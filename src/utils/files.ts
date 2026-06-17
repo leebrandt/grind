@@ -5,7 +5,6 @@
 import { readdir, stat, readFile } from "node:fs/promises";
 import path from "node:path";
 import { findMainWorktree } from "./workspace.js";
-import { getIdeasDirPath } from "./paths.js";
 
 /**
  * Check if a file or directory exists
@@ -32,14 +31,16 @@ export async function getIdeaByNumber(
   const mainWorktree = await findMainWorktree(process.cwd());
   if (!mainWorktree) return null;
 
-  const ideasDir = getIdeasDirPath(mainWorktree);
+  const ideasDir = path.join(mainWorktree, "ideas");
   let files = await readdir(ideasDir);
   files.sort();
 
+  // Filter out rejected ideas unless explicitly requested
   if (!includeRejected) {
     files = files.filter(file => !file.startsWith("rejected-"));
   }
 
+  // Use 0-based indexing directly
   if (ideaNumber < 0 || ideaNumber >= files.length) {
     return null;
   }
