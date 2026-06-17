@@ -8,6 +8,7 @@ import { getIdeaByNumber } from "../utils/files.js";
 import { GrindUserError } from "../utils/errors.js";
 import { openEditor } from "../utils/editor.js";
 import { workStart } from "./work.js";
+import { getIdeasDirPath } from "../utils/paths.js";
 
 /**
  * Open an idea file in $EDITOR
@@ -26,7 +27,7 @@ export async function editIdea(ideaNumber: string): Promise<void> {
     throw new GrindUserError(`Idea #${index} not found. Run 'grind ideas' to see available ideas.`);
   }
 
-  const filepath = path.join(mainWorktree, "ideas", idea.filename);
+  const filepath = path.join(getIdeasDirPath(mainWorktree), idea.filename);
   await openEditor(filepath);
 }
 

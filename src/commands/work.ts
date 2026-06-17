@@ -10,6 +10,7 @@ import { getActiveSession, startSession } from "../utils/session.js";
 import { GrindUserError } from "../utils/errors.js";
 import { openEditorDetached } from "../utils/editor.js";
 import { save } from "./save.js";
+import { getProjectWorktreePath, getProjectFilesPath } from "../utils/paths.js";
 
 export async function workStart(
   projectName: string,
@@ -17,7 +18,7 @@ export async function workStart(
 ): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
-  const worktreePath = path.join(workspaceRoot, projectName);
+  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     throw new GrindUserError(`Project '${projectName}' does not exist.`);
   }
@@ -49,7 +50,7 @@ export async function workStart(
       throw new GrindUserError(`Code directory '${targetDir}' does not exist.`);
     }
   } else {
-    targetDir = path.join(worktreePath, "projects", projectName);
+    targetDir = getProjectFilesPath(workspaceRoot, projectName);
   }
 
   if (!options?.quiet) {

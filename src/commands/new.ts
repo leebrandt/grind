@@ -15,6 +15,13 @@ import { parseRepoUrl } from "../utils/repo.js";
 import { listIdeas } from "./list.js";
 import { GrindUserError } from "../utils/errors.js";
 import { editTempFile } from "../utils/editor.js";
+import {
+  getIdeasDirPath,
+  getBareRepoPath,
+  getProjectWorktreePath,
+  getProjectDirInMainPath,
+  getProjectConfigPath,
+} from "../utils/paths.js";
 
 /**
  * Open editor to get a message from the user
@@ -41,7 +48,7 @@ export async function newIdea(
 ): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
-  const ideasDir = path.join(mainWorktree, "ideas");
+  const ideasDir = getIdeasDirPath(mainWorktree);
   await mkdir(ideasDir, { recursive: true });
 
   let fileContent: string;
@@ -100,8 +107,8 @@ export async function newProject(
   // Read workspace config
   const grindConfig = await readGrindConfig(mainWorktree);
 
-  const bareRepoPath = path.join(workspaceRoot, ".grind.repo.git");
-  const worktreePath = path.join(workspaceRoot, name);
+  const bareRepoPath = getBareRepoPath(workspaceRoot);
+  const worktreePath = getProjectWorktreePath(workspaceRoot, name);
   
   // Check if worktree directory already exists
   if (await fileExists(worktreePath)) {
@@ -110,7 +117,7 @@ export async function newProject(
   
   // Step 1: Create .project.json in main worktree's projects/ folder
   console.log(`Creating project in grind/projects/${name}/...`);
-  const projectFolderInMain = path.join(mainWorktree, "projects", name);
+  const projectFolderInMain = getProjectDirInMainPath(mainWorktree, name);
   await mkdir(projectFolderInMain, { recursive: true });
   
   const projectConfig: ProjectConfig = {
@@ -136,7 +143,7 @@ export async function newProject(
   await gitAddWorktree(bareRepoPath, worktreePath, name);
 
   // Step 3: Delete the idea file from main worktree
-  const ideaFilePath = path.join(mainWorktree, "ideas", idea.filename);
+  const ideaFilePath = path.join(getIdeasDirPath(mainWorktree), idea.filename);
   await unlink(ideaFilePath);
   await gitCommit(mainWorktree, `Remove idea ${idea.filename} (now project ${name})`);
   
@@ -194,7 +201,7 @@ async function newRepoIssue(
   const { workspaceRoot } = await requireWorkspace();
 
   // Read project config from project worktree ({workspace}/{project}/projects/{project}/.project.json)
-  const configPath = path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");
+  const configPath = getProjectConfigPath(workspaceRoot, projectName);
   let projectConfig: ProjectConfig;
   try {
     const content = await readFile(configPath, "utf-8");
