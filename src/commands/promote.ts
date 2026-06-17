@@ -2,46 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import path from "node:path";
-import { readFile } from "node:fs/promises";
 import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
-import { fileExists } from "../utils/files.js";
-import type { ProjectConfig } from "../types/index.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
+import { resolveProjectConfig } from "../utils/config.js";
 
 const N8N_WEBHOOK_URL = "https://gandalf.local:5678/webhook-test/promote";
 
 export async function promoteProject(projectName: string): Promise<void> {
-  const { workspaceRoot, mainWorktree } = await requireWorkspace();
+  const { workspaceRoot } = await requireWorkspace();
 
-  const projectWorktreeConfigPath = path.join(
-    workspaceRoot,
-    projectName,
-    "projects",
-    projectName,
-    ".project.json",
-  );
-
-  const mainWorktreeConfigPath = path.join(
-    mainWorktree,
-    "projects",
-    projectName,
-    ".project.json",
-  );
-
-  let configPath: string;
-
-  if (await fileExists(projectWorktreeConfigPath)) {
-    configPath = projectWorktreeConfigPath;
-  } else if (await fileExists(mainWorktreeConfigPath)) {
-    configPath = mainWorktreeConfigPath;
-  } else {
+  const result = await resolveProjectConfig(workspaceRoot, projectName);
+  if (!result) {
     throw new GrindUserError(`Project '${projectName}' not found.`);
   }
-
-  const configContent = await readFile(configPath, "utf-8");
-  const config: ProjectConfig = JSON.parse(configContent);
+  const { config } = result;
 
   if (!config.publications || config.publications.length === 0) {
     throw new GrindUserError(`Project '${projectName}' has no publication URLs.`);
