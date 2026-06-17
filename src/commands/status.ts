@@ -4,13 +4,14 @@
 
 import { $ } from "bun";
 import path from "node:path";
-import { readFile } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
-import { getCommitCount, getFirstCommitDate, getLastCommitDate, getActiveWorktrees } from "../utils/git.js";
+import { getCommitCount, getFirstCommitDate, getLastCommitDate } from "../utils/git.js";
 import { timeAgo, formatDate } from "../utils/time.js";
 import { parseRepoUrl } from "../utils/repo.js";
 import { DIM, RED, GREEN, RESET } from "../utils/colors.js";
+import { collectProjects } from "../utils/project.js";
 import type { ProjectConfig } from "../types/index.js";
+import type { ProjectEntry } from "../utils/project.js";
 
 interface ProjectRow {
   name: string;
@@ -61,20 +62,9 @@ async function getIssueCount(repo: string): Promise<string> {
 export async function status(): Promise<void> {
   const { workspaceRoot, bareRepo } = await requireWorkspace();
 
-  // Get active worktrees from git
-  const worktreeNames = await getActiveWorktrees(bareRepo, workspaceRoot);
-
-  // Load project configs
-  const projects: { config: ProjectConfig; name: string; branch: string }[] = [];
-  for (const name of worktreeNames) {
-    const configPath = path.join(workspaceRoot, name, "projects", name, ".project.json");
-    try {
-      const content = await readFile(configPath, "utf-8");
-      projects.push({ config: JSON.parse(content), name, branch: name });
-    } catch {
-      continue;
-    }
-  }
+  // Collect active project worktrees with their configs
+  const allProjects = await collectProjects(workspaceRoot);
+  const projects = allProjects.filter((p): p is ProjectEntry & { config: ProjectConfig } => p.config !== null);
 
   if (projects.length === 0) {
     console.log("No active projects. Create one with: grind new project \"name\" <idea-number>");
@@ -82,9 +72,9 @@ export async function status(): Promise<void> {
   }
 
   // Build rows in parallel
-  const rowPromises = projects.map(async ({ config, name, branch }): Promise<ProjectRow> => {
+  const rowPromises = projects.map(async ({ config, name, worktreePath }): Promise<ProjectRow> => {
     // Git queries
-    const worktreePath = path.join(workspaceRoot, name);
+    const branch = name;
     const [commitCount, firstCommitDate, lastCommitDate, issueCount, hasChanges] = await Promise.all([
       getCommitCount(bareRepo, branch),
       getFirstCommitDate(bareRepo, branch),

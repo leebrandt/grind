@@ -5,10 +5,11 @@
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
-import { getActiveWorktrees } from "../utils/git.js";
 import { DIM, RED, RESET } from "../utils/colors.js";
-import type { ProjectConfig } from "../types/index.js";
 import { timeAgo } from "../utils/time.js";
+import { collectProjects } from "../utils/project.js";
+import type { ProjectConfig } from "../types/index.js";
+import type { ProjectEntry } from "../utils/project.js";
 
 /**
  * List all idea files for triage
@@ -65,22 +66,11 @@ export async function listIdeas(options?: {
  * grind list projects
  */
 export async function listProjects(): Promise<void> {
-  const { workspaceRoot, bareRepo } = await requireWorkspace();
+  const { workspaceRoot } = await requireWorkspace();
 
-  // Get active worktrees from git
-  const worktreeNames = await getActiveWorktrees(bareRepo, workspaceRoot);
-
-  // Load .project.json from each project's own worktree (has latest session data)
-  const projects: { config: ProjectConfig; dir: string }[] = [];
-  for (const name of worktreeNames) {
-    const configPath = path.join(workspaceRoot, name, "projects", name, ".project.json");
-    try {
-      const content = await readFile(configPath, "utf-8");
-      projects.push({ config: JSON.parse(content), dir: name });
-    } catch {
-      continue;
-    }
-  }
+  // Collect active project worktrees with their configs
+  const allProjects = await collectProjects(workspaceRoot);
+  const projects = allProjects.filter((p): p is ProjectEntry & { config: ProjectConfig } => p.config !== null);
 
   if (projects.length === 0) {
     console.log("No active projects. Create one with: grind new project \"name\" <idea-number>");
@@ -91,7 +81,7 @@ export async function listProjects(): Promise<void> {
   projects.sort((a, b) => {
     const aLast = a.config.time.length > 0 ? a.config.time[a.config.time.length - 1].start : null;
     const bLast = b.config.time.length > 0 ? b.config.time[b.config.time.length - 1].start : null;
-    if (!aLast && !bLast) return a.dir.localeCompare(b.dir);
+    if (!aLast && !bLast) return a.name.localeCompare(b.name);
     if (!aLast) return -1;
     if (!bLast) return 1;
     return new Date(aLast).getTime() - new Date(bLast).getTime();
