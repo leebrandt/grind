@@ -11,7 +11,7 @@ import { GrindUserError } from "../utils/errors.js";
 
 export async function save(
   projectName: string,
-  options?: { quiet?: boolean; time?: string },
+  options?: { quiet?: boolean; time?: string; yes?: boolean },
 ): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
   const worktreePath = path.join(workspaceRoot, projectName);
@@ -63,7 +63,9 @@ export async function save(
   if (await hasUncommittedChanges(worktreePath)) {
     console.log(`Committing changes...`);
 
-    if (options?.quiet) {
+    const autoCommit = options?.quiet || options?.yes;
+
+    if (autoCommit) {
       const timestamp = new Date().toLocaleString();
       const commitMessage = roundedHours
         ? `Work Session on ${timestamp}: ${roundedHours}h\n=== WARNING: May contain unfinished work. ===`

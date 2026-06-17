@@ -261,22 +261,26 @@ program
     await openCode(project);
   });
 
-// grind save "project" [-q] [-t <hours>]
+// grind save "project" [-q] [-y] [-t <hours>]
 program
   .command("save <project>")
   .description("Save work on a project (stops timer, commits changes)")
   .option("-q, --quiet", "Use auto-generated commit message (quick save)")
+  .option("-y, --yes", "Skip interactive commit (same as --quiet)")
   .option(
     "-t, --time <hours>",
     "Backfill: set session end time to start + N hours",
   )
   .action(
-    async (project: string, options: { quiet?: boolean; time?: string }) => {
+    async (
+      project: string,
+      options: { quiet?: boolean; yes?: boolean; time?: string },
+    ) => {
       await save(project, options);
     },
   );
 
-// grind publish <name> [-d] [-D] [-u <url>]
+// grind publish <name> [-d] [-D] [-u <url>] [-y]
 program
   .command("publish <name>")
   .description(
@@ -285,6 +289,7 @@ program
   .option("-d, --delete-worktree", "Delete worktree after merging")
   .option("-D, --delete-branch", "Delete worktree and branch after merging")
   .option("-u, --url <url>", "URL where this project was published")
+  .option("-y, --yes", "Skip confirmation before deleting worktree")
   .action(
     async (
       name: string,
@@ -292,22 +297,26 @@ program
         deleteWorktree?: boolean;
         deleteBranch?: boolean;
         url?: string;
+        yes?: boolean;
       },
     ) => {
       await publishProject(name, options);
     },
   );
 
-// grind cancel <name> [--force]
+// grind cancel <name> [--force] [-y]
 program
   .command("cancel <name>")
   .description(
     "Cancel (abandon) a project — removes worktree, branch, and config",
   )
   .option("-f, --force", "Force removal even with uncommitted changes")
-  .action(async (name: string, options: { force?: boolean }) => {
-    await cancelProject(name, options);
-  });
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(
+    async (name: string, options: { force?: boolean; yes?: boolean }) => {
+      await cancelProject(name, options);
+    },
+  );
 
 // grind reject idea [number]
 const rejectCmd = program
@@ -329,8 +338,9 @@ const pruneCmd = program
 pruneCmd
   .command("ideas")
   .description("Delete all rejected ideas (files starting with 'rejected-')")
-  .action(async () => {
-    await pruneIdeas();
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (options: { yes?: boolean }) => {
+    await pruneIdeas(options);
   });
 
 // grind invoice <project>
