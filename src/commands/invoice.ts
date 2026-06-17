@@ -3,14 +3,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir } from "node:fs/promises";
 import { PassThrough } from "stream";
 import { requireWorkspace } from "../utils/workspace.js";
-import { readGrindConfig } from "../utils/config.js";
-import { fileExists } from "../utils/files.js";
+import { readGrindConfig, resolveProjectConfig } from "../utils/config.js";
 import { gitCommit } from "../utils/git.js";
 import { formatDate } from "../utils/time.js";
-import type { ProjectConfig, GrindConfig } from "../types/index.js";
+
 import PDFDocument from "pdfkit";
 import { GrindUserError } from "../utils/errors.js";
 
@@ -27,37 +26,13 @@ export async function invoiceProject(projectName: string): Promise<void> {
   // 2. Load workspace config for professional info
   const grindConfig = await readGrindConfig(mainWorktree);
 
-  // 3. Determine where to read .project.json from (ONE location only!)
-  const projectWorktreePath = path.join(workspaceRoot, projectName);
-  const projectWorktreeConfigPath = path.join(
-    projectWorktreePath,
-    "projects",
-    projectName,
-    ".project.json"
-  );
-  
-  const mainWorktreeConfigPath = path.join(
-    mainWorktree,
-    "projects",
-    projectName,
-    ".project.json"
-  );
-  
-  let configPath: string;
-
-  if (await fileExists(projectWorktreeConfigPath)) {
-    configPath = projectWorktreeConfigPath;
-    console.log(`Reading config from project worktree...`);
-  } else if (await fileExists(mainWorktreeConfigPath)) {
-    configPath = mainWorktreeConfigPath;
-    console.log(`Reading config from main worktree (project worktree not found)...`);
-  } else {
+  // 3. Resolve project config from worktree or main worktree
+  const result = await resolveProjectConfig(workspaceRoot, projectName);
+  if (!result) {
     throw new GrindUserError(`Project '${projectName}' not found.`);
   }
-  
-  // 4. Load project config
-  const configContent = await readFile(configPath, "utf-8");
-  const config: ProjectConfig = JSON.parse(configContent);
+  const { config, sourcePath: configPath } = result;
+  const projectWorktreePath = path.join(workspaceRoot, projectName);
 
   // 5. Filter sessions: only unbilled sessions with start AND end times
   const unbilledSessions = config.time.filter(
