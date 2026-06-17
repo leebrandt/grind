@@ -2,33 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import type { ProjectConfig } from "../types/index.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
+import { getProjectConfigPath, getMainProjectConfigPath } from "../utils/paths.js";
 
 const N8N_WEBHOOK_URL = "https://gandalf.local:5678/webhook-test/promote";
 
 export async function promoteProject(projectName: string): Promise<void> {
   const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
-  const projectWorktreeConfigPath = path.join(
-    workspaceRoot,
-    projectName,
-    "projects",
-    projectName,
-    ".project.json",
-  );
-
-  const mainWorktreeConfigPath = path.join(
-    mainWorktree,
-    "projects",
-    projectName,
-    ".project.json",
-  );
+  const projectWorktreeConfigPath = getProjectConfigPath(workspaceRoot, projectName);
+  const mainWorktreeConfigPath = getMainProjectConfigPath(mainWorktree, projectName);
 
   let configPath: string;
 

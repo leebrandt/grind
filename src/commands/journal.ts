@@ -6,6 +6,7 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
+import { getJournalDirPath } from "../utils/paths.js";
 
 /**
  * Open today's journal entry in nvim
@@ -14,7 +15,7 @@ import { requireWorkspace } from "../utils/workspace.js";
 export async function journal(): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
-  const journalDir = path.join(mainWorktree, "journal");
+  const journalDir = getJournalDirPath(mainWorktree);
   await mkdir(journalDir, { recursive: true });
 
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD

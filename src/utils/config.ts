@@ -3,17 +3,17 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import type { GrindConfig, ProjectConfig } from "../types/index.js";
+import { getGrindConfigPath, getProjectConfigPath } from "./paths.js";
 
 export async function readGrindConfig(rootPath: string): Promise<GrindConfig> {
-  const configPath = path.join(rootPath, ".grind.json");
+  const configPath = getGrindConfigPath(rootPath);
   const content = await readFile(configPath, "utf-8");
   return JSON.parse(content);
 }
 
 export async function writeGrindConfig(rootPath: string, config: GrindConfig): Promise<void> {
-  const configPath = path.join(rootPath, ".grind.json");
+  const configPath = getGrindConfigPath(rootPath);
   await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
 
@@ -21,14 +21,7 @@ export async function readProjectConfig(
   workspaceRoot: string,
   projectName: string
 ): Promise<ProjectConfig | null> {
-  const configPath = path.join(
-    workspaceRoot,
-    projectName,
-    "projects",
-    projectName,
-    ".project.json"
-  );
-
+  const configPath = getProjectConfigPath(workspaceRoot, projectName);
   try {
     const content = await readFile(configPath, "utf-8");
     return JSON.parse(content);
@@ -42,13 +35,6 @@ export async function writeProjectConfig(
   projectName: string,
   config: ProjectConfig
 ): Promise<void> {
-  const configPath = path.join(
-    workspaceRoot,
-    projectName,
-    "projects",
-    projectName,
-    ".project.json"
-  );
-
+  const configPath = getProjectConfigPath(workspaceRoot, projectName);
   await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 }
