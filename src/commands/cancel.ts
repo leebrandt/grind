@@ -8,15 +8,16 @@ import { rm } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
+import { confirmOrExit } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 /**
  * Cancel (abandon) a project
- * grind cancel <name> [--force]
+ * grind cancel <name> [--force] [-y]
  */
 export async function cancelProject(
   projectName: string,
-  options?: { force?: boolean }
+  options?: { force?: boolean; yes?: boolean }
 ): Promise<void> {
   // 1. Find workspace root and main worktree
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
@@ -36,7 +37,13 @@ export async function cancelProject(
     );
   }
 
-  // 4. Remove the worktree
+  // 4. Confirm cancellation
+  await confirmOrExit(
+    `Cancel project '${projectName}'? This will permanently delete the worktree, branch, and project config.`,
+    options?.yes ?? false,
+  );
+
+  // 5. Remove the worktree
   console.log(`Cancelling project '${projectName}'...`);
   try {
     if (options?.force) {

@@ -6,12 +6,13 @@ import path from "node:path";
 import { readdir, unlink } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { gitCommit } from "../utils/git.js";
+import { confirmOrExit } from "../utils/prompts.js";
 
 /**
  * Prune rejected ideas by deleting them
- * grind prune ideas
+ * grind prune ideas [-y]
  */
-export async function pruneIdeas(): Promise<void> {
+export async function pruneIdeas(options?: { yes?: boolean }): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
   const ideasDir = path.join(mainWorktree, "ideas");
@@ -27,8 +28,19 @@ export async function pruneIdeas(): Promise<void> {
     return;
   }
 
-  // Delete each rejected file
+  // List what will be pruned
   console.log(`Found ${rejectedFiles.length} rejected idea(s) to prune:`);
+  for (const file of rejectedFiles) {
+    console.log(`  - ${file}`);
+  }
+
+  // Confirm before deleting
+  await confirmOrExit(
+    `Delete ${rejectedFiles.length} rejected idea(s)?`,
+    options?.yes ?? false,
+  );
+
+  // Delete each rejected file
   for (const file of rejectedFiles) {
     const filepath = path.join(ideasDir, file);
     await unlink(filepath);

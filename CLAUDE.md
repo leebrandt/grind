@@ -48,6 +48,8 @@ workspace-root/
 - `src/utils/time.ts` — timestamp generation, duration calculation, rounding, `timeAgo`/`formatDate` helpers
 - `src/utils/colors.ts` — shared ANSI color constants (`DIM`, `RED`, `GREEN`, `RESET`)
 
+**Prompts:** `src/utils/prompts.ts` provides `confirmOrExit(prompt, skip)` — prints a y/N prompt and exits unless the user confirms. Pass `skip=true` to bypass (used by `-y`/`--yes` flags). The function reads stdin via `node:readline/promises`.
+
 **Invoicing:** `src/commands/invoice.ts` generates both markdown and PDF (via pdfkit) invoices from tracked time sessions.
 
 ## Conventions
