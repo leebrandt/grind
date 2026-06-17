@@ -10,6 +10,7 @@ import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import type { Session } from "../types/index.js";
 import { GrindUserError } from "../utils/errors.js";
+import { getProjectWorktreePath } from "../utils/paths.js";
 
 /**
  * Open code editor in project's code directory & start work session
@@ -19,7 +20,7 @@ export async function openCode(projectName: string): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
   // Verify project worktree exists
-  const worktreePath = path.join(workspaceRoot, projectName);
+  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     throw new GrindUserError(`Project '${projectName}' does not exist.`);
   }

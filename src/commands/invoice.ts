@@ -13,6 +13,7 @@ import { formatDate } from "../utils/time.js";
 import type { ProjectConfig, GrindConfig } from "../types/index.js";
 import PDFDocument from "pdfkit";
 import { GrindUserError } from "../utils/errors.js";
+import { getProjectWorktreePath, getProjectConfigPath, getMainProjectConfigPath, getInvoiceDirPath } from "../utils/paths.js";
 
 /**
  * Generate invoice for a project
@@ -28,20 +29,9 @@ export async function invoiceProject(projectName: string): Promise<void> {
   const grindConfig = await readGrindConfig(mainWorktree);
 
   // 3. Determine where to read .project.json from (ONE location only!)
-  const projectWorktreePath = path.join(workspaceRoot, projectName);
-  const projectWorktreeConfigPath = path.join(
-    projectWorktreePath,
-    "projects",
-    projectName,
-    ".project.json"
-  );
-  
-  const mainWorktreeConfigPath = path.join(
-    mainWorktree,
-    "projects",
-    projectName,
-    ".project.json"
-  );
+  const projectWorktreePath = getProjectWorktreePath(workspaceRoot, projectName);
+  const projectWorktreeConfigPath = getProjectConfigPath(workspaceRoot, projectName);
+  const mainWorktreeConfigPath = getMainProjectConfigPath(mainWorktree, projectName);
   
   let configPath: string;
 
@@ -192,13 +182,7 @@ ${tableRows}
   });
 
   // 9. All content generated successfully - now write everything atomically
-  const invoiceDir = path.join(
-    mainWorktree,
-    "projects",
-    projectName,
-    "invoices",
-    timestamp
-  );
+  const invoiceDir = getInvoiceDirPath(mainWorktree, projectName, timestamp);
   const markdownPath = path.join(invoiceDir, "invoice.md");
   const pdfPath = path.join(invoiceDir, "invoice.pdf");
 

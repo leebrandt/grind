@@ -9,6 +9,7 @@ import { getActiveWorktrees } from "../utils/git.js";
 import { DIM, RED, RESET } from "../utils/colors.js";
 import type { ProjectConfig } from "../types/index.js";
 import { timeAgo } from "../utils/time.js";
+import { getIdeasDirPath, getProjectConfigPath } from "../utils/paths.js";
 
 /**
  * List all idea files for triage
@@ -20,7 +21,7 @@ export async function listIdeas(options?: {
 }): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
-  const ideasDir = path.join(mainWorktree, "ideas");
+  const ideasDir = getIdeasDirPath(mainWorktree);
 
   // Get all files, sorted by filename (chronological)
   let files = await readdir(ideasDir);
@@ -73,7 +74,7 @@ export async function listProjects(): Promise<void> {
   // Load .project.json from each project's own worktree (has latest session data)
   const projects: { config: ProjectConfig; dir: string }[] = [];
   for (const name of worktreeNames) {
-    const configPath = path.join(workspaceRoot, name, "projects", name, ".project.json");
+    const configPath = getProjectConfigPath(workspaceRoot, name);
     try {
       const content = await readFile(configPath, "utf-8");
       projects.push({ config: JSON.parse(content), dir: name });

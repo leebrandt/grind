@@ -5,6 +5,7 @@
 import path from "node:path";
 import { fileExists } from "./files.js";
 import { GrindUserError } from "./errors.js";
+import { BARE_REPO_NAME, MAIN_WORKTREE_NAME, getBareRepoPath, getMainWorktreePath, getGrindConfigPath } from "./paths.js";
 
 /**
  * Derive the current project name from the working directory.
@@ -21,15 +22,10 @@ export async function getCurrentProjectName(): Promise<string | null> {
 
   const firstSegment = relative.split(path.sep)[0];
 
-  // The "grind" directory is the main worktree, not a project
-  if (firstSegment === "grind" || firstSegment === ".grind.repo.git") return null;
+  if (firstSegment === MAIN_WORKTREE_NAME || firstSegment === BARE_REPO_NAME) return null;
 
   return firstSegment;
 }
-
-const BARE_REPO_NAME = ".grind.repo.git";
-const MAIN_WORKTREE_NAME = "grind";
-const CONFIG_FILE_NAME = ".grind.json";
 
 /**
  * Find the bare repo by scanning up from startPath
@@ -43,7 +39,6 @@ export async function findBareRepo(startPath: string): Promise<string | null> {
     if (await fileExists(bareRepoPath)) {
       return bareRepoPath;
     }
-    // Also check parent (worktrees are siblings to bare repo)
     const parentBareRepoPath = path.join(path.dirname(currentPath), BARE_REPO_NAME);
     if (await fileExists(parentBareRepoPath)) {
       return parentBareRepoPath;
@@ -70,8 +65,8 @@ export async function findMainWorktree(startPath: string): Promise<string | null
   const workspaceRoot = await getWorkspaceRoot(startPath);
   if (!workspaceRoot) return null;
 
-  const mainWorktreePath = path.join(workspaceRoot, MAIN_WORKTREE_NAME);
-  const configPath = path.join(mainWorktreePath, CONFIG_FILE_NAME);
+  const mainWorktreePath = getMainWorktreePath(workspaceRoot);
+  const configPath = getGrindConfigPath(mainWorktreePath);
 
   if (await fileExists(configPath)) {
     return mainWorktreePath;
@@ -99,7 +94,7 @@ export async function requireWorkspace(): Promise<{
     throw new GrindUserError("Could not find main worktree.");
   }
 
-  const bareRepo = path.join(workspaceRoot, BARE_REPO_NAME);
+  const bareRepo = getBareRepoPath(workspaceRoot);
 
   return { workspaceRoot, mainWorktree, bareRepo };
 }
