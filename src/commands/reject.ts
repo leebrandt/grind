@@ -8,7 +8,6 @@ import { requireWorkspace } from "../utils/workspace.js";
 import { getIdeaByNumber } from "../utils/files.js";
 import { gitCommit } from "../utils/git.js";
 import { GrindUserError } from "../utils/errors.js";
-import { getIdeasDirPath } from "../utils/paths.js";
 
 /**
  * Reject an idea by prepending "rejected-" to filename
@@ -33,7 +32,7 @@ export async function rejectIdea(ideaNumber: string): Promise<void> {
   }
 
   // Create new filename with "rejected-" prefix
-  const ideasDir = getIdeasDirPath(mainWorktree);
+  const ideasDir = path.join(mainWorktree, "ideas");
   const oldPath = path.join(ideasDir, idea.filename);
   const newFilename = `rejected-${idea.filename}`;
   const newPath = path.join(ideasDir, newFilename);

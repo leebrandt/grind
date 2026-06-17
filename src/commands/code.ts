@@ -3,14 +3,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { execSync } from "node:child_process";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import type { Session } from "../types/index.js";
 import { GrindUserError } from "../utils/errors.js";
-import { getProjectWorktreePath } from "../utils/paths.js";
+import { openEditorDetached } from "../utils/editor.js";
 
 /**
  * Open code editor in project's code directory & start work session
@@ -20,7 +19,7 @@ export async function openCode(projectName: string): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
   // Verify project worktree exists
-  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
+  const worktreePath = path.join(workspaceRoot, projectName);
   if (!(await fileExists(worktreePath))) {
     throw new GrindUserError(`Project '${projectName}' does not exist.`);
   }
@@ -70,6 +69,5 @@ export async function openCode(projectName: string): Promise<void> {
   console.log(`Time started: ${newSession.start}`);
 
   // Open code directory in editor
-  const editor = process.env.EDITOR || process.env.VISUAL || "nvim";
-  execSync(`${editor} ${codeDir}`, { stdio: "inherit" });
+  await openEditorDetached(codeDir);
 }

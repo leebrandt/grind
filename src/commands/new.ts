@@ -3,8 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { tmpdir } from "node:os";
-import { execSync } from "node:child_process";
 import { mkdir, writeFile, unlink, readFile } from "node:fs/promises";
 import { $ } from "bun";
 import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
@@ -16,20 +14,14 @@ import { readGrindConfig } from "../utils/config.js";
 import { parseRepoUrl } from "../utils/repo.js";
 import { listIdeas } from "./list.js";
 import { GrindUserError } from "../utils/errors.js";
-import { getIdeasDirPath, getBareRepoPath, getProjectWorktreePath, getProjectConfigDirPath, getProjectConfigPath } from "../utils/paths.js";
+import { editTempFile } from "../utils/editor.js";
 
 /**
  * Open editor to get a message from the user
  */
 async function getMessageFromEditor(prompt: string): Promise<string | null> {
-  const tmpFile = path.join(tmpdir(), `grind-${Date.now()}.md`);
-  await writeFile(tmpFile, `\n# ${prompt} (lines starting with # are ignored)\n`, "utf-8");
-
-  const editor = process.env.EDITOR || process.env.VISUAL || "vi";
-  execSync(`${editor} ${tmpFile}`, { stdio: "inherit" });
-
-  const content = await readFile(tmpFile, "utf-8");
-  await unlink(tmpFile);
+  const initialContent = `\n# ${prompt} (lines starting with # are ignored)\n`;
+  const content = await editTempFile("grind-issue", initialContent);
 
   const message = content
     .split("\n")
@@ -49,7 +41,7 @@ export async function newIdea(
 ): Promise<void> {
   const { mainWorktree } = await requireWorkspace();
 
-  const ideasDir = getIdeasDirPath(mainWorktree);
+  const ideasDir = path.join(mainWorktree, "ideas");
   await mkdir(ideasDir, { recursive: true });
 
   let fileContent: string;
@@ -108,8 +100,8 @@ export async function newProject(
   // Read workspace config
   const grindConfig = await readGrindConfig(mainWorktree);
 
-  const bareRepoPath = getBareRepoPath(workspaceRoot);
-  const worktreePath = getProjectWorktreePath(workspaceRoot, name);
+  const bareRepoPath = path.join(workspaceRoot, ".grind.repo.git");
+  const worktreePath = path.join(workspaceRoot, name);
   
   // Check if worktree directory already exists
   if (await fileExists(worktreePath)) {
@@ -118,7 +110,7 @@ export async function newProject(
   
   // Step 1: Create .project.json in main worktree's projects/ folder
   console.log(`Creating project in grind/projects/${name}/...`);
-  const projectFolderInMain = getProjectConfigDirPath(mainWorktree, name);
+  const projectFolderInMain = path.join(mainWorktree, "projects", name);
   await mkdir(projectFolderInMain, { recursive: true });
   
   const projectConfig: ProjectConfig = {
@@ -201,7 +193,8 @@ async function newRepoIssue(
 ): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
-  const configPath = getProjectConfigPath(workspaceRoot, projectName);
+  // Read project config from project worktree ({workspace}/{project}/projects/{project}/.project.json)
+  const configPath = path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");
   let projectConfig: ProjectConfig;
   try {
     const content = await readFile(configPath, "utf-8");
