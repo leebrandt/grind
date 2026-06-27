@@ -46,18 +46,31 @@ workspace-root/
 
 **Time tracking:** Sessions are stored as start/end ISO timestamps in `.project.json`. Duration is calculated in seconds and rounded (quarter-hour/half-hour/hour) per `src/utils/time.ts`. Sessions can be marked as invoiced.
 
-**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo), `repo` (git remote URL), and `longTerm` (boolean, shows ★ icon) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, and `paymentTerms` fields for invoicing.
+**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo), `repo` (git remote URL), `code` (code directory path), `publications` (published URL/date records), and `longTerm` (boolean, shows ★ icon) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, `paymentTerms`, and `defaultBranch` fields.
 
 **Utilities:**
-- `src/utils/git.ts` — git command wrappers using Bun shell; `getActiveWorktrees()` lists project worktrees; uses `execSync` for interactive editor spawning
-- `src/utils/config.ts` — JSON config file read/write
+- `src/utils/git.ts` — git command wrappers using Bun shell; `getActiveWorktrees()` lists project worktrees; `getDefaultBranch()` resolves branch name (config → detected → "main"); uses `execSync` for interactive editor spawning
+- `src/utils/config.ts` — JSON config file read/write; `resolveProjectConfig()` checks project worktree then falls back to main worktree
+- `src/utils/editor.ts` — `openEditor()` (blocking), `openEditorDetached()` (non-blocking), `editTempFile()` (temp file lifecycle); resolves `$EDITOR → $VISUAL → "vi"`
+- `src/utils/errors.ts` — `GrindError` (base, exit code), `GrindUserError` (exit 1, bad input), `GrindSystemError` (exit 2, I/O/git failures); each carries `message`, `exitCode`, optional `cause`
 - `src/utils/files.ts` — filesystem helpers
-- `src/utils/workspace.ts` — workspace/worktree location logic; `requireWorkspace()` returns `{ workspaceRoot, mainWorktree, bareRepo }` or exits with error
+- `src/utils/project.ts` — `collectProjects()` returns all active project worktrees with their configs (used by `list.ts`, `status.ts`)
+- `src/utils/prompts.ts` — `confirmOrExit(prompt, skip)` prints y/N prompt and exits unless user confirms
 - `src/utils/repo.ts` — parses git remote URLs (SSH/HTTPS) for GitHub and GitLab into `{ platform, repo }` format
+- `src/utils/session.ts` — `getActiveSession()`, `startSession()`, `endSession()`, `closeOrphanedSession()` for time-tracking session lifecycle
 - `src/utils/time.ts` — timestamp generation, duration calculation, rounding, `timeAgo`/`formatDate` helpers
+- `src/utils/workspace.ts` — workspace/worktree location logic; `requireWorkspace()` returns `{ workspaceRoot, mainWorktree, bareRepo }` or throws `GrindUserError`
 - `src/utils/colors.ts` — shared ANSI color constants (`DIM`, `RED`, `GREEN`, `RESET`)
 
 **Prompts:** `src/utils/prompts.ts` provides `confirmOrExit(prompt, skip)` — prints a y/N prompt and exits unless the user confirms. Pass `skip=true` to bypass (used by `-y`/`--yes` flags). The function reads stdin via `node:readline/promises`.
+
+**Error handling:** All errors use the `GrindError` hierarchy defined in `src/utils/errors.ts`. `src/index.ts` wraps `program.parseAsync()` in a single try/catch — no `process.exit` calls exist in any command file. Errors exit with code 1 (user error) or 2 (system error), with stack traces for unexpected errors (exit 99).
+
+**Workflow consolidation:** `grind work <project>` is the unified daily-driver command, supporting `-c` (code editor), `-q` (quiet, no timer), and `-s` (save). `grind edit <project>` and `grind code <project>` are thin aliases calling `workStart()` with appropriate flags. `grind save` accepts `-t <hours>` for time backfill and `-y`/`-q` for auto-commit. `grind promote` is removed (dead source file remains unregistered).
+
+**Confirmation model:** Destructive commands (`cancel`, `prune ideas`, `publish -d/-D`) use `confirmOrExit()` from `src/utils/prompts.ts`. Pass `-y`/`--yes` to skip the prompt. `-f`/`--force` is reserved for safety-skip semantics (uncommitted changes on `cancel`).
+
+**Configurable default branch:** `GrindConfig.defaultBranch` sets the branch name; falls back to `git symbolic-ref HEAD` detection on the bare repo, then `"main"`. Resolution order: config → detected → `"main"`.
 
 **Invoicing:** `src/commands/invoice.ts` generates both markdown and PDF (via pdfkit) invoices from tracked time sessions.
 
@@ -67,7 +80,7 @@ workspace-root/
 - Config files are JSON with 2-space indentation
 - Ideas are timestamped markdown files (`YYYYMMDDHHmmss.md`) in `grind/ideas/`
 - Rejected ideas are prefixed with `rejected-` in the filename
-- Error handling uses early-exit pattern with `console.error()` + `process.exit(1)`
+- Error handling uses `GrindError` hierarchy (thrown in commands, caught in `src/index.ts`)
 - The `config` command (`src/commands/config.ts`) supports `configList`, `configGet`, and `configSet` for both workspace-level (`-g`) and project-level configs
 - Short aliases exist: `grind ideas` = `grind list ideas`, `grind projects` = `grind list projects`
 - All `path` imports use the `node:path` prefix (Node.js built-in module convention)
