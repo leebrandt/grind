@@ -99,7 +99,7 @@ export async function gitAddWorktree(
  */
 export async function getCommitCount(repoPath: string, branch: string): Promise<number> {
   try {
-    const result = await $`git -C ${repoPath} rev-list --count ${branch}`.quiet();
+    const result = await $`git -C ${repoPath} rev-list --count ${branch} --not main`.quiet();
     return parseInt(result.stdout.toString().trim(), 10);
   } catch {
     return 0;
