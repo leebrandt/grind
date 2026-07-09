@@ -17,3 +17,22 @@ export async function confirmOrExit(prompt: string, skip: boolean): Promise<void
     process.exit(0);
   }
 }
+
+/**
+ * Prompt for confirmation and return true/false without exiting.
+ * Returns true if the user confirms, false otherwise.
+ * Pass skip=true to auto-confirm without prompting.
+ */
+export async function confirm(prompt: string, skip: boolean): Promise<boolean> {
+  if (skip) return true;
+
+  const rl = createInterface({
+    input: stdin,
+    output: stdout,
+  });
+
+  const answer = await rl.question(`${prompt} (y/N) `);
+  rl.close();
+
+  return answer.toLowerCase() === "y" || answer.toLowerCase() === "yes";
+}

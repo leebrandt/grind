@@ -29,6 +29,8 @@ import { openCode } from "./commands/code.js";
 import { journal } from "./commands/journal.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
+import { pushProjects } from "./commands/push.js";
+import { pullProjects } from "./commands/pull.js";
 import { showProject } from "./commands/show.js";
 import packageJson from "../package.json" with { type: "json" };
 
@@ -44,14 +46,15 @@ program
     program.help({ error: true });
   });
 
-// grind init
+// grind init [-u <url>]
 program
   .command("init")
   .description(
     "Initialize a grind workspace (creates ideas/, projects/, .grind.json)",
   )
-  .action(async () => {
-    await init();
+  .option("-u, --url <url>", "Remote repository URL")
+  .action(async (options: { url?: string }) => {
+    await init(options.url);
   });
 
 // grind clone <url> [directory]
@@ -60,6 +63,24 @@ program
   .description("Clone an existing grind workspace from a remote repository")
   .action(async (url: string, directory?: string) => {
     await clone(url, directory);
+  });
+
+// grind push [-u <url>]
+program
+  .command("push")
+  .description("Push all workspace changes to remote")
+  .option("-u, --url <url>", "Remote URL (overrides configured remote)")
+  .action(async (options: { url?: string }) => {
+    await pushProjects(options);
+  });
+
+// grind pull [-u <url>]
+program
+  .command("pull")
+  .description("Pull latest workspace state from remote")
+  .option("-u, --url <url>", "Remote URL (overrides configured remote)")
+  .action(async (options: { url?: string }) => {
+    await pullProjects(options);
   });
 
 // grind config [key] [value] [-g/--global] [-p/--project] [--list]
@@ -103,6 +124,7 @@ Settable keys (workspace-level, use -g):
   my.taxId              tax ID (ABN/EIN/VAT)
   currency              currency code (e.g. USD, AUD)
   paymentTerms          payment terms (e.g. "Net 30")
+  remote.url            remote repository URL (for push/pull)
 `,
   )
   .action(

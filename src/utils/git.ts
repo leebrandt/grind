@@ -162,3 +162,104 @@ export async function getActiveWorktrees(bareRepo: string, workspaceRoot: string
 
   return names;
 }
+
+/**
+ * Push all branches and tags to the remote
+ */
+export async function gitPushAll(bareRepoPath: string): Promise<void> {
+  await $`git -C ${bareRepoPath} push origin --all`.quiet();
+  await $`git -C ${bareRepoPath} push origin --tags`.quiet();
+}
+
+/**
+ * Fetch all branches from remote
+ */
+export async function gitFetchAll(bareRepoPath: string): Promise<void> {
+  await $`git -C ${bareRepoPath} fetch --all`.quiet();
+}
+
+/**
+ * Get the remote origin URL from a bare repo
+ */
+export async function getRemoteUrl(bareRepoPath: string): Promise<string | null> {
+  try {
+    const result = await $`git -C ${bareRepoPath} remote get-url origin`.quiet();
+    return result.stdout.toString().trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Set the remote origin URL on a bare repo
+ */
+export async function setRemoteUrl(bareRepoPath: string, url: string): Promise<void> {
+  // Check if origin already exists
+  const existing = await getRemoteUrl(bareRepoPath);
+  if (existing) {
+    await $`git -C ${bareRepoPath} remote set-url origin ${url}`.quiet();
+  } else {
+    await $`git -C ${bareRepoPath} remote add origin ${url}`.quiet();
+  }
+}
+
+/**
+ * List remote branches (refs/remotes/origin/*) excluding HEAD
+ */
+export async function getRemoteBranchList(bareRepoPath: string): Promise<string[]> {
+  const result = await $`git -C ${bareRepoPath} branch -r --format="%(refname:short)"`.quiet();
+  return result.stdout.toString().trim().split("\n")
+    .filter(b => b && b !== "origin/HEAD");
+}
+
+/**
+ * Get the current branch name for a worktree
+ */
+export async function getCurrentBranch(worktreePath: string): Promise<string> {
+  const result = await $`git -C ${worktreePath} rev-parse --abbrev-ref HEAD`.quiet();
+  return result.stdout.toString().trim();
+}
+
+/**
+ * Fast-forward a worktree branch to match its remote tracking branch.
+ * Returns true if the update was applied.
+ */
+export async function fastForwardWorktree(worktreePath: string, branch: string): Promise<boolean> {
+  try {
+    await $`git -C ${worktreePath} merge --ff-only origin/${branch}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if a remote branch exists
+ */
+export async function remoteBranchExists(bareRepoPath: string, branch: string): Promise<boolean> {
+  try {
+    await $`git -C ${bareRepoPath} rev-parse --verify refs/remotes/origin/${branch}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if a local branch exists in the bare repo
+ */
+export async function localBranchExists(bareRepoPath: string, branch: string): Promise<boolean> {
+  try {
+    await $`git -C ${bareRepoPath} rev-parse --verify refs/heads/${branch}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Push a project branch to a specific remote URL (for per-project push).
+ */
+export async function gitPushToUrl(bareRepoPath: string, branch: string, remoteUrl: string): Promise<void> {
+  await $`git -C ${bareRepoPath} push ${remoteUrl} ${branch}:${branch}`.quiet();
+}

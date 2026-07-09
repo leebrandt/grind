@@ -58,6 +58,9 @@ export interface GrindConfig {
   my?: ProfessionalInfo;
   currency?: string;
   paymentTerms?: string;
+  remote?: {
+    url?: string; // Remote URL for push/pull (e.g., git@github.com:user/workspace.git)
+  };
 }
 
 // .project.json schema

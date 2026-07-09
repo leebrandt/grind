@@ -4,7 +4,8 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import type { GrindConfig } from "../types/index.js";
-import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit, getDefaultBranch } from "../utils/git.js";
+import { gitInit, gitInitialCommit, gitAddWorktree, gitCommit, getDefaultBranch, setRemoteUrl } from "../utils/git.js";
+import { readGrindConfig, writeGrindConfig } from "../utils/config.js";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError } from "../utils/errors.js";
 import {
@@ -27,7 +28,7 @@ export const DEFAULT_GRIND_CONFIG: GrindConfig = {
 
 /**
  * Initialize a grind workspace
- * grind init
+ * grind init [-u <url>]
  *
  * Creates:
  * - .grind.repo.git/ (bare repository)
@@ -35,7 +36,7 @@ export const DEFAULT_GRIND_CONFIG: GrindConfig = {
  *   - ideas/
  *   - .grind.json
  */
-export async function init(): Promise<void> {
+export async function init(url?: string): Promise<void> {
   const cwd = process.cwd();
   const bareRepoPath = getBareRepoPath(cwd);
   const mainWorktreePath = getMainWorktreePath(cwd);
@@ -74,6 +75,20 @@ export async function init(): Promise<void> {
   // 6. Commit the structure
   console.log("Committing initial structure...");
   await gitCommit(mainWorktreePath, "Initialize grind workspace");
+
+  // 7. If remote URL provided, record it
+  if (url) {
+    console.log("Setting remote URL...");
+    await setRemoteUrl(bareRepoPath, url);
+    const config = await readGrindConfig(mainWorktreePath);
+    if (!config.remote) {
+      config.remote = {};
+    }
+    config.remote.url = url;
+    await writeGrindConfig(mainWorktreePath, config);
+    await gitCommit(mainWorktreePath, "Configure remote URL");
+    console.log(`Remote set to: ${url}`);
+  }
 
   console.log("\n--> grind workspace initialized <--");
   console.log(`\nWorkspace root: ${cwd}`);

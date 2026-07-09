@@ -7,6 +7,7 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
+import { readGrindConfig, writeGrindConfig } from "../utils/config.js";
 import {
   getBareRepoPath,
   getMainWorktreePath,
@@ -91,6 +92,14 @@ export async function clone(url: string, directory?: string): Promise<void> {
     await cleanup();
     throw new GrindUserError("Repository does not appear to be a grind workspace (.grind.json not found).");
   }
+
+  // 6b. Record remote URL in workspace config
+  const grindConfig = await readGrindConfig(mainWorktreePath);
+  if (!grindConfig.remote) {
+    grindConfig.remote = {};
+  }
+  grindConfig.remote.url = url;
+  await writeGrindConfig(mainWorktreePath, grindConfig);
 
   // 7. Restore project worktrees from branches
   const branchResult = await $`git -C ${bareRepoPath} branch --format="%(refname:short)"`.quiet();
