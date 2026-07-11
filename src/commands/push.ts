@@ -4,13 +4,12 @@
 
 import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
-import { readGrindConfig, readProjectConfig } from "../utils/config.js";
+import { readGrindConfig } from "../utils/config.js";
 import {
   getActiveWorktrees,
   gitPushAll,
   getRemoteUrl,
   setRemoteUrl,
-  gitPushToUrl,
   hasUncommittedChanges,
 } from "../utils/git.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
@@ -83,33 +82,10 @@ export async function pushProjects(
     throw new GrindSystemError("Failed to push to remote. Check your connection and authentication.");
   }
 
-  // 5. Per-project push: push each project's branch to its own remote (if repo configured)
-  let projectPushCount = 0;
-  for (const projectName of allWorktrees) {
-    if (dirtyWorktrees.includes(`${projectName}/`)) {
-      // Skip dirty worktrees for per-project push too
-      continue;
-    }
-
-    const projectConfig = await readProjectConfig(workspaceRoot, projectName);
-    if (projectConfig?.repo) {
-      try {
-        await gitPushToUrl(bareRepo, projectName, projectConfig.repo);
-        console.log(`  Pushed '${projectName}' to ${projectConfig.repo}`);
-        projectPushCount++;
-      } catch {
-        console.log(`  Warning: could not push '${projectName}' to ${projectConfig.repo}`);
-      }
-    }
-  }
-
-  // 6. Summary
+  // 5. Summary
   console.log(`\n--> push complete <--`);
   console.log(`Remote: ${remoteUrl}`);
   console.log(`Branches pushed to origin: ${allWorktrees.length + 1}`);
-  if (projectPushCount > 0) {
-    console.log(`Per-project pushes: ${projectPushCount}`);
-  }
   if (dirtyWorktrees.length > 0) {
     console.log(`Skipped (uncommitted): ${dirtyWorktrees.length}`);
   }

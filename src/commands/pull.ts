@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { $ } from "bun";
-import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { readGrindConfig } from "../utils/config.js";
 import {
@@ -16,13 +15,12 @@ import {
   getCurrentBranch,
   remoteBranchExists,
   fastForwardWorktree,
-  localBranchExists,
   gitAddWorktree,
   hasUncommittedChanges,
 } from "../utils/git.js";
 import { confirm } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { getMainWorktreePath, getProjectWorktreePath } from "../utils/paths.js";
+import { getMainWorktreePath, getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
 import { fileExists } from "../utils/files.js";
 
 /**
@@ -135,14 +133,22 @@ export async function pullProjects(
   const remoteBranches = await getRemoteBranchList(bareRepo);
   const remoteProjectBranches = remoteBranches
     .map(b => b.replace(/^origin\//, ""))
-    .filter(b => b !== defaultBranch && b !== "main");
+    .filter(b => b !== defaultBranch);
 
   const newBranches: string[] = [];
+  const skippedBranches: string[] = [];
   for (const branch of remoteProjectBranches) {
     const wtPath = getProjectWorktreePath(workspaceRoot, branch);
-    if (!(await fileExists(wtPath))) {
-      newBranches.push(branch);
+    if (await fileExists(wtPath)) continue;
+
+    // Check if this project exists on main (has a project config directory)
+    const projectDir = getProjectDirInMainPath(mainWorktree, branch);
+    if (!(await fileExists(projectDir))) {
+      skippedBranches.push(branch);
+      continue;
     }
+
+    newBranches.push(branch);
   }
 
   let newWorktreeCount = 0;
@@ -161,6 +167,13 @@ export async function pullProjects(
       } else {
         console.log(`  - ${branch}/ (skipped)`);
       }
+    }
+  }
+
+  if (skippedBranches.length > 0) {
+    console.log(`\n${skippedBranches.length} stale remote branch(es) ignored (no project config on main):`);
+    for (const branch of skippedBranches) {
+      console.log(`  - ${branch}`);
     }
   }
 

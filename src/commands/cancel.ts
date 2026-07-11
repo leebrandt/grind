@@ -68,6 +68,14 @@ export async function cancelProject(
     console.error(`Warning: Could not delete branch '${projectName}'.`);
   }
 
+  // 5b. Push branch deletion to remote (best-effort)
+  try {
+    await $`git -C ${bareRepo} push origin --delete ${projectName}`.quiet();
+    console.log(`  - Deleted remote branch: ${projectName}`);
+  } catch {
+    // Branch may not exist on remote, or origin may not be configured — not fatal
+  }
+
   // 6. Delete project config from main worktree
   const projectConfigDir = getProjectDirInMainPath(mainWorktree, projectName);
   if (await fileExists(projectConfigDir)) {
