@@ -4,64 +4,31 @@
 
 import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
-import { getCommitCount, getFirstCommitDate, getLastCommitDate } from "../utils/git.js";
-import { timeAgo, formatDate } from "../utils/time.js";
-import { parseRepoUrl } from "../utils/repo.js";
-import { DIM, RED, GREEN, RESET } from "../utils/colors.js";
+import { getCommitCount, getLastCommitDate } from "../utils/git.js";
+import { timeAgo } from "../utils/time.js";
+import { DIM, RED, GREEN, YELLOW, RESET } from "../utils/colors.js";
 import { collectProjects } from "../utils/project.js";
+import { getOpenTasks, getTaskUrgency } from "../utils/task.js";
 import type { ProjectConfig } from "../types/index.js";
 import type { ProjectEntry } from "../utils/project.js";
 
 interface ProjectRow {
   name: string;
-  startDate: string;
   hoursWorked: string;
   hoursBilled: string;
-  issues: string;
-  commits: string;
+  taskCount: number;
+  taskUrgency: "overdue" | "today" | "soon" | "none";
   lastSession: string;
   lastCommit: string;
   hasChanges: boolean;
   hasUnbilled: boolean;
   longTerm: boolean;
-  sortKey: number; // for sorting by last session date
-}
-
-async function getIssueCount(repo: string): Promise<string> {
-  const info = parseRepoUrl(repo);
-  if (!info) {
-    // Try as owner/repo shorthand (assume GitHub)
-    if (repo.includes("/") && !repo.includes(":") && !repo.includes("//")) {
-      try {
-        const result = await $`gh issue list --repo ${repo} --state open --json number`.quiet();
-        const issues = JSON.parse(result.stdout.toString().trim());
-        return String(issues.length);
-      } catch {
-        return "?";
-      }
-    }
-    return "?";
-  }
-
-  try {
-    if (info.platform === "github") {
-      const result = await $`gh issue list --repo ${info.repo} --state open --json number`.quiet();
-      const issues = JSON.parse(result.stdout.toString().trim());
-      return String(issues.length);
-    } else {
-      const result = await $`glab issue list --repo ${info.repo} -O json`.quiet();
-      const issues = JSON.parse(result.stdout.toString().trim());
-      return String(Array.isArray(issues) ? issues.length : 0);
-    }
-  } catch {
-    return "?";
-  }
+  sortKey: number;
 }
 
 export async function status(): Promise<void> {
   const { workspaceRoot, bareRepo } = await requireWorkspace();
 
-  // Collect active project worktrees with their configs
   const allProjects = await collectProjects(workspaceRoot);
   const projects = allProjects.filter((p): p is ProjectEntry & { config: ProjectConfig } => p.config !== null);
 
@@ -70,40 +37,36 @@ export async function status(): Promise<void> {
     return;
   }
 
-  // Build rows in parallel
   const rowPromises = projects.map(async ({ config, name, worktreePath }): Promise<ProjectRow> => {
-    // Git queries
     const branch = name;
-    const [commitCount, firstCommitDate, lastCommitDate, issueCount, hasChanges] = await Promise.all([
+    const [commitCount, lastCommitDate, openTasks, hasChanges] = await Promise.all([
       getCommitCount(bareRepo, branch),
-      getFirstCommitDate(bareRepo, branch),
       getLastCommitDate(bareRepo, branch),
-      config.repo ? getIssueCount(config.repo) : Promise.resolve("—"),
+      getOpenTasks(workspaceRoot, name),
       $`git -C ${worktreePath} status --porcelain`.quiet().then(r => r.stdout.toString().trim().length > 0).catch(() => false),
     ]);
 
-    // Time calculations
+    const taskCount = openTasks.length;
+    const taskUrgency = getTaskUrgency(openTasks);
+
     const totalSeconds = config.time.reduce((sum, s) => sum + s.rounded, 0);
     const billedSeconds = config.time.filter(s => s.invoiced).reduce((sum, s) => sum + s.rounded, 0);
     const totalHours = (totalSeconds / 3600).toFixed(1);
     const billedHours = (billedSeconds / 3600).toFixed(1);
     const hasUnbilled = totalSeconds > billedSeconds;
 
-    // Last session
     const sessions = config.time;
     const lastSessionDate = sessions.length > 0 ? sessions[sessions.length - 1].start : null;
     const lastSessionDisplay = lastSessionDate ? timeAgo(new Date(lastSessionDate)) : "never";
 
-    // Sort key: last session timestamp (0 for never)
     const sortKey = lastSessionDate ? new Date(lastSessionDate).getTime() : 0;
 
     return {
       name: config.name,
-      startDate: firstCommitDate ? formatDate(firstCommitDate) : "—",
       hoursWorked: `${totalHours}h`,
       hoursBilled: `${billedHours}h`,
-      issues: issueCount,
-      commits: String(commitCount),
+      taskCount,
+      taskUrgency,
       lastSession: lastSessionDisplay,
       lastCommit: lastCommitDate ? timeAgo(new Date(lastCommitDate)) : "never",
       hasChanges,
@@ -115,7 +78,6 @@ export async function status(): Promise<void> {
 
   const rows = await Promise.all(rowPromises);
 
-  // Sort by last session ascending (most neglected first, never-worked at top)
   rows.sort((a, b) => {
     if (a.sortKey === 0 && b.sortKey === 0) return a.name.localeCompare(b.name);
     if (a.sortKey === 0) return -1;
@@ -123,27 +85,22 @@ export async function status(): Promise<void> {
     return a.sortKey - b.sortKey;
   });
 
-  // Calculate column widths
   const cols = {
     name: Math.max("Project".length, ...rows.map(r => r.name.length)),
-    startDate: Math.max("Started".length, ...rows.map(r => r.startDate.length)),
     hoursWorked: Math.max("Worked".length, ...rows.map(r => r.hoursWorked.length)),
     hoursBilled: Math.max("Billed".length, ...rows.map(r => r.hoursBilled.length)),
-    issues: Math.max("Issues".length, ...rows.map(r => r.issues.length)),
-    commits: Math.max("Commits".length, ...rows.map(r => r.commits.length)),
+    tasks: Math.max("Tasks".length, ...rows.map(r => String(r.taskCount).length)),
     lastSession: Math.max("Last Session".length, ...rows.map(r => r.lastSession.length)),
     lastCommit: Math.max("Last Commit".length, ...rows.map(r => r.lastCommit.length)),
   };
 
-  // Header
-  const header = `  ${"Project".padEnd(cols.name)}  ${"Started".padEnd(cols.startDate)}  ${"Worked".padStart(cols.hoursWorked)}  ${"Billed".padStart(cols.hoursBilled)}  ${"Issues".padStart(cols.issues)}  ${"Commits".padStart(cols.commits)}  ${"Last Session".padEnd(cols.lastSession)}  ${"Last Commit".padEnd(cols.lastCommit)}`;
-  const divider = `  ${"─".repeat(cols.name)}  ${"─".repeat(cols.startDate)}  ${"─".repeat(cols.hoursWorked)}  ${"─".repeat(cols.hoursBilled)}  ${"─".repeat(cols.issues)}  ${"─".repeat(cols.commits)}  ${"─".repeat(cols.lastSession)}  ${"─".repeat(cols.lastCommit)}`;
+  const header = `  ${"Project".padEnd(cols.name)}  ${"Worked".padStart(cols.hoursWorked)}  ${"Billed".padStart(cols.hoursBilled)}  ${"Tasks".padStart(cols.tasks)}  ${"Last Session".padEnd(cols.lastSession)}  ${"Last Commit".padEnd(cols.lastCommit)}`;
+  const divider = `  ${"─".repeat(cols.name)}  ${"─".repeat(cols.hoursWorked)}  ${"─".repeat(cols.hoursBilled)}  ${"─".repeat(cols.tasks)}  ${"─".repeat(cols.lastSession)}  ${"─".repeat(cols.lastCommit)}`;
 
   console.log(`${DIM}${header}${RESET}`);
   console.log(`${DIM}${divider}${RESET}`);
 
   for (const row of rows) {
-    // Highlight: red = no sessions or uncommitted changes, green = unbilled hours
     const prefix = row.longTerm ? "★ " : "  ";
     const paddedName = row.name.padEnd(cols.name);
     let nameDisplay: string;
@@ -155,6 +112,16 @@ export async function status(): Promise<void> {
       nameDisplay = `${prefix}${paddedName}`;
     }
 
-    console.log(`${nameDisplay}  ${row.startDate.padEnd(cols.startDate)}  ${row.hoursWorked.padStart(cols.hoursWorked)}  ${row.hoursBilled.padStart(cols.hoursBilled)}  ${row.issues.padStart(cols.issues)}  ${row.commits.padStart(cols.commits)}  ${row.lastSession.padEnd(cols.lastSession)}  ${row.lastCommit.padEnd(cols.lastCommit)}`);
+    const taskCountStr = String(row.taskCount).padStart(cols.tasks);
+    let taskDisplay: string;
+    if (row.taskUrgency === "overdue") {
+      taskDisplay = `${RED}${taskCountStr}${RESET}`;
+    } else if (row.taskUrgency === "today") {
+      taskDisplay = `${YELLOW}${taskCountStr}${RESET}`;
+    } else {
+      taskDisplay = taskCountStr;
+    }
+
+    console.log(`${nameDisplay}  ${row.hoursWorked.padStart(cols.hoursWorked)}  ${row.hoursBilled.padStart(cols.hoursBilled)}  ${taskDisplay}  ${row.lastSession.padEnd(cols.lastSession)}  ${row.lastCommit.padEnd(cols.lastCommit)}`);
   }
 }

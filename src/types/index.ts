@@ -18,6 +18,16 @@ export interface Session {
   invoiced?: boolean; // true if this session has been billed
 }
 
+// Task
+export interface Task {
+  id: number;
+  description: string;
+  done: boolean;
+  createdAt: string;       // ISO timestamp
+  completedAt?: string;    // ISO timestamp, set when done=true
+  dueDate?: string;        // ISO date (YYYY-MM-DD)
+}
+
 // Rounding options
 export const ROUND_TO_OPTIONS = ["quarter-hour", "half-hour", "hour"] as const;
 export type RoundTo = (typeof ROUND_TO_OPTIONS)[number];
@@ -69,6 +79,7 @@ export interface ProjectConfig {
   type?: string; // Can be any custom type defined in workspace config
   idea: string;
   time: Session[];
+  tasks?: Task[];
   billing: {
     roundTo: RoundTo;
     rate: number;
