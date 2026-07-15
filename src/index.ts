@@ -32,6 +32,7 @@ import { clone } from "./commands/clone.js";
 import { pushProjects } from "./commands/push.js";
 import { pullProjects } from "./commands/pull.js";
 import { showProject } from "./commands/show.js";
+import { listAllTasks, listProjectTasks, addTaskToProject, completeProjectTask } from "./commands/tasks.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -387,6 +388,40 @@ program
   .description("Show project overview")
   .action(async () => {
     await status();
+  });
+
+// grind tasks list [project]
+// grind tasks add <project> "description" [-d <date>]
+// grind tasks done <project> <id>
+const tasksCmd = program
+  .command("tasks")
+  .description("List or manage tasks");
+
+tasksCmd
+  .command("list [project]")
+  .description("List tasks (all projects, or a specific project)")
+  .option("-a, --all", "Include completed tasks")
+  .action(async (project: string | undefined, options: { all?: boolean }) => {
+    if (project) {
+      await listProjectTasks(project, options);
+    } else {
+      await listAllTasks(options);
+    }
+  });
+
+tasksCmd
+  .command("add <project> <description>")
+  .description("Add a task to a project")
+  .option("-d, --due <date>", "Due date")
+  .action(async (project: string, description: string, options: { due?: string }) => {
+    await addTaskToProject(project, description, options);
+  });
+
+tasksCmd
+  .command("done <project> <id>")
+  .description("Mark a task as complete")
+  .action(async (project: string, id: string) => {
+    await completeProjectTask(project, id);
   });
 
 // grind show <project>
