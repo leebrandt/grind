@@ -85,17 +85,18 @@ program
     await pullProjects(options);
   });
 
-// grind config [key] [value] [-g/--global] [-p/--project] [--list]
+// grind config <project> <key> <value>    # Set project config
+// grind config <project> <key>            # Get project config
+// grind config <project> --list           # Show project config
+// grind config -g <key> <value>           # Set workspace config
+// grind config -g <key>                   # Get workspace config
+// grind config -g --list                  # Show workspace config
 program
-  .command("config [key] [value]")
+  .command("config [project] [key] [value]")
   .description("Get or set configuration values")
   .option(
     "-g, --global",
     "Use workspace config (.grind.json) instead of project config",
-  )
-  .option(
-    "-p, --project <name>",
-    "Target a specific project (instead of detecting from cwd)",
   )
   .option("-l, --list", "List all config values")
   .addHelpText(
@@ -132,16 +133,30 @@ Settable keys (workspace-level, use -g):
   )
   .action(
     async (
+      project: string | undefined,
       key: string | undefined,
       value: string | undefined,
-      options: { global?: boolean; project?: string; list?: boolean },
+      options: { global?: boolean; list?: boolean },
     ) => {
-      if (options.list || (!key && !value)) {
-        await configList(options);
-      } else if (key && !value) {
-        await configGet(key, options);
-      } else if (key && value) {
-        await configSet(key, value, options);
+      if (options.global) {
+        if (options.list || (!key && !value)) {
+          await configList(null, options);
+        } else if (key && !value) {
+          await configGet(key, null, options);
+        } else if (key && value) {
+          await configSet(key, value, null, options);
+        }
+      } else {
+        if (!project) {
+          throw new GrindError("Project name is required (or use -g for workspace config)", 1);
+        }
+        if (options.list || (!key && !value)) {
+          await configList(project, options);
+        } else if (key && !value) {
+          await configGet(key, project, options);
+        } else if (key && value) {
+          await configSet(key, value, project, options);
+        }
       }
     },
   );

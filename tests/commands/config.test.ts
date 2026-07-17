@@ -11,7 +11,6 @@ jest.mock("../../src/utils/workspace.js", () => ({
     workspaceRoot: "/home/user/workspace",
     mainWorktree: "/home/user/workspace/grind",
   }),
-  getCurrentProjectName: jest.fn().mockResolvedValue("test-project"),
 }));
 jest.mock("../../src/utils/config.js", () => ({
   readProjectConfig: (...args: unknown[]) => mockReadProjectConfig(...args),
@@ -43,7 +42,7 @@ describe("config command — deadline", () => {
 
   describe("configSet with deadline", () => {
     it("should accept a valid YYYY-MM-DD date", async () => {
-      await configSet("deadline", "2026-08-15", {});
+      await configSet("deadline", "2026-08-15", "test-project", {});
       expect(mockWriteProjectConfig).toHaveBeenCalledWith(
         expect.any(String),
         "test-project",
@@ -52,7 +51,7 @@ describe("config command — deadline", () => {
     });
 
     it("should accept Dec 31", async () => {
-      await configSet("deadline", "2026-12-31", {});
+      await configSet("deadline", "2026-12-31", "test-project", {});
       expect(mockWriteProjectConfig).toHaveBeenCalledWith(
         expect.any(String),
         "test-project",
@@ -61,20 +60,28 @@ describe("config command — deadline", () => {
     });
 
     it("should reject MM-DD-YYYY format", async () => {
-      await expect(configSet("deadline", "08-15-2026", {})).rejects.toThrow(GrindUserError);
-      await expect(configSet("deadline", "08-15-2026", {})).rejects.toThrow("YYYY-MM-DD");
+      await expect(configSet("deadline", "08-15-2026", "test-project", {})).rejects.toThrow(GrindUserError);
+      await expect(configSet("deadline", "08-15-2026", "test-project", {})).rejects.toThrow("YYYY-MM-DD");
     });
 
     it("should reject non-date strings", async () => {
-      await expect(configSet("deadline", "not-a-date", {})).rejects.toThrow(GrindUserError);
+      await expect(configSet("deadline", "not-a-date", "test-project", {})).rejects.toThrow(GrindUserError);
     });
 
     it("should reject invalid month", async () => {
-      await expect(configSet("deadline", "2026-13-01", {})).rejects.toThrow(GrindUserError);
+      await expect(configSet("deadline", "2026-13-01", "test-project", {})).rejects.toThrow(GrindUserError);
     });
 
     it("should reject invalid day", async () => {
-      await expect(configSet("deadline", "2026-02-30", {})).rejects.toThrow(GrindUserError);
+      await expect(configSet("deadline", "2026-02-30", "test-project", {})).rejects.toThrow(GrindUserError);
+    });
+
+    it("should write to global config when projectName is null", async () => {
+      await configSet("currency", "USD", null, {});
+      expect(mockWriteGrindConfig).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ currency: "USD" }),
+      );
     });
   });
 
@@ -84,13 +91,13 @@ describe("config command — deadline", () => {
         ...baseConfig,
         deadline: "2026-08-15",
       });
-      await configList({});
+      await configList("test-project", {});
       expect(console.log).toHaveBeenCalledWith("deadline = 2026-08-15");
     });
 
     it("should not display deadline when not set", async () => {
       mockReadProjectConfig.mockResolvedValue({ ...baseConfig });
-      await configList({});
+      await configList("test-project", {});
       const calls = (console.log as jest.Mock).mock.calls.map(c => c[0]);
       expect(calls).not.toContainEqual(expect.stringContaining("deadline"));
     });
