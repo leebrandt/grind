@@ -349,6 +349,129 @@ describe("status", () => {
     });
   });
 
+  // ── Sort order tests ──
+
+  describe("sort order by hours worked", () => {
+    it("sorts projects by total hours worked descending", async () => {
+      const proj2h = makeConfig({
+        name: "two-hours",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T12:00:00Z", duration: 7200, rounded: 7200 }],
+      });
+      const proj5h = makeConfig({
+        name: "five-hours",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T15:00:00Z", duration: 18000, rounded: 18000 }],
+      });
+      const proj8h = makeConfig({
+        name: "eight-hours",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T18:00:00Z", duration: 28800, rounded: 28800 }],
+      });
+      // Pass in ascending hours order to prove sort is working
+      mockCollectProjects.mockResolvedValue([
+        makeProjectEntry(proj2h),
+        makeProjectEntry(proj5h),
+        makeProjectEntry(proj8h),
+      ]);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const projectLines = rawCalls.filter((l: string) =>
+        l.includes("eight-hours") || l.includes("five-hours") || l.includes("two-hours"),
+      );
+      expect(projectLines).toHaveLength(3);
+
+      const eightIdx = projectLines.findIndex((l: string) => l.includes("eight-hours"));
+      const fiveIdx = projectLines.findIndex((l: string) => l.includes("five-hours"));
+      const twoIdx = projectLines.findIndex((l: string) => l.includes("two-hours"));
+      expect(eightIdx).toBeLessThan(fiveIdx);
+      expect(fiveIdx).toBeLessThan(twoIdx);
+    });
+
+    it("alphabetical tiebreak when hours are equal", async () => {
+      const projA = makeConfig({
+        name: "alpha-project",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T15:00:00Z", duration: 18000, rounded: 18000 }],
+      });
+      const projB = makeConfig({
+        name: "bravo-project",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T15:00:00Z", duration: 18000, rounded: 18000 }],
+      });
+      // Pass in reverse alphabetical order to prove sort is working
+      mockCollectProjects.mockResolvedValue([
+        makeProjectEntry(projB),
+        makeProjectEntry(projA),
+      ]);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const projectLines = rawCalls.filter((l: string) =>
+        l.includes("alpha-project") || l.includes("bravo-project"),
+      );
+      expect(projectLines).toHaveLength(2);
+
+      const alphaIdx = projectLines.findIndex((l: string) => l.includes("alpha-project"));
+      const bravoIdx = projectLines.findIndex((l: string) => l.includes("bravo-project"));
+      expect(alphaIdx).toBeLessThan(bravoIdx);
+    });
+
+    it("zero hours projects fall to bottom", async () => {
+      const proj5h = makeConfig({
+        name: "has-hours",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T15:00:00Z", duration: 18000, rounded: 18000 }],
+      });
+      const proj0h = makeConfig({
+        name: "no-hours",
+        time: [],
+      });
+      // Pass zero-hours first to prove sort is working
+      mockCollectProjects.mockResolvedValue([
+        makeProjectEntry(proj0h),
+        makeProjectEntry(proj5h),
+      ]);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const projectLines = rawCalls.filter((l: string) =>
+        l.includes("has-hours") || l.includes("no-hours"),
+      );
+      expect(projectLines).toHaveLength(2);
+
+      const hasHoursIdx = projectLines.findIndex((l: string) => l.includes("has-hours"));
+      const noHoursIdx = projectLines.findIndex((l: string) => l.includes("no-hours"));
+      expect(hasHoursIdx).toBeLessThan(noHoursIdx);
+    });
+
+    it("no last-session dependency — hours determine order, not recency", async () => {
+      const proj10h = makeConfig({
+        name: "big-project",
+        time: [{ start: "2026-07-01T10:00:00Z", end: "2026-07-01T20:00:00Z", duration: 36000, rounded: 36000 }],
+      });
+      const proj1h = makeConfig({
+        name: "tiny-project",
+        time: [{ start: "2026-07-16T10:00:00Z", end: "2026-07-16T11:00:00Z", duration: 3600, rounded: 3600 }],
+      });
+      // Pass low-hours recent project first
+      mockCollectProjects.mockResolvedValue([
+        makeProjectEntry(proj1h),
+        makeProjectEntry(proj10h),
+      ]);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const projectLines = rawCalls.filter((l: string) =>
+        l.includes("big-project") || l.includes("tiny-project"),
+      );
+      expect(projectLines).toHaveLength(2);
+
+      const bigIdx = projectLines.findIndex((l: string) => l.includes("big-project"));
+      const tinyIdx = projectLines.findIndex((l: string) => l.includes("tiny-project"));
+      expect(bigIdx).toBeLessThan(tinyIdx);
+    });
+  });
+
   // ── Empty state ──
 
   describe("empty state", () => {

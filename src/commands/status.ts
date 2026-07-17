@@ -24,7 +24,7 @@ interface ProjectRow {
   isDeadlineSoon: boolean;
   hasUnbilled: boolean;
   longTerm: boolean;
-  sortKey: number;
+  totalSeconds: number;
 }
 
 export async function status(): Promise<void> {
@@ -59,8 +59,6 @@ export async function status(): Promise<void> {
     const lastSessionDate = sessions.length > 0 ? sessions[sessions.length - 1].start : null;
     const lastSessionDisplay = lastSessionDate ? timeAgo(new Date(lastSessionDate)) : "never";
 
-    const sortKey = lastSessionDate ? new Date(lastSessionDate).getTime() : 0;
-
     const isActive = getActiveSession(config) !== undefined;
 
     const now = new Date();
@@ -84,17 +82,15 @@ export async function status(): Promise<void> {
       isDeadlineSoon,
       hasUnbilled,
       longTerm: config.longTerm === true,
-      sortKey,
+      totalSeconds,
     };
   });
 
   const rows = await Promise.all(rowPromises);
 
   rows.sort((a, b) => {
-    if (a.sortKey === 0 && b.sortKey === 0) return a.name.localeCompare(b.name);
-    if (a.sortKey === 0) return -1;
-    if (b.sortKey === 0) return 1;
-    return a.sortKey - b.sortKey;
+    if (a.totalSeconds === b.totalSeconds) return a.name.localeCompare(b.name);
+    return b.totalSeconds - a.totalSeconds;
   });
 
   const cols = {
