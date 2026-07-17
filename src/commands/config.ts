@@ -5,10 +5,12 @@
 /**
  * Get or set configuration values
  *
- * grind config [key] [value]           # Project-level (in .project.json)
- * grind config -g [key] [value]        # Workspace-level (in .grind.json)
- * grind config --list                  # Show project config
- * grind config -g --list               # Show workspace config
+ * grind config <project> <key> <value>  # Set project config
+ * grind config <project> <key>          # Get project config
+ * grind config <project> --list         # Show project config
+ * grind config -g <key> <value>         # Set workspace config
+ * grind config -g <key>                 # Get workspace config
+ * grind config -g --list                # Show workspace config
  *
  * Keys (workspace-level, -g):
  *   billing.roundTo            - quarter-hour | half-hour | hour
@@ -35,9 +37,10 @@
  *   repo                       - git remote URL (e.g. git@github.com:owner/repo.git, https://gitlab.com/owner/repo)
  *   code                       - code directory (relative to project, e.g. "src")
  *   longTerm                   - true | false (mark as long-term project)
+ *   deadline                   - project deadline (YYYY-MM-DD)
  */
 
-import { requireWorkspace, getCurrentProjectName } from "../utils/workspace.js";
+import { requireWorkspace } from "../utils/workspace.js";
 import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { ROUND_TO_OPTIONS, DEFAULT_PROJECT_TYPES, isValidProjectType } from "../types/index.js";
 import type { RoundTo } from "../types/index.js";
@@ -45,8 +48,6 @@ import { parseRepoUrl } from "../utils/repo.js";
 import { GrindUserError } from "../utils/errors.js";
 
 export interface ConfigOptions {
-  global?: boolean;
-  project?: string;
   list?: boolean;
 }
 
@@ -62,6 +63,7 @@ const PROJECT_SETTABLE_KEYS = [
   "type", "billing.roundTo", "billing.rate",
   "client.contact", "client.company", "client.address",
   "client.phone", "client.email", "repo", "code", "longTerm",
+  "deadline",
 ] as const;
 
 /**
@@ -167,6 +169,20 @@ async function validateValue(key: string, value: string, isGlobal: boolean, main
     return value === "true";
   }
 
+  if (key === "deadline") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new GrindUserError(
+        `Invalid deadline: ${value}. Expected format: YYYY-MM-DD`
+      );
+    }
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      throw new GrindUserError(`Invalid deadline: ${value} is not a valid date.`);
+    }
+    return value;
+  }
+
   // String fields (my.*, client.*, currency, paymentTerms)
   return value;
 }
@@ -174,11 +190,10 @@ async function validateValue(key: string, value: string, isGlobal: boolean, main
 /**
  * List all config values
  */
-export async function configList(options: ConfigOptions): Promise<void> {
+export async function configList(projectName: string | null, options: ConfigOptions): Promise<void> {
   const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
-  const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
-  const useGlobal = options.global || !projectName;
+  const useGlobal = projectName === null;
 
   if (useGlobal) {
     const config = await readGrindConfig(mainWorktree);
@@ -215,17 +230,19 @@ export async function configList(options: ConfigOptions): Promise<void> {
     if (config.longTerm != null) {
       console.log(`longTerm = ${config.longTerm}`);
     }
+    if (config.deadline) {
+      console.log(`deadline = ${config.deadline}`);
+    }
   }
 }
 
 /**
  * Get a config value
  */
-export async function configGet(key: string, options: ConfigOptions): Promise<void> {
+export async function configGet(key: string, projectName: string | null, options: ConfigOptions): Promise<void> {
   const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
-  const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
-  const useGlobal = options.global || !projectName;
+  const useGlobal = projectName === null;
 
   if (useGlobal) {
     const config = await readGrindConfig(mainWorktree);
@@ -251,11 +268,10 @@ export async function configGet(key: string, options: ConfigOptions): Promise<vo
 /**
  * Set a config value
  */
-export async function configSet(key: string, value: string, options: ConfigOptions): Promise<void> {
+export async function configSet(key: string, value: string, projectName: string | null, options: ConfigOptions): Promise<void> {
   const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
-  const projectName = options.global ? null : (options.project ?? await getCurrentProjectName());
-  const useGlobal = options.global || !projectName;
+  const useGlobal = projectName === null;
 
   const grindConfig = await readGrindConfig(mainWorktree);
 
