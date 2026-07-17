@@ -33,6 +33,7 @@ import { pushProjects } from "./commands/push.js";
 import { pullProjects } from "./commands/pull.js";
 import { showProject } from "./commands/show.js";
 import { listAllTasks, listProjectTasks, addTaskToProject, completeProjectTask } from "./commands/tasks.js";
+import { wwd } from "./commands/wwd.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -389,6 +390,11 @@ program
   .action(async () => {
     await status();
   });
+
+// grind wwd (undocumented — "Wha we doin?")
+program.command("wwd").action(async () => {
+  await wwd();
+});
 
 // grind tasks list [project]
 // grind tasks add <project> "description" [-d <date>]
