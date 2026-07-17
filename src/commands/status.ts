@@ -89,6 +89,7 @@ export async function status(): Promise<void> {
   const rows = await Promise.all(rowPromises);
 
   rows.sort((a, b) => {
+    if (a.longTerm !== b.longTerm) return a.longTerm ? 1 : -1;
     if (a.totalSeconds === b.totalSeconds) return a.name.localeCompare(b.name);
     return b.totalSeconds - a.totalSeconds;
   });
