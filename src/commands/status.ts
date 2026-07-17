@@ -2,13 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
 import { getCommitCount, getLastCommitDate } from "../utils/git.js";
 import { timeAgo } from "../utils/time.js";
-import { DIM, RED, GREEN, YELLOW, RESET } from "../utils/colors.js";
+import { DIM, RED, GREEN, YELLOW, WHITE, RESET } from "../utils/colors.js";
 import { collectProjects } from "../utils/project.js";
 import { getOpenTasks, getTaskUrgency } from "../utils/task.js";
+import { getActiveSession } from "../utils/session.js";
 import type { ProjectConfig } from "../types/index.js";
 import type { ProjectEntry } from "../utils/project.js";
 
@@ -20,7 +20,8 @@ interface ProjectRow {
   taskUrgency: "overdue" | "today" | "soon" | "none";
   lastSession: string;
   lastCommit: string;
-  hasChanges: boolean;
+  isActive: boolean;
+  isDeadlineSoon: boolean;
   hasUnbilled: boolean;
   longTerm: boolean;
   sortKey: number;
@@ -37,13 +38,12 @@ export async function status(): Promise<void> {
     return;
   }
 
-  const rowPromises = projects.map(async ({ config, name, worktreePath }): Promise<ProjectRow> => {
+  const rowPromises = projects.map(async ({ config, name }): Promise<ProjectRow> => {
     const branch = name;
-    const [commitCount, lastCommitDate, openTasks, hasChanges] = await Promise.all([
+    const [commitCount, lastCommitDate, openTasks] = await Promise.all([
       getCommitCount(bareRepo, branch),
       getLastCommitDate(bareRepo, branch),
       getOpenTasks(workspaceRoot, name),
-      $`git -C ${worktreePath} status --porcelain`.quiet().then(r => r.stdout.toString().trim().length > 0).catch(() => false),
     ]);
 
     const taskCount = openTasks.length;
@@ -61,6 +61,17 @@ export async function status(): Promise<void> {
 
     const sortKey = lastSessionDate ? new Date(lastSessionDate).getTime() : 0;
 
+    const isActive = getActiveSession(config) !== undefined;
+
+    const now = new Date();
+    let isDeadlineSoon = false;
+    if (config.deadline) {
+      const deadline = new Date(config.deadline + "T23:59:59Z");
+      const diffMs = deadline.getTime() - now.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      isDeadlineSoon = diffDays <= 7;
+    }
+
     return {
       name: config.name,
       hoursWorked: `${totalHours}h`,
@@ -69,7 +80,8 @@ export async function status(): Promise<void> {
       taskUrgency,
       lastSession: lastSessionDisplay,
       lastCommit: lastCommitDate ? timeAgo(new Date(lastCommitDate)) : "never",
-      hasChanges,
+      isActive,
+      isDeadlineSoon,
       hasUnbilled,
       longTerm: config.longTerm === true,
       sortKey,
@@ -104,12 +116,14 @@ export async function status(): Promise<void> {
     const prefix = row.longTerm ? "★ " : "  ";
     const paddedName = row.name.padEnd(cols.name);
     let nameDisplay: string;
-    if (row.sortKey === 0 || row.hasChanges) {
+    if (row.isActive) {
+      nameDisplay = `${prefix}${GREEN}${paddedName}${RESET}`;
+    } else if (row.isDeadlineSoon) {
       nameDisplay = `${prefix}${RED}${paddedName}${RESET}`;
     } else if (row.hasUnbilled) {
-      nameDisplay = `${prefix}${GREEN}${paddedName}${RESET}`;
+      nameDisplay = `${prefix}${YELLOW}${paddedName}${RESET}`;
     } else {
-      nameDisplay = `${prefix}${paddedName}`;
+      nameDisplay = `${prefix}${WHITE}${paddedName}${RESET}`;
     }
 
     const taskCountStr = String(row.taskCount).padStart(cols.tasks);
