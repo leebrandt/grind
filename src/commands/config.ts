@@ -35,6 +35,7 @@
  *   repo                       - git remote URL (e.g. git@github.com:owner/repo.git, https://gitlab.com/owner/repo)
  *   code                       - code directory (relative to project, e.g. "src")
  *   longTerm                   - true | false (mark as long-term project)
+ *   deadline                   - project deadline (YYYY-MM-DD)
  */
 
 import { requireWorkspace, getCurrentProjectName } from "../utils/workspace.js";
@@ -62,6 +63,7 @@ const PROJECT_SETTABLE_KEYS = [
   "type", "billing.roundTo", "billing.rate",
   "client.contact", "client.company", "client.address",
   "client.phone", "client.email", "repo", "code", "longTerm",
+  "deadline",
 ] as const;
 
 /**
@@ -167,6 +169,20 @@ async function validateValue(key: string, value: string, isGlobal: boolean, main
     return value === "true";
   }
 
+  if (key === "deadline") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new GrindUserError(
+        `Invalid deadline: ${value}. Expected format: YYYY-MM-DD`
+      );
+    }
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      throw new GrindUserError(`Invalid deadline: ${value} is not a valid date.`);
+    }
+    return value;
+  }
+
   // String fields (my.*, client.*, currency, paymentTerms)
   return value;
 }
@@ -214,6 +230,9 @@ export async function configList(options: ConfigOptions): Promise<void> {
     }
     if (config.longTerm != null) {
       console.log(`longTerm = ${config.longTerm}`);
+    }
+    if (config.deadline) {
+      console.log(`deadline = ${config.deadline}`);
     }
   }
 }

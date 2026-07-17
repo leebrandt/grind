@@ -197,6 +197,7 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
   "repo": "git@github.com:owner/repo.git",
   "code": "src",
   "longTerm": false,
+  "deadline": "2026-08-15",
   "publications": [
     {
       "url": "https://example.com/my-post",

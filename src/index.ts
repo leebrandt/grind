@@ -113,6 +113,7 @@ Settable keys (project-level):
   repo                  GitHub repository (owner/repo format)
   code                  code directory (relative to project, e.g. "src")
   longTerm              true/false (mark as long-running project, shows ★)
+  deadline              project deadline (YYYY-MM-DD)
 
 Settable keys (workspace-level, use -g):
   billing.roundTo       quarter-hour, half-hour, hour

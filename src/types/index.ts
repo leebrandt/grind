@@ -88,6 +88,7 @@ export interface ProjectConfig {
   repo?: string;
   code?: string; // Directory containing code (opened by 'grind code')
   longTerm?: boolean;
+  deadline?: string; // ISO date (YYYY-MM-DD)
   publications?: { url: string; publishedAt: string }[];
 }
 
