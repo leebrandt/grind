@@ -11,6 +11,7 @@ import {
   getRemoteUrl,
   setRemoteUrl,
   hasUncommittedChanges,
+  formatShellError,
 } from "../utils/git.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 import { getMainWorktreePath, getProjectWorktreePath } from "../utils/paths.js";
@@ -79,7 +80,7 @@ export async function pushProjects(
     await gitPushAll(bareRepo);
     console.log("  Branches pushed successfully.");
   } catch (e) {
-    throw new GrindSystemError("Failed to push to remote. Check your connection and authentication.");
+    throw new GrindSystemError(`Failed to push to remote. Check your connection and authentication: ${formatShellError(e)}`);
   }
 
   // 5. Summary

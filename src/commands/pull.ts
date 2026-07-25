@@ -8,6 +8,7 @@ import { readGrindConfig } from "../utils/config.js";
 import {
   getActiveWorktrees,
   gitFetchAll,
+  formatShellError,
   getRemoteUrl,
   setRemoteUrl,
   getRemoteBranchList,
@@ -85,8 +86,8 @@ export async function pullProjects(
   try {
     await gitFetchAll(bareRepo);
     console.log("  Fetch completed.");
-  } catch {
-    throw new GrindSystemError("Failed to fetch from remote. Check your connection and authentication.");
+  } catch (e) {
+    throw new GrindSystemError(`Failed to fetch from remote. Check your connection and authentication: ${formatShellError(e)}`);
   }
 
   const defaultBranch = await getDefaultBranch(bareRepo, config);
@@ -100,8 +101,8 @@ export async function pullProjects(
     try {
       await $`git -C ${mainWorktree} merge --ff-only origin/${mainBranch}`.quiet();
       console.log(`  ${mainBranch} fast-forwarded.`);
-    } catch {
-      console.log(`  Warning: could not fast-forward ${mainBranch}. It may have diverged.`);
+    } catch (e) {
+      console.log(`  Warning: could not fast-forward ${mainBranch}: ${formatShellError(e)}`);
     }
   } else if (!mainHasRemote) {
     console.log(`  No remote tracking branch for '${mainBranch}', skipping.`);

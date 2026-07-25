@@ -263,3 +263,15 @@ export async function localBranchExists(bareRepoPath: string, branch: string): P
 export async function gitPushToUrl(bareRepoPath: string, branch: string, remoteUrl: string): Promise<void> {
   await $`git -C ${bareRepoPath} push ${remoteUrl} ${branch}:${branch}`.quiet();
 }
+
+/**
+ * Extract a human-readable message from a Bun ShellError (or any error).
+ * Returns the git stderr output when available, otherwise the error message.
+ */
+export function formatShellError(e: unknown): string {
+  if (e instanceof $.ShellError) {
+    const stderr = e.stderr.toString().trim();
+    return stderr || e.message;
+  }
+  return String(e);
+}

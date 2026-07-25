@@ -6,7 +6,7 @@ import { $ } from "bun";
 import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
-import { getDefaultBranch, hasUncommittedChanges } from "../utils/git.js";
+import { getDefaultBranch, hasUncommittedChanges, formatShellError } from "../utils/git.js";
 import { readGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import { confirmOrExit } from "../utils/prompts.js";
@@ -62,8 +62,8 @@ export async function publishProject(
   // 6. Switch to default branch in grind/ worktree
   try {
     await $`git -C ${mainWorktree} switch ${defaultBranch}`.quiet();
-  } catch {
-    throw new GrindSystemError(`Could not switch to ${defaultBranch} branch. Is it checked out in another worktree?`);
+  } catch (e) {
+    throw new GrindSystemError(`Could not switch to ${defaultBranch} branch. Is it checked out in another worktree?: ${formatShellError(e)}`);
   }
 
   // 7. Merge project branch into default branch
@@ -73,8 +73,8 @@ export async function publishProject(
   try {
     await $`git -C ${mainWorktree} merge ${projectName}`.quiet();
     console.log("Merge completed successfully.");
-  } catch {
-    throw new GrindSystemError(`Merge failed. Please resolve conflicts manually in ${mainWorktree}`);
+  } catch (e) {
+    throw new GrindSystemError(`Merge failed. Please resolve conflicts manually in ${mainWorktree}: ${formatShellError(e)}`);
   }
 
   // 8. If -d or -D flag: remove worktree (and optionally branch)

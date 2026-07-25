@@ -7,7 +7,7 @@ import path from "node:path";
 import { rm } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
-import { gitCommit } from "../utils/git.js";
+import { gitCommit, formatShellError } from "../utils/git.js";
 import { confirmOrExit } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 import { getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
@@ -53,10 +53,10 @@ export async function cancelProject(
       await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
     }
     console.log(`  - Removed worktree: ${projectName}/`);
-  } catch {
+  } catch (e) {
     throw new GrindSystemError(
       "Could not remove worktree. It may have uncommitted changes.\n" +
-      "Use --force to remove anyway."
+      `Use --force to remove anyway: ${formatShellError(e)}`
     );
   }
 
@@ -64,8 +64,8 @@ export async function cancelProject(
   try {
     await $`git -C ${bareRepo} branch -D ${projectName}`.quiet();
     console.log(`  - Deleted branch: ${projectName}`);
-  } catch {
-    console.error(`Warning: Could not delete branch '${projectName}'.`);
+  } catch (e) {
+    console.error(`Warning: Could not delete branch '${projectName}': ${formatShellError(e)}`);
   }
 
   // 5b. Push branch deletion to remote (best-effort)
