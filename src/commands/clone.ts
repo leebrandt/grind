@@ -7,7 +7,7 @@ import path from "node:path";
 import { mkdir, readdir } from "node:fs/promises";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { readGrindConfig, writeGrindConfig } from "../utils/config.js";
+import { readGrindConfig, writeGrindConfig, readProjectConfig } from "../utils/config.js";
 import {
   cloneBare,
   setFetchRefspec,
@@ -107,14 +107,20 @@ export async function clone(url: string, directory?: string): Promise<void> {
   grindConfig.remote.url = url;
   await writeGrindConfig(mainWorktreePath, grindConfig);
 
-  // 7. Restore project worktrees from configs on main
+  // 7. Restore project worktrees from configs on main (skip canceled/published)
   const projectsDir = getProjectsDirPath(mainWorktreePath);
   let projectNames: string[] = [];
   if (await fileExists(projectsDir)) {
     const entries = await readdir(projectsDir, { withFileTypes: true });
-    projectNames = entries
+    const allNames = entries
       .filter(e => e.isDirectory())
       .map(e => e.name);
+
+    for (const name of allNames) {
+      const config = await readProjectConfig(targetDir, name);
+      if (config?.status === "canceled" || config?.status === "published") continue;
+      projectNames.push(name);
+    }
   }
 
   if (projectNames.length > 0) {
