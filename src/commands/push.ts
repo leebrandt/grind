@@ -2,22 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { $ } from "bun";
 import { requireWorkspace } from "../utils/workspace.js";
 import { readGrindConfig } from "../utils/config.js";
 import {
-  getActiveWorktrees,
-  gitPushAll,
+  gitPushBranch,
   getRemoteUrl,
   setRemoteUrl,
   hasUncommittedChanges,
+  getDefaultBranch,
   formatShellError,
 } from "../utils/git.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { getMainWorktreePath, getProjectWorktreePath } from "../utils/paths.js";
 
 /**
- * Push all workspace changes to remote.
+ * Push workspace changes to remote.
+ * Only pushes the main branch (project worktrees are local-only).
  * grind push [-u <url>]
  */
 export async function pushProjects(
@@ -43,42 +42,21 @@ export async function pushProjects(
     console.log("Setting remote origin...");
     await setRemoteUrl(bareRepo, remoteUrl);
   } else if (existingOrigin !== remoteUrl) {
-    // URL provided differs from origin — update it
     await setRemoteUrl(bareRepo, remoteUrl);
   }
 
-  // 3. Collect worktrees and check for uncommitted changes
-  const allWorktrees = await getActiveWorktrees(bareRepo, workspaceRoot);
-  const dirtyWorktrees: string[] = [];
-
-  // Check main worktree
+  // 3. Check main worktree for uncommitted changes
   if (await hasUncommittedChanges(mainWorktree)) {
-    dirtyWorktrees.push("grind/ (main worktree)");
+    console.log("Warning: uncommitted changes in grind/ (main worktree).");
+    console.log("  Run 'grind save grind' to commit, then push again.\n");
   }
 
-  // Check project worktrees
-  for (const projectName of allWorktrees) {
-    const wtPath = getProjectWorktreePath(workspaceRoot, projectName);
-    if (await hasUncommittedChanges(wtPath)) {
-      dirtyWorktrees.push(`${projectName}/`);
-    }
-  }
-
-  // Warn about uncommitted changes
-  if (dirtyWorktrees.length > 0) {
-    console.log("Warning: uncommitted changes in:");
-    for (const wt of dirtyWorktrees) {
-      console.log(`  - ${wt} (skipping push for this worktree)`);
-    }
-    // We continue — the bare repo's committed state will still be pushed
-    console.log("  Run 'grind save' on each project to commit, then push again.\n");
-  }
-
-  // 4. Push all branches and tags to origin
-  console.log("Pushing all branches to remote...");
+  // 4. Push main branch and tags to origin
+  const defaultBranch = await getDefaultBranch(bareRepo, config);
+  console.log(`Pushing ${defaultBranch} branch to remote...`);
   try {
-    await gitPushAll(bareRepo);
-    console.log("  Branches pushed successfully.");
+    await gitPushBranch(bareRepo, defaultBranch);
+    console.log("  Pushed successfully.");
   } catch (e) {
     throw new GrindSystemError(`Failed to push to remote. Check your connection and authentication: ${formatShellError(e)}`);
   }
@@ -86,8 +64,5 @@ export async function pushProjects(
   // 5. Summary
   console.log(`\n--> push complete <--`);
   console.log(`Remote: ${remoteUrl}`);
-  console.log(`Branches pushed to origin: ${allWorktrees.length + 1}`);
-  if (dirtyWorktrees.length > 0) {
-    console.log(`Skipped (uncommitted): ${dirtyWorktrees.length}`);
-  }
+  console.log(`Branch pushed: ${defaultBranch}`);
 }

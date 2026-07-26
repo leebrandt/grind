@@ -12,7 +12,7 @@ import { formatDate } from "../utils/time.js";
 
 import PDFDocument from "pdfkit";
 import { GrindUserError } from "../utils/errors.js";
-import { getProjectWorktreePath, getInvoiceDirPath } from "../utils/paths.js";
+import { getInvoiceDirPath } from "../utils/paths.js";
 
 /**
  * Generate invoice for a project
@@ -33,7 +33,6 @@ export async function invoiceProject(projectName: string): Promise<void> {
     throw new GrindUserError(`Project '${projectName}' not found.`);
   }
   const { config, sourcePath: configPath } = result;
-  const projectWorktreePath = getProjectWorktreePath(workspaceRoot, projectName);
 
   // 5. Filter sessions: only unbilled sessions with start AND end times
   const unbilledSessions = config.time.filter(
@@ -186,8 +185,8 @@ ${tableRows}
   // 11. Save updated config - this is the final "commit"
   await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 
-  // 12. Commit changes to the project worktree
-  await gitCommit(projectWorktreePath, `Invoice ${timestamp} for ${projectName}`);
+  // 12. Commit changes to the main worktree
+  await gitCommit(mainWorktree, `Invoice ${timestamp} for ${projectName}`);
 
   console.log(`\nInvoice generated:`);
   console.log(`  Markdown: ${markdownPath}`);

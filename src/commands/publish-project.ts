@@ -6,7 +6,7 @@ import { $ } from "bun";
 import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
-import { getDefaultBranch, hasUncommittedChanges, formatShellError } from "../utils/git.js";
+import { getDefaultBranch, hasUncommittedChanges, formatShellError, gitDeleteRemoteBranch } from "../utils/git.js";
 import { readGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import { confirmOrExit } from "../utils/prompts.js";
@@ -50,9 +50,20 @@ export async function publishProject(
     await writeProjectConfig(workspaceRoot, projectName, config);
 
     const configRelPath = path.join("projects", projectName, ".project.json");
-    await $`git -C ${worktreePath} add ${configRelPath}`.quiet();
-    await $`git -C ${worktreePath} commit -m ${"Record publication: " + options.url}`.quiet();
+    await $`git -C ${mainWorktree} add ${configRelPath}`.quiet();
+    await $`git -C ${mainWorktree} commit -m ${"Record publication: " + options.url}`.quiet();
     console.log(`  - Recorded publication: ${options.url}`);
+  }
+
+  // 4b. Mark project as published in config
+  const pubConfig = await readProjectConfig(workspaceRoot, projectName);
+  if (pubConfig) {
+    pubConfig.status = 'published';
+    await writeProjectConfig(workspaceRoot, projectName, pubConfig);
+    const configRelPath = path.join("projects", projectName, ".project.json");
+    await $`git -C ${mainWorktree} add ${configRelPath}`.quiet();
+    await $`git -C ${mainWorktree} commit -m ${"Mark project as published: " + projectName}`.quiet();
+    console.log(`  - Marked project as published in config`);
   }
 
   // 5. Determine default branch name
@@ -93,6 +104,11 @@ export async function publishProject(
     if (options?.deleteBranch) {
       await $`git -C ${bareRepo} branch -D ${projectName}`.quiet();
       console.log(`  - Deleted branch: ${projectName}`);
+
+      // Also delete from remote (best-effort)
+      if (await gitDeleteRemoteBranch(bareRepo, projectName)) {
+        console.log(`  - Deleted remote branch: ${projectName}`);
+      }
     }
 
     console.log(`\nProject '${projectName}' published and archived.`);

@@ -3,14 +3,14 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import path from "node:path";
-import { mkdir, writeFile, unlink, readFile } from "node:fs/promises";
+import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { $ } from "bun";
 import type { NewCommandOptions, ProjectConfig } from "../types/index.js";
 import { getTimestampFilename } from "../utils/time.js";
 import { getIdeaByNumber, fileExists } from "../utils/files.js";
 import { requireWorkspace } from "../utils/workspace.js";
 import { gitAddWorktree, gitCommit, hasUncommittedChanges } from "../utils/git.js";
-import { readGrindConfig } from "../utils/config.js";
+import { readGrindConfig, readProjectConfig } from "../utils/config.js";
 import { parseRepoUrl } from "../utils/repo.js";
 import { listIdeas } from "./list.js";
 import { GrindUserError } from "../utils/errors.js";
@@ -20,7 +20,6 @@ import {
   getBareRepoPath,
   getProjectWorktreePath,
   getProjectDirInMainPath,
-  getProjectConfigPath,
 } from "../utils/paths.js";
 
 /**
@@ -200,13 +199,8 @@ async function newRepoIssue(
 ): Promise<void> {
   const { workspaceRoot } = await requireWorkspace();
 
-  // Read project config from project worktree ({workspace}/{project}/projects/{project}/.project.json)
-  const configPath = getProjectConfigPath(workspaceRoot, projectName);
-  let projectConfig: ProjectConfig;
-  try {
-    const content = await readFile(configPath, "utf-8");
-    projectConfig = JSON.parse(content);
-  } catch {
+  const projectConfig = await readProjectConfig(workspaceRoot, projectName);
+  if (!projectConfig) {
     throw new GrindUserError(`Project '${projectName}' not found.`);
   }
   if (!projectConfig.repo) {

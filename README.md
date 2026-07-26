@@ -99,10 +99,32 @@ grind publish rust-memory-management -D   # Delete worktree and branch (prompts 
 grind publish rust-memory-management -D -y  # Skip confirmation prompt
 grind publish rust-memory-management -u https://example.com/post  # Record publication URL
 
+# Tasks
+grind tasks list                          # List all open tasks across projects
+grind tasks list my-project               # List tasks for a specific project
+grind tasks list -a                       # Include completed tasks
+grind tasks add my-project "Fix the bug"  # Add a task
+grind tasks add my-project "Ship feature" -d 3d  # Add a task with due date (3 days)
+grind tasks done my-project 1             # Mark task #1 as complete
+
+# Journal
+grind journal                             # Open today's journal entry in $EDITOR
+
+# What we doing? (status + tasks combined)
+grind wwd
+
+# Sync with remote
+grind push                                # Push main branch to remote
+grind pull                                # Pull main branch and create worktrees for new projects
+
+# Cleanup stale branches
+grind cleanup                             # Remove branches without project configs
+grind cleanup --dry-run                   # Preview what would be deleted
+
 # Configuration
 grind config -g billing.defaultRate 125   # Set workspace default rate
 grind config -g billing.roundTo half-hour # Set workspace rounding
-grind config -g projectTypes "blog,webapp,video,podcast"  # Override project types
+grind config -g projectTypes "blog,webapp,video,song"  # Override project types
 grind config -g defaultBranch main        # Set custom default branch name
 grind config billing.rate 85              # Set project-specific rate
 grind config -p my-project repo git@github.com:owner/repo.git  # Set project repo
@@ -123,9 +145,11 @@ Uses git worktrees to isolate each project while sharing history:
 │   ├── .grind.json              # workspace config (billing defaults, defaultBranch, projectTypes, professional info)
 │   ├── ideas/                   # timestamped markdown files
 │   │   └── 20260125051508.md
+│   ├── journal/                 # daily journal entries (YYYY-MM-DD.md)
+│   │   └── 2026-07-26.md
 │   └── projects/                # project configs (shared across worktrees)
 │       ├── my-blog-post/
-│       │   └── .project.json    # time tracking & billing config
+│       │   └── .project.json    # time tracking, billing, tasks
 │       └── cool-webapp/
 │           └── .project.json
 ├── my-blog-post/                # project worktree (tracks "my-blog-post" branch)
@@ -187,6 +211,15 @@ Located in `grind/projects/{project-name}/.project.json` and shared across all w
     "roundTo": "quarter-hour",
     "rate": 150
   },
+  "tasks": [
+    {
+      "id": 1,
+      "description": "Write introduction",
+      "done": false,
+      "createdAt": "2026-07-20T10:00:00Z",
+      "dueDate": "2026-07-28"
+    }
+  ],
   "client": {
     "contact": "John Smith",
     "company": "Client Corp",

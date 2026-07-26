@@ -3,29 +3,27 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { $ } from "bun";
+import { readdir } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
-import { readGrindConfig } from "../utils/config.js";
+import { readGrindConfig, readProjectConfig } from "../utils/config.js";
 import {
-  getActiveWorktrees,
-  gitFetchAll,
+  gitFetchBranch,
+  getDefaultBranch,
   formatShellError,
   getRemoteUrl,
   setRemoteUrl,
-  getRemoteBranchList,
-  getDefaultBranch,
-  getCurrentBranch,
-  remoteBranchExists,
-  fastForwardWorktree,
-  gitAddWorktree,
   hasUncommittedChanges,
+  gitAddWorktree,
+  getActiveWorktrees,
 } from "../utils/git.js";
 import { confirm } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { getMainWorktreePath, getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
+import { getProjectsDirPath, getProjectWorktreePath } from "../utils/paths.js";
 import { fileExists } from "../utils/files.js";
 
 /**
  * Pull latest workspace state from remote.
+ * Fetches main branch only, then reconciles project worktrees from configs on main.
  * grind pull [-u <url>]
  */
 export async function pullProjects(
@@ -54,143 +52,84 @@ export async function pullProjects(
     await setRemoteUrl(bareRepo, remoteUrl);
   }
 
-  // 3. Collect worktrees and check for uncommitted changes
-  const allWorktrees = await getActiveWorktrees(bareRepo, workspaceRoot);
-  const dirtyWorktrees: Set<string> = new Set();
-
-  // Check main worktree
+  // 3. Check main worktree for uncommitted changes
   const mainDirty = await hasUncommittedChanges(mainWorktree);
   if (mainDirty) {
-    dirtyWorktrees.add("grind");
+    console.log("Warning: uncommitted changes in grind/ (main worktree).");
+    console.log("  Run 'grind save grind' to commit before pulling.\n");
   }
 
-  // Check project worktrees
-  for (const projectName of allWorktrees) {
-    const wtPath = getProjectWorktreePath(workspaceRoot, projectName);
-    if (await hasUncommittedChanges(wtPath)) {
-      dirtyWorktrees.add(projectName);
-    }
-  }
-
-  if (dirtyWorktrees.size > 0) {
-    console.log("Warning: uncommitted changes in:");
-    for (const wt of dirtyWorktrees) {
-      const label = wt === "grind" ? "grind/ (main worktree)" : `${wt}/`;
-      console.log(`  - ${label} (will not update this worktree)`);
-    }
-    console.log("  Run 'grind save' on each project to commit before pulling.\n");
-  }
-
-  // 4. Fetch all from remote
-  console.log("Fetching from remote...");
+  // 4. Fetch main branch from remote
+  const defaultBranch = await getDefaultBranch(bareRepo, config);
+  console.log(`Fetching ${defaultBranch} from remote...`);
   try {
-    await gitFetchAll(bareRepo);
+    await gitFetchBranch(bareRepo, defaultBranch);
     console.log("  Fetch completed.");
   } catch (e) {
     throw new GrindSystemError(`Failed to fetch from remote. Check your connection and authentication: ${formatShellError(e)}`);
   }
 
-  const defaultBranch = await getDefaultBranch(bareRepo, config);
-
   // 5. Update main worktree
-  const mainBranch = await getCurrentBranch(mainWorktree);
-  const mainHasRemote = await remoteBranchExists(bareRepo, mainBranch);
-
-  if (mainHasRemote && !dirtyWorktrees.has("grind")) {
-    console.log(`Updating grind/ (${mainBranch})...`);
+  if (!mainDirty) {
+    console.log(`Updating grind/ (${defaultBranch})...`);
     try {
-      await $`git -C ${mainWorktree} merge --ff-only origin/${mainBranch}`.quiet();
-      console.log(`  ${mainBranch} fast-forwarded.`);
+      await $`git -C ${mainWorktree} merge --ff-only origin/${defaultBranch}`.quiet();
+      console.log(`  ${defaultBranch} fast-forwarded.`);
     } catch (e) {
-      console.log(`  Warning: could not fast-forward ${mainBranch}: ${formatShellError(e)}`);
+      console.log(`  Warning: could not fast-forward ${defaultBranch}: ${formatShellError(e)}`);
     }
-  } else if (!mainHasRemote) {
-    console.log(`  No remote tracking branch for '${mainBranch}', skipping.`);
   }
 
-  // 6. Update existing project worktrees
-  for (const projectName of allWorktrees) {
-    if (dirtyWorktrees.has(projectName)) {
-      console.log(`  Skipping ${projectName}/ (uncommitted changes)`);
+  // 6. Read project configs from main and reconcile worktrees
+  const projectsDir = getProjectsDirPath(mainWorktree);
+  let projectNames: string[] = [];
+  if (await fileExists(projectsDir)) {
+    const entries = await readdir(projectsDir, { withFileTypes: true });
+    projectNames = entries
+      .filter(e => e.isDirectory())
+      .map(e => e.name);
+  }
+
+  const activeWorktrees = await getActiveWorktrees(bareRepo, workspaceRoot);
+  const activeSet = new Set(activeWorktrees);
+
+  let createdCount = 0;
+  let skippedCount = 0;
+
+  for (const name of projectNames) {
+    const wtPath = getProjectWorktreePath(workspaceRoot, name);
+    if (await fileExists(wtPath)) continue; // worktree already exists
+
+    // Create worktree for this project from main
+    if (activeSet.has(name)) continue; // branch exists with worktree (shouldn't happen if dir doesn't exist, but be safe)
+
+    // Skip canceled or published projects
+    const projectConfig = await readProjectConfig(workspaceRoot, name);
+    if (projectConfig?.status === 'canceled' || projectConfig?.status === 'published') {
+      console.log(`  Skipping '${name}' (${projectConfig.status})`);
+      skippedCount++;
       continue;
     }
 
-    const hasRemote = await remoteBranchExists(bareRepo, projectName);
-    if (!hasRemote) {
-      console.log(`  No remote tracking for '${projectName}', skipping.`);
-      continue;
-    }
-
-    const wtPath = getProjectWorktreePath(workspaceRoot, projectName);
-    const updated = await fastForwardWorktree(wtPath, projectName);
-    if (updated) {
-      console.log(`  ${projectName}/ fast-forwarded.`);
-    } else {
-      console.log(`  Warning: could not fast-forward ${projectName}/. May have diverged.`);
+    console.log(`  Creating worktree for '${name}'...`);
+    try {
+      await gitAddWorktree(bareRepo, wtPath, name);
+      console.log(`    - ${name}/ created.`);
+      createdCount++;
+    } catch {
+      console.log(`    - ${name}/ (failed to create worktree)`);
+      skippedCount++;
     }
   }
 
-  // 7. Find remote branches that don't have local worktrees and prompt to restore
-  const remoteBranches = await getRemoteBranchList(bareRepo);
-  const remoteProjectBranches = remoteBranches
-    .map(b => b.replace(/^origin\//, ""))
-    .filter(b => b !== defaultBranch);
-
-  const newBranches: string[] = [];
-  const skippedBranches: string[] = [];
-  for (const branch of remoteProjectBranches) {
-    const wtPath = getProjectWorktreePath(workspaceRoot, branch);
-    if (await fileExists(wtPath)) continue;
-
-    // Check if this project exists on main (has a project config directory)
-    const projectDir = getProjectDirInMainPath(mainWorktree, branch);
-    if (!(await fileExists(projectDir))) {
-      skippedBranches.push(branch);
-      continue;
-    }
-
-    newBranches.push(branch);
-  }
-
-  let newWorktreeCount = 0;
-  if (newBranches.length > 0) {
-    console.log(`\n${newBranches.length} new remote branch(es) found:`);
-    for (const branch of newBranches) {
-      if (await confirm(`Create worktree for '${branch}'?`, false)) {
-        const wtPath = getProjectWorktreePath(workspaceRoot, branch);
-        try {
-          await gitAddWorktree(bareRepo, wtPath, branch);
-          console.log(`  - ${branch}/ created.`);
-          newWorktreeCount++;
-        } catch {
-          console.log(`  - ${branch}/ (failed to create worktree)`);
-        }
-      } else {
-        console.log(`  - ${branch}/ (skipped)`);
-      }
-    }
-  }
-
-  if (skippedBranches.length > 0) {
-    console.log(`\n${skippedBranches.length} stale remote branch(es) ignored (no project config on main):`);
-    for (const branch of skippedBranches) {
-      console.log(`  - ${branch}`);
-    }
-  }
-
-  // 8. Summary
-  const updatedCount = allWorktrees.filter(
-    n => !dirtyWorktrees.has(n) && remoteBranches.includes(`origin/${n}`)
-  ).length;
-  const mainUpdated = mainHasRemote && !dirtyWorktrees.has("grind") ? 1 : 0;
-
+  // 7. Summary
   console.log(`\n--> pull complete <--`);
   console.log(`Remote: ${remoteUrl}`);
-  console.log(`Worktrees updated: ${updatedCount + mainUpdated}`);
-  if (newWorktreeCount > 0) {
-    console.log(`New worktrees created: ${newWorktreeCount}`);
+  console.log(`Branch updated: ${defaultBranch}`);
+  if (createdCount > 0) {
+    console.log(`New worktrees created: ${createdCount}`);
   }
-  if (dirtyWorktrees.size > 0) {
-    console.log(`Skipped (uncommitted): ${dirtyWorktrees.size}`);
+  if (skippedCount > 0) {
+    console.log(`Worktrees failed: ${skippedCount}`);
   }
 }

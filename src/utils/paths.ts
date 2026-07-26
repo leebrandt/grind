@@ -17,17 +17,24 @@ export function getGrindConfigPath(mainWorktree: string): string {
   return path.join(mainWorktree, ".grind.json");
 }
 
+/**
+ * Path to .project.json in the main worktree (single source of truth).
+ * All reads and writes of project config go through this path.
+ */
 export function getProjectConfigPath(workspaceRoot: string, projectName: string): string {
-  return path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");
+  return path.join(workspaceRoot, MAIN_WORKTREE_NAME, "projects", projectName, ".project.json");
 }
 
+/**
+ * @deprecated Use getProjectConfigPath — kept as alias for backward compat.
+ */
 export function getMainProjectConfigPath(mainWorktree: string, projectName: string): string {
   return path.join(mainWorktree, "projects", projectName, ".project.json");
 }
 
 // Project files
 export function getProjectIdeaFilePath(workspaceRoot: string, projectName: string): string {
-  return path.join(workspaceRoot, projectName, "projects", projectName, "the-idea.md");
+  return path.join(workspaceRoot, MAIN_WORKTREE_NAME, "projects", projectName, "the-idea.md");
 }
 
 export function getProjectWorktreePath(workspaceRoot: string, projectName: string): string {

@@ -31,6 +31,8 @@ import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
 import { pushProjects } from "./commands/push.js";
 import { pullProjects } from "./commands/pull.js";
+import { cleanup } from "./commands/cleanup.js";
+import { migrate } from "./commands/migrate.js";
 import { showProject } from "./commands/show.js";
 import { listAllTasks, listProjectTasks, addTaskToProject, completeProjectTask } from "./commands/tasks.js";
 import { wwd } from "./commands/wwd.js";
@@ -70,7 +72,7 @@ program
 // grind push [-u <url>]
 program
   .command("push")
-  .description("Push all workspace changes to remote")
+  .description("Push main branch to remote (project worktrees are local-only)")
   .option("-u, --url <url>", "Remote URL (overrides configured remote)")
   .action(async (options: { url?: string }) => {
     await pushProjects(options);
@@ -79,10 +81,28 @@ program
 // grind pull [-u <url>]
 program
   .command("pull")
-  .description("Pull latest workspace state from remote")
+  .description("Pull main branch and create worktrees for new projects")
   .option("-u, --url <url>", "Remote URL (overrides configured remote)")
   .action(async (options: { url?: string }) => {
     await pullProjects(options);
+  });
+
+// grind cleanup [--dry-run] [-y]
+program
+  .command("cleanup")
+  .description("Remove stale remote and local branches (branches without project configs on main)")
+  .option("--dry-run", "Show what would be deleted without making changes")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (options: { dryRun?: boolean; yes?: boolean }) => {
+    await cleanup(options);
+  });
+
+// grind migrate
+program
+  .command("migrate")
+  .description("One-time migration: move project configs from project worktrees to main")
+  .action(async () => {
+    await migrate();
   });
 
 // grind config <project> <key> <value>    # Set project config

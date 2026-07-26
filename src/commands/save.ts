@@ -7,19 +7,17 @@ import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getActiveSession, endSession } from "../utils/session.js";
 import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
 import { GrindUserError } from "../utils/errors.js";
-import { getProjectWorktreePath } from "../utils/paths.js";
 
 export async function save(
   projectName: string,
   options?: { quiet?: boolean; time?: string; yes?: boolean },
 ): Promise<void> {
-  const { workspaceRoot } = await requireWorkspace();
-  const worktreePath = getProjectWorktreePath(workspaceRoot, projectName);
+  const { workspaceRoot, mainWorktree } = await requireWorkspace();
 
   if (projectName === "grind") {
     console.log("Saving grind worktree...");
-    if (await hasUncommittedChanges(worktreePath)) {
-      await gitCommitInteractive(worktreePath);
+    if (await hasUncommittedChanges(mainWorktree)) {
+      await gitCommitInteractive(mainWorktree);
       console.log("Changes committed to main branch");
     } else {
       console.log("No changes to commit.");
@@ -60,7 +58,7 @@ export async function save(
     console.log("No active sessions found.");
   }
 
-  if (await hasUncommittedChanges(worktreePath)) {
+  if (await hasUncommittedChanges(mainWorktree)) {
     console.log(`Committing changes...`);
 
     const autoCommit = options?.quiet || options?.yes;
@@ -70,12 +68,12 @@ export async function save(
       const commitMessage = roundedHours
         ? `Work Session on ${timestamp}: ${roundedHours}h\n=== WARNING: May contain unfinished work. ===`
         : `Save on ${timestamp}\n=== WARNING: May contain unfinished work. ===`;
-      await gitCommit(worktreePath, commitMessage);
+      await gitCommit(mainWorktree, commitMessage);
     } else {
-      await gitCommitInteractive(worktreePath);
+      await gitCommitInteractive(mainWorktree);
     }
 
-    console.log(`Changes committed to ${projectName} branch`);
+    console.log(`Changes committed to main branch`);
   } else {
     console.log("No changes to commit.");
   }

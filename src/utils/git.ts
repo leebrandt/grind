@@ -172,6 +172,33 @@ export async function gitPushAll(bareRepoPath: string): Promise<void> {
 }
 
 /**
+ * Push a single branch and tags to the remote
+ */
+export async function gitPushBranch(bareRepoPath: string, branch: string): Promise<void> {
+  await $`git -C ${bareRepoPath} push origin ${branch}:${branch}`.quiet();
+  await $`git -C ${bareRepoPath} push origin --tags`.quiet();
+}
+
+/**
+ * Fetch a single branch from remote
+ */
+export async function gitFetchBranch(bareRepoPath: string, branch: string): Promise<void> {
+  await $`git -C ${bareRepoPath} fetch origin ${branch}`.quiet();
+}
+
+/**
+ * Delete a remote branch (best-effort, swallows errors)
+ */
+export async function gitDeleteRemoteBranch(bareRepoPath: string, branch: string): Promise<boolean> {
+  try {
+    await $`git -C ${bareRepoPath} push origin --delete ${branch}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Fetch all branches from remote
  */
 export async function gitFetchAll(bareRepoPath: string): Promise<void> {
@@ -255,13 +282,6 @@ export async function localBranchExists(bareRepoPath: string, branch: string): P
   } catch {
     return false;
   }
-}
-
-/**
- * Push a project branch to a specific remote URL (for per-project push).
- */
-export async function gitPushToUrl(bareRepoPath: string, branch: string, remoteUrl: string): Promise<void> {
-  await $`git -C ${bareRepoPath} push ${remoteUrl} ${branch}:${branch}`.quiet();
 }
 
 /**

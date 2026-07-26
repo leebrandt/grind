@@ -4,12 +4,9 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import type { GrindConfig, ProjectConfig } from "../types/index.js";
-import { fileExists } from "./files.js";
 import {
   getGrindConfigPath,
   getProjectConfigPath,
-  getMainWorktreePath,
-  getMainProjectConfigPath,
 } from "./paths.js";
 
 export async function readGrindConfig(rootPath: string): Promise<GrindConfig> {
@@ -51,20 +48,12 @@ export async function resolveProjectConfig(
   workspaceRoot: string,
   projectName: string
 ): Promise<{ config: ProjectConfig; sourcePath: string } | null> {
-  const projectWorktreePath = getProjectConfigPath(workspaceRoot, projectName);
+  const configPath = getProjectConfigPath(workspaceRoot, projectName);
 
-  const mainWorktree = getMainWorktreePath(workspaceRoot);
-  const mainWorktreeConfigPath = getMainProjectConfigPath(mainWorktree, projectName);
-
-  if (await fileExists(projectWorktreePath)) {
-    const content = await readFile(projectWorktreePath, "utf-8");
-    return { config: JSON.parse(content), sourcePath: projectWorktreePath };
+  try {
+    const content = await readFile(configPath, "utf-8");
+    return { config: JSON.parse(content), sourcePath: configPath };
+  } catch {
+    return null;
   }
-
-  if (await fileExists(mainWorktreeConfigPath)) {
-    const content = await readFile(mainWorktreeConfigPath, "utf-8");
-    return { config: JSON.parse(content), sourcePath: mainWorktreeConfigPath };
-  }
-
-  return null;
 }

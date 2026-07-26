@@ -11,6 +11,7 @@ import { gitCommit, formatShellError } from "../utils/git.js";
 import { confirmOrExit } from "../utils/prompts.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 import { getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
+import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 
 /**
  * Cancel (abandon) a project
@@ -76,12 +77,13 @@ export async function cancelProject(
     // Branch may not exist on remote, or origin may not be configured — not fatal
   }
 
-  // 6. Delete project config from main worktree
-  const projectConfigDir = getProjectDirInMainPath(mainWorktree, projectName);
-  if (await fileExists(projectConfigDir)) {
-    await rm(projectConfigDir, { recursive: true });
+  // 6. Mark project as canceled in config (keep config as record)
+  const config = await readProjectConfig(workspaceRoot, projectName);
+  if (config) {
+    config.status = 'canceled';
+    await writeProjectConfig(workspaceRoot, projectName, config);
     await gitCommit(mainWorktree, `Cancel project: ${projectName}`);
-    console.log(`  - Removed project config: projects/${projectName}/`);
+    console.log(`  - Marked project as canceled in config`);
   }
 
   console.log(`\nProject '${projectName}' cancelled.`);

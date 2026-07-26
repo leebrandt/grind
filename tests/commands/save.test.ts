@@ -12,6 +12,7 @@ const mockHasUncommittedChanges = jest.fn().mockResolvedValue(true);
 jest.mock("../../src/utils/workspace.js", () => ({
   requireWorkspace: jest.fn().mockResolvedValue({
     workspaceRoot: "/home/user/workspace",
+    mainWorktree: "/home/user/workspace/grind",
   }),
 }));
 jest.mock("../../src/utils/config.js", () => ({

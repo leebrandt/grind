@@ -38,9 +38,9 @@ describe("getGrindConfigPath", () => {
 });
 
 describe("getProjectConfigPath", () => {
-  it("returns project config path under worktree", () => {
+  it("returns project config path under main worktree (single source of truth)", () => {
     expect(getProjectConfigPath(workspaceRoot, projectName)).toBe(
-      "/home/user/work/my-project/projects/my-project/.project.json"
+      "/home/user/work/grind/projects/my-project/.project.json"
     );
   });
 });
@@ -54,9 +54,9 @@ describe("getMainProjectConfigPath", () => {
 });
 
 describe("getProjectIdeaFilePath", () => {
-  it("returns the-idea.md path under worktree", () => {
+  it("returns the-idea.md path under main worktree", () => {
     expect(getProjectIdeaFilePath(workspaceRoot, projectName)).toBe(
-      "/home/user/work/my-project/projects/my-project/the-idea.md"
+      "/home/user/work/grind/projects/my-project/the-idea.md"
     );
   });
 });

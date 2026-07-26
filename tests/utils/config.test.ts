@@ -9,10 +9,11 @@ import { readGrindConfig, writeGrindConfig, readProjectConfig, writeProjectConfi
 jest.mock("node:fs/promises");
 
 describe('grind config utilities', () => {
-  const rootPath = "/home/user/grind";
+  const workspaceRoot = "/home/user/work";
+  const mainWorktree = path.join(workspaceRoot, "grind");
   const project = "my-project";
-  const projectConfigPath = path.join(rootPath, project, "projects", project, ".project.json");
-  const configPath = path.join(rootPath, ".grind.json");
+  const mainProjectConfigPath = path.join(mainWorktree, "projects", project, ".project.json");
+  const grindConfigPath = path.join(mainWorktree, ".grind.json");
   let baseGrindConfig = {
     "billing": { 
       "defaultRate": 150, 
@@ -25,7 +26,7 @@ describe('grind config utilities', () => {
     describe('the function successfully reading the file', () => {
       beforeEach(async () => {
         (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(baseGrindConfig));
-        result = await readGrindConfig(rootPath);
+        result = await readGrindConfig(mainWorktree);
       });
     
       afterEach(()=>{
@@ -33,7 +34,7 @@ describe('grind config utilities', () => {
       });
 
       it('should read the .grind.config file in the main workspace', async () => {
-        expect(fs.readFile).toHaveBeenCalledWith(configPath, "utf-8");
+        expect(fs.readFile).toHaveBeenCalledWith(grindConfigPath, "utf-8");
       });
 
       it('should return the contents of the .grind.json file', async () => {
@@ -50,33 +51,27 @@ describe('grind config utilities', () => {
       });
 
       it('should throw an error if it is unable to write the config file', async () => {
-          await expect(readGrindConfig(rootPath)).rejects.toThrow("TEST FAILURE");
+          await expect(readGrindConfig(mainWorktree)).rejects.toThrow("TEST FAILURE");
       });
     });
   });
 
   describe('the readProjectConfig function', () => {
-    const project = "my-project";
-    const projectConfigPath = path.join(rootPath, project, "projects", project, ".project.json");
-
     beforeEach(async () => {
       (fs.readFile as jest.Mock);
-      await readProjectConfig(rootPath, project); 
+      await readProjectConfig(workspaceRoot, project); 
     });
     
     afterEach(()=>{
       jest.restoreAllMocks();
     });
 
-    it("should read the config from .project.json in the project workspace", () => {
-      expect(fs.readFile).toHaveBeenCalledWith(projectConfigPath, "utf-8");
+    it("should read the config from .project.json in the main worktree", () => {
+      expect(fs.readFile).toHaveBeenCalledWith(mainProjectConfigPath, "utf-8");
     });
   });
 
   describe('the resolveProjectConfig function', () => {
-    const project = "my-project";
-    const projectWorktreeConfigPath = path.join(rootPath, project, "projects", project, ".project.json");
-    const mainWorktreeConfigPath = path.join(rootPath, "grind", "projects", project, ".project.json");
     const projectConfig = {
       name: project,
       idea: "test idea",
@@ -88,38 +83,21 @@ describe('grind config utilities', () => {
       jest.restoreAllMocks();
     });
 
-    it('should return config from project worktree when it exists', async () => {
-      (fs.stat as jest.Mock).mockImplementation((p: string) =>
-        p === projectWorktreeConfigPath ? Promise.resolve() : Promise.reject(new Error("not found"))
-      );
+    it('should return config when it exists on main', async () => {
       (fs.readFile as jest.Mock).mockImplementation((p: string) =>
-        p === projectWorktreeConfigPath ? Promise.resolve(JSON.stringify(projectConfig)) : Promise.reject(new Error("not found"))
+        p === mainProjectConfigPath ? Promise.resolve(JSON.stringify(projectConfig)) : Promise.reject(new Error("not found"))
       );
 
-      const result = await resolveProjectConfig(rootPath, project);
+      const result = await resolveProjectConfig(workspaceRoot, project);
       expect(result).not.toBeNull();
       expect(result!.config.name).toBe(project);
-      expect(result!.sourcePath).toBe(projectWorktreeConfigPath);
+      expect(result!.sourcePath).toBe(mainProjectConfigPath);
     });
 
-    it('should fall back to main worktree when project worktree does not exist', async () => {
-      (fs.stat as jest.Mock).mockImplementation((p: string) =>
-        p === mainWorktreeConfigPath ? Promise.resolve() : Promise.reject(new Error("not found"))
-      );
-      (fs.readFile as jest.Mock).mockImplementation((p: string) =>
-        p === mainWorktreeConfigPath ? Promise.resolve(JSON.stringify(projectConfig)) : Promise.reject(new Error("not found"))
-      );
+    it('should return null when no config exists', async () => {
+      (fs.readFile as jest.Mock).mockRejectedValue(new Error("not found"));
 
-      const result = await resolveProjectConfig(rootPath, project);
-      expect(result).not.toBeNull();
-      expect(result!.config.name).toBe(project);
-      expect(result!.sourcePath).toBe(mainWorktreeConfigPath);
-    });
-
-    it('should return null when neither location has a config', async () => {
-      (fs.stat as jest.Mock).mockRejectedValue(new Error("not found"));
-
-      const result = await resolveProjectConfig(rootPath, project);
+      const result = await resolveProjectConfig(workspaceRoot, project);
       expect(result).toBeNull();
     });
   });
@@ -127,15 +105,15 @@ describe('grind config utilities', () => {
   describe('the writeProjectConfig function', () => {
     beforeEach(async () => {
       (fs.writeFile as jest.Mock);
-      await writeProjectConfig(rootPath, project, baseGrindConfig);
+      await writeProjectConfig(workspaceRoot, project, baseGrindConfig);
     });
     
     afterEach(()=>{
       jest.restoreAllMocks();
     });
 
-    it("should write the passed config to .project.json in the project workspace", () => {
-      expect(fs.writeFile).toHaveBeenCalledWith(projectConfigPath, JSON.stringify(baseGrindConfig, null, 2), "utf-8");
+    it("should write the passed config to .project.json in the main worktree", () => {
+      expect(fs.writeFile).toHaveBeenCalledWith(mainProjectConfigPath, JSON.stringify(baseGrindConfig, null, 2), "utf-8");
     });
   });
 });

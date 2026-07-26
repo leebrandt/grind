@@ -46,7 +46,7 @@ workspace-root/
 
 **Time tracking:** Sessions are stored as start/end ISO timestamps in `.project.json`. Duration is calculated in seconds and rounded (quarter-hour/half-hour/hour) per `src/utils/time.ts`. Sessions can be marked as invoiced.
 
-**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo), `repo` (git remote URL), `code` (code directory path), `publications` (published URL/date records), and `longTerm` (boolean, shows ★ icon) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, `paymentTerms`, and `defaultBranch` fields.
+**Key types:** All domain types live in `src/types/index.ts` — `ProjectConfig`, `Session`, `Task`, `GrindConfig`, `BillingConfig`, `RoundTo`, `ProjectType`, `NewCommandOptions`, `ProfessionalInfo`, `ClientInfo`. Project types are defined as a const array (`PROJECT_TYPES`); extend that array to add new types. `ProjectConfig` includes optional `client` (ClientInfo), `repo` (git remote URL), `code` (code directory path), `publications` (published URL/date records), `longTerm` (boolean, shows ★ icon), `deadline` (ISO date string), and `status` (`active` | `canceled` | `published`) fields. `GrindConfig` includes optional `my` (ProfessionalInfo), `currency`, `paymentTerms`, `defaultBranch`, and `remote` (object with `url` for push/pull) fields.
 
 **Utilities:**
 - `src/utils/git.ts` — git command wrappers using Bun shell; `getActiveWorktrees()` lists project worktrees; `getDefaultBranch()` resolves branch name (config → detected → "main"); uses `execSync` for interactive editor spawning
@@ -60,13 +60,24 @@ workspace-root/
 - `src/utils/session.ts` — `getActiveSession()`, `startSession()`, `endSession()`, `closeOrphanedSession()` for time-tracking session lifecycle
 - `src/utils/time.ts` — timestamp generation, duration calculation, rounding, `timeAgo`/`formatDate` helpers
 - `src/utils/workspace.ts` — workspace/worktree location logic; `requireWorkspace()` returns `{ workspaceRoot, mainWorktree, bareRepo }` or throws `GrindUserError`
-- `src/utils/colors.ts` — shared ANSI color constants (`DIM`, `RED`, `GREEN`, `RESET`)
+- `src/utils/colors.ts` — shared ANSI color constants (`DIM`, `RED`, `GREEN`, `YELLOW`, `WHITE`, `RESET`)
+- `src/utils/dates.ts` — flexible date parsing (`parseDate()`); accepts relative (`today`, `tomorrow`, `3d`, `2w`) and absolute (`YYYY-MM-DD`, `YYYYMMDD`, `MMDDYY`, `MMDD`) formats
+- `src/utils/paths.ts` — centralized path constants for workspace structure (bare repo, main worktree, configs, ideas, journal, projects, invoices)
+- `src/utils/task.ts` — task CRUD (`getTasks()`, `getOpenTasks()`, `addTask()`, `completeTask()`, `getTaskUrgency()`) for the native task/todo system
 
-**Prompts:** `src/utils/prompts.ts` provides `confirmOrExit(prompt, skip)` — prints a y/N prompt and exits unless the user confirms. Pass `skip=true` to bypass (used by `-y`/`--yes` flags). The function reads stdin via `node:readline/promises`.
+**Prompts:** `src/utils/prompts.ts` provides `confirmOrExit(prompt, skip)` — prints a y/N prompt and exits unless the user confirms, and `confirm(prompt, skip)` — returns `true`/`false` without exiting. Pass `skip=true` to bypass. The functions read stdin via `node:readline/promises`.
 
 **Error handling:** All errors use the `GrindError` hierarchy defined in `src/utils/errors.ts`. `src/index.ts` wraps `program.parseAsync()` in a single try/catch — no `process.exit` calls exist in any command file. Errors exit with code 1 (user error) or 2 (system error), with stack traces for unexpected errors (exit 99).
 
 **Workflow consolidation:** `grind work <project>` is the unified daily-driver command, supporting `-c` (code editor), `-q` (quiet, no timer), and `-s` (save). `grind edit <project>` and `grind code <project>` are thin aliases calling `workStart()` with appropriate flags. `grind save` accepts `-t <hours>` for time backfill and `-y`/`-q` for auto-commit. `grind promote` is removed (dead source file remains unregistered).
+
+**Sync commands:** `grind push` and `grind pull` sync the main branch with a remote (configured via `GrindConfig.remote.url` or `-u` flag). `grind pull` also creates worktrees for any new project branches found on the remote.
+
+**Cleanup:** `grind cleanup` removes stale remote and local branches that have no corresponding project config on main. Supports `--dry-run` and `-y` flags. `grind migrate` is a one-time migration utility for moving project configs from project worktrees to main.
+
+**Tasks:** `grind tasks` provides a native todo system per project. `tasks list [project]` shows open tasks (or all with `-a`), `tasks add <project> "desc" [-d date]` creates a task, `tasks done <project> <id>` marks one complete. Tasks are stored in `.project.json` and support due dates with flexible parsing via `parseDate()`. `grind wwd` ("What we doing?") combines `status` + `tasks list` into a single dashboard.
+
+**Journal:** `grind journal` opens today's markdown journal entry (`YYYY-MM-DD.md`) in `$EDITOR`, creating the `journal/` directory if needed.
 
 **Confirmation model:** Destructive commands (`cancel`, `prune ideas`, `publish -d/-D`) use `confirmOrExit()` from `src/utils/prompts.ts`. Pass `-y`/`--yes` to skip the prompt. `-f`/`--force` is reserved for safety-skip semantics (uncommitted changes on `cancel`).
 

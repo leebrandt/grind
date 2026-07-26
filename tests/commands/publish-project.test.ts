@@ -16,6 +16,8 @@ jest.mock("../../src/utils/files.js", () => ({
 jest.mock("../../src/utils/git.js", () => ({
   getDefaultBranch: jest.fn().mockResolvedValue("main"),
   hasUncommittedChanges: jest.fn().mockResolvedValue(false),
+  gitDeleteRemoteBranch: jest.fn().mockResolvedValue(true),
+  formatShellError: jest.fn().mockReturnValue(""),
 }));
 jest.mock("../../src/utils/config.js", () => ({
   readGrindConfig: jest.fn().mockResolvedValue({}),

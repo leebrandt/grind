@@ -18,6 +18,10 @@ jest.mock("../../src/utils/files.js", () => ({
 jest.mock("../../src/utils/git.js", () => ({
   gitCommit: jest.fn().mockResolvedValue(undefined),
 }));
+jest.mock("../../src/utils/config.js", () => ({
+  readProjectConfig: jest.fn().mockResolvedValue({ name: "test-project", status: "active" }),
+  writeProjectConfig: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock("../../src/utils/prompts.js");
 
 import { confirmOrExit } from "../../src/utils/prompts.js";

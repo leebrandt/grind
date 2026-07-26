@@ -4,15 +4,17 @@
 
 import { $ } from "bun";
 import path from "node:path";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 import { readGrindConfig, writeGrindConfig } from "../utils/config.js";
+import { gitAddWorktree } from "../utils/git.js";
 import {
   getBareRepoPath,
   getMainWorktreePath,
   getGrindConfigPath,
   getProjectWorktreePath,
+  getProjectsDirPath,
 } from "../utils/paths.js";
 
 /**
@@ -101,19 +103,25 @@ export async function clone(url: string, directory?: string): Promise<void> {
   grindConfig.remote.url = url;
   await writeGrindConfig(mainWorktreePath, grindConfig);
 
-  // 7. Restore project worktrees from branches
-  const branchResult = await $`git -C ${bareRepoPath} branch --format="%(refname:short)"`.quiet();
-  const branches = branchResult.stdout.toString().trim().split("\n").filter(b => b && b !== "main");
+  // 7. Restore project worktrees from configs on main
+  const projectsDir = getProjectsDirPath(mainWorktreePath);
+  let projectNames: string[] = [];
+  if (await fileExists(projectsDir)) {
+    const entries = await readdir(projectsDir, { withFileTypes: true });
+    projectNames = entries
+      .filter(e => e.isDirectory())
+      .map(e => e.name);
+  }
 
-  if (branches.length > 0) {
-    console.log(`\nRestoring ${branches.length} project worktree(s)...`);
-    for (const branch of branches) {
-      const worktreePath = getProjectWorktreePath(targetDir, branch);
+  if (projectNames.length > 0) {
+    console.log(`\nRestoring ${projectNames.length} project worktree(s)...`);
+    for (const name of projectNames) {
+      const worktreePath = getProjectWorktreePath(targetDir, name);
       try {
-        await $`git -C ${bareRepoPath} worktree add ${worktreePath} ${branch}`.quiet();
-        console.log(`  - ${branch}/`);
+        await gitAddWorktree(bareRepoPath, worktreePath, name);
+        console.log(`  - ${name}/`);
       } catch {
-        console.log(`  - ${branch}/ (skipped: could not create worktree)`);
+        console.log(`  - ${name}/ (skipped: could not create worktree)`);
       }
     }
   }
@@ -123,8 +131,8 @@ export async function clone(url: string, directory?: string): Promise<void> {
   console.log(`\nWorkspace root: ${targetDir}`);
   console.log(`Bare repo:      ${bareRepoPath}`);
   console.log(`Main worktree:  ${mainWorktreePath}`);
-  if (branches.length > 0) {
-    console.log(`Projects:       ${branches.length} worktree(s) restored`);
+  if (projectNames.length > 0) {
+    console.log(`Projects:       ${projectNames.length} worktree(s) restored`);
   }
   console.log(`\nNext: cd ${dirName}/grind`);
 }

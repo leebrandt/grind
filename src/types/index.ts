@@ -90,6 +90,7 @@ export interface ProjectConfig {
   longTerm?: boolean;
   deadline?: string; // ISO date (YYYY-MM-DD)
   publications?: { url: string; publishedAt: string }[];
+  status?: 'active' | 'canceled' | 'published';
 }
 
 // Command option types
