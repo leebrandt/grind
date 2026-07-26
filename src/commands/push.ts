@@ -5,18 +5,16 @@
 import { requireWorkspace } from "../utils/workspace.js";
 import { readGrindConfig } from "../utils/config.js";
 import {
-  gitPushBranch,
+  gitPushAll,
+  gitCommit,
   getRemoteUrl,
   setRemoteUrl,
   hasUncommittedChanges,
-  getDefaultBranch,
-  formatShellError,
 } from "../utils/git.js";
-import { GrindUserError, GrindSystemError } from "../utils/errors.js";
+import { GrindUserError } from "../utils/errors.js";
 
 /**
- * Push workspace changes to remote.
- * Only pushes the main branch (project worktrees are local-only).
+ * Push all workspace branches to remote.
  * grind push [-u <url>]
  */
 export async function pushProjects(
@@ -45,24 +43,33 @@ export async function pushProjects(
     await setRemoteUrl(bareRepo, remoteUrl);
   }
 
-  // 3. Check main worktree for uncommitted changes
+  // 3. Auto-commit uncommitted main worktree changes
   if (await hasUncommittedChanges(mainWorktree)) {
-    console.log("Warning: uncommitted changes in grind/ (main worktree).");
-    console.log("  Run 'grind save grind' to commit, then push again.\n");
+    console.log("Auto-committing uncommitted changes in grind/...");
+    const timestamp = new Date().toLocaleString();
+    await gitCommit(mainWorktree, `Auto-commit before push: ${timestamp}`);
+    console.log("  Committed.");
   }
 
-  // 4. Push main branch and tags to origin
-  const defaultBranch = await getDefaultBranch(bareRepo, config);
-  console.log(`Pushing ${defaultBranch} branch to remote...`);
-  try {
-    await gitPushBranch(bareRepo, defaultBranch);
-    console.log("  Pushed successfully.");
-  } catch (e) {
-    throw new GrindSystemError(`Failed to push to remote. Check your connection and authentication: ${formatShellError(e)}`);
+  // 4. Push all branches and tags to origin
+  console.log("Pushing all branches to remote...");
+  const { pushed, forcePushed, failed } = await gitPushAll(bareRepo);
+
+  if (pushed.length > 0) {
+    console.log(`  Pushed ${pushed.length} branch(es).`);
+  }
+  if (forcePushed.length > 0) {
+    console.log(`  Force-pushed ${forcePushed.length} branch(es) (diverged from remote): ${forcePushed.join(", ")}`);
+  }
+  if (failed.length > 0) {
+    console.error(`\n  ${failed.length} branch(es) failed to push:`);
+    for (const { branch, error } of failed) {
+      console.error(`    ${branch}: ${error}`);
+    }
   }
 
   // 5. Summary
   console.log(`\n--> push complete <--`);
   console.log(`Remote: ${remoteUrl}`);
-  console.log(`Branch pushed: ${defaultBranch}`);
+  console.log(`All branches pushed.`);
 }

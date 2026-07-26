@@ -3,9 +3,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { execSync } from "node:child_process";
+import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { $ } from "bun";
 import type { GrindConfig } from "../types/index.js";
+import { getProjectsDirPath, getProjectWorktreePath } from "./paths.js";
+import { readProjectConfig } from "./config.js";
+import { fileExists } from "./files.js";
 
 /**
  * Initialize a bare git repository (for use with worktrees)
@@ -164,11 +168,131 @@ export async function getActiveWorktrees(bareRepo: string, workspaceRoot: string
 }
 
 /**
- * Push all branches and tags to the remote
+ * Remove a git worktree
  */
-export async function gitPushAll(bareRepoPath: string): Promise<void> {
-  await $`git -C ${bareRepoPath} push origin --all`.quiet();
-  await $`git -C ${bareRepoPath} push origin --tags`.quiet();
+export async function removeWorktree(
+  bareRepoPath: string,
+  worktreePath: string,
+  force: boolean = false,
+): Promise<void> {
+  if (force) {
+    await $`git -C ${bareRepoPath} worktree remove --force ${worktreePath}`.quiet();
+  } else {
+    await $`git -C ${bareRepoPath} worktree remove ${worktreePath}`.quiet();
+  }
+}
+
+/**
+ * Delete a local branch (force, -D)
+ */
+export async function deleteLocalBranch(bareRepoPath: string, branch: string): Promise<boolean> {
+  try {
+    await $`git -C ${bareRepoPath} branch -D ${branch}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Stage specific files (not all changes)
+ */
+export async function stageFiles(worktreePath: string, files: string[]): Promise<void> {
+  await $`git -C ${worktreePath} add ${files}`.quiet();
+}
+
+/**
+ * Create a commit without staging (assumes files already staged)
+ */
+export async function commitOnly(worktreePath: string, message: string): Promise<void> {
+  await $`git -C ${worktreePath} commit -m ${message}`.quiet();
+}
+
+/**
+ * Switch to a branch in a worktree
+ */
+export async function switchBranch(worktreePath: string, branch: string): Promise<void> {
+  await $`git -C ${worktreePath} switch ${branch}`.quiet();
+}
+
+/**
+ * Merge a branch into the current branch of a worktree
+ */
+export async function mergeBranch(worktreePath: string, branch: string): Promise<void> {
+  await $`git -C ${worktreePath} merge ${branch}`.quiet();
+}
+
+/**
+ * Read file contents from a git ref (branch/tag/commit) without a worktree
+ */
+export async function showFile(
+  repoPath: string,
+  ref: string,
+  filePath: string,
+): Promise<string | null> {
+  try {
+    const result = await $`git -C ${repoPath} show ${ref}:${filePath}`.quiet();
+    return result.stdout.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * List all local branches in the bare repo
+ */
+export async function listLocalBranches(bareRepoPath: string): Promise<string[]> {
+  const result = await $`git -C ${bareRepoPath} branch --format="%(refname:short)"`.quiet();
+  return result.stdout.toString().trim().split("\n").filter(b => b);
+}
+
+/**
+ * Clone a remote repository as a bare repo
+ */
+export async function cloneBare(url: string, repoPath: string): Promise<void> {
+  await $`git clone --bare ${url} ${repoPath}`.quiet();
+}
+
+/**
+ * Set the fetch refspec for the origin remote
+ */
+export async function setFetchRefspec(bareRepoPath: string, refspec: string): Promise<void> {
+  await $`git -C ${bareRepoPath} config remote.origin.fetch ${refspec}`.quiet();
+}
+
+/**
+ * Push all branches and tags to the remote (individually, so one failure doesn't block others).
+ * Falls back to --force-with-lease for diverged branches.
+ */
+export async function gitPushAll(bareRepoPath: string): Promise<{ pushed: string[]; forcePushed: string[]; failed: { branch: string; error: string }[] }> {
+  const branches = await listLocalBranches(bareRepoPath);
+  const pushed: string[] = [];
+  const forcePushed: string[] = [];
+  const failed: { branch: string; error: string }[] = [];
+
+  for (const branch of branches) {
+    try {
+      await $`git -C ${bareRepoPath} push origin ${branch}:${branch}`.quiet();
+      pushed.push(branch);
+    } catch {
+      // Normal push failed — try force-with-lease (safe for personal workspaces)
+      try {
+        await $`git -C ${bareRepoPath} push origin ${branch}:${branch} --force-with-lease`.quiet();
+        forcePushed.push(branch);
+      } catch (e) {
+        failed.push({ branch, error: formatShellError(e) });
+      }
+    }
+  }
+
+  // Tags are all-or-nothing (less likely to conflict)
+  try {
+    await $`git -C ${bareRepoPath} push origin --tags`.quiet();
+  } catch {
+    // Tags push failure is non-fatal
+  }
+
+  return { pushed, forcePushed, failed };
 }
 
 /**
@@ -294,4 +418,128 @@ export function formatShellError(e: unknown): string {
     return stderr || e.message;
   }
   return String(e);
+}
+
+// ── Workflow Methods ──────────────────────────────────────────────────────────
+// Higher-level operations that compose primitives for common grind workflows.
+
+/**
+ * Push a branch and all tags to the remote.
+ * Used by grind save and grind push.
+ */
+export async function pushWorkspace(bareRepoPath: string, branch: string): Promise<void> {
+  await gitPushBranch(bareRepoPath, branch);
+}
+
+/**
+ * Pull all branches from remote, merge main, and create missing project worktrees.
+ * Used by grind pull.
+ */
+export async function pullWorkspace(
+  bareRepoPath: string,
+  mainWorktreePath: string,
+  workspaceRoot: string,
+): Promise<{ fastForwarded: boolean; created: number; skipped: number; updated: string[]; diverged: string[] }> {
+  // 1. Fetch all branches
+  await gitFetchAll(bareRepoPath);
+
+  // 2. Fast-forward local branches to match remote (best-effort per branch)
+  const localBranches = await listLocalBranches(bareRepoPath);
+  const updated: string[] = [];
+  const diverged: string[] = [];
+
+  for (const branch of localBranches) {
+    try {
+      const remoteHash = (await $`git -C ${bareRepoPath} rev-parse --verify origin/${branch}`.quiet().nothrow()).stdout.toString().trim();
+      if (!remoteHash) continue;
+
+      const localHash = (await $`git -C ${bareRepoPath} rev-parse --verify refs/heads/${branch}`.quiet().nothrow()).stdout.toString().trim();
+      if (!localHash || localHash === remoteHash) continue;
+
+      const check = await $`git -C ${bareRepoPath} merge-base --is-ancestor ${localHash} ${remoteHash}`.quiet().nothrow();
+      if (check.exitCode === 0) {
+        await $`git -C ${bareRepoPath} update-ref refs/heads/${branch} ${remoteHash}`.quiet();
+        updated.push(branch);
+      } else {
+        diverged.push(branch);
+      }
+    } catch {
+      // Skip on error
+    }
+  }
+
+  // 3. Merge main (non-ff-only to handle divergence)
+  let fastForwarded = false;
+  try {
+    await $`git -C ${mainWorktreePath} merge origin/main --no-edit`.quiet();
+    fastForwarded = true;
+  } catch {
+    // Merge conflicts — let user know but don't fail
+  }
+
+  // 4. Find project branches on remote
+  const remoteBranches = await getRemoteBranchList(bareRepoPath);
+  const projectBranches = remoteBranches
+    .map(b => b.replace("origin/", ""))
+    .filter(b => b !== "main" && b !== "HEAD");
+
+  // 5. Get existing worktrees
+  const existingWorktrees = new Set(await getActiveWorktrees(bareRepoPath, workspaceRoot));
+
+  // 6. Create missing worktrees
+  let created = 0;
+  let skipped = 0;
+
+  for (const branch of projectBranches) {
+    const wtPath = getProjectWorktreePath(workspaceRoot, branch);
+    if (await fileExists(wtPath) || existingWorktrees.has(branch)) {
+      continue;
+    }
+
+    // Skip canceled or published projects
+    const projectConfig = await readProjectConfig(workspaceRoot, branch);
+    if (projectConfig?.status === "canceled" || projectConfig?.status === "published") {
+      skipped++;
+      continue;
+    }
+
+    try {
+      await gitAddWorktree(bareRepoPath, wtPath, branch);
+      created++;
+    } catch {
+      skipped++;
+    }
+  }
+
+  return { fastForwarded, created, skipped, updated, diverged };
+}
+
+/**
+ * Remove a project's worktree, local branch, and optionally remote branch.
+ * Used by grind cancel and grind publish.
+ */
+export async function removeProject(
+  bareRepoPath: string,
+  worktreePath: string,
+  branch: string,
+  options: { force?: boolean; deleteRemote?: boolean } = {},
+): Promise<{ worktreeRemoved: boolean; localDeleted: boolean; remoteDeleted: boolean }> {
+  let worktreeRemoved = false;
+  let localDeleted = false;
+  let remoteDeleted = false;
+
+  try {
+    await removeWorktree(bareRepoPath, worktreePath, options.force);
+    worktreeRemoved = true;
+  } catch {
+    // worktree removal failed
+  }
+
+  localDeleted = await deleteLocalBranch(bareRepoPath, branch);
+
+  if (options.deleteRemote) {
+    remoteDeleted = await gitDeleteRemoteBranch(bareRepoPath, branch);
+  }
+
+  return { worktreeRemoved, localDeleted, remoteDeleted };
 }

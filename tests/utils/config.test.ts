@@ -105,6 +105,7 @@ describe('grind config utilities', () => {
   describe('the writeProjectConfig function', () => {
     beforeEach(async () => {
       (fs.writeFile as jest.Mock);
+      (fs.rename as jest.Mock).mockResolvedValue(undefined);
       await writeProjectConfig(workspaceRoot, project, baseGrindConfig);
     });
     
@@ -112,8 +113,11 @@ describe('grind config utilities', () => {
       jest.restoreAllMocks();
     });
 
-    it("should write the passed config to .project.json in the main worktree", () => {
-      expect(fs.writeFile).toHaveBeenCalledWith(mainProjectConfigPath, JSON.stringify(baseGrindConfig, null, 2), "utf-8");
+    it("should atomically write the passed config to .project.json in the main worktree", () => {
+      expect(fs.rename).toHaveBeenCalledWith(
+        expect.stringContaining(mainProjectConfigPath),
+        mainProjectConfigPath,
+      );
     });
   });
 });

@@ -2,11 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { $ } from "bun";
-import { readdir } from "node:fs/promises";
+import { readFile, mkdir, readdir } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
-import { gitCommit, getActiveWorktrees, localBranchExists } from "../utils/git.js";
+import { gitCommit, getActiveWorktrees, localBranchExists, showFile } from "../utils/git.js";
 import { getProjectsDirPath, getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
 import { fileExists } from "../utils/files.js";
 
@@ -48,12 +47,10 @@ export async function migrate(): Promise<void> {
     const worktreePath = getProjectWorktreePath(workspaceRoot, name);
     let worktreeConfig = null;
     if (await fileExists(worktreePath)) {
-      worktreeConfig = await readProjectConfig(workspaceRoot, name);
       // readProjectConfig now reads from main, so we need to read directly from worktree
       // for the migration case
       const worktreeConfigPath = `${worktreePath}/projects/${name}/.project.json`;
       try {
-        const { readFile } = await import("node:fs/promises");
         const content = await readFile(worktreeConfigPath, "utf-8");
         worktreeConfig = JSON.parse(content);
       } catch {
@@ -65,7 +62,6 @@ export async function migrate(): Promise<void> {
     if (worktreeConfig) {
       if (!mainHasConfig) {
         // Create directory and write config to main
-        const { mkdir } = await import("node:fs/promises");
         await mkdir(mainConfigPath, { recursive: true });
         await writeProjectConfig(workspaceRoot, name, worktreeConfig);
         console.log(`  Migrated: ${name} (from worktree → main)`);
@@ -77,15 +73,15 @@ export async function migrate(): Promise<void> {
     } else if (!mainHasConfig) {
       // No worktree and no main config — try to read from branch
       if (await localBranchExists(bareRepo, name)) {
-        try {
-          const result = await $`git -C ${bareRepo} show ${name}:projects/${name}/.project.json`.quiet();
-          const config = JSON.parse(result.stdout.toString());
-          const { mkdir } = await import("node:fs/promises");
+        const configPath = `projects/${name}/.project.json`;
+        const content = await showFile(bareRepo, name, configPath);
+        if (content) {
+          const config = JSON.parse(content);
           await mkdir(mainConfigPath, { recursive: true });
           await writeProjectConfig(workspaceRoot, name, config);
           console.log(`  Migrated: ${name} (from branch → main)`);
           migrated++;
-        } catch {
+        } else {
           console.log(`  Skipped: ${name} (no config found anywhere)`);
           skipped++;
         }

@@ -5,10 +5,11 @@
 import { requireWorkspace } from "../utils/workspace.js";
 import { getCommitCount, getLastCommitDate } from "../utils/git.js";
 import { timeAgo } from "../utils/time.js";
-import { DIM, RED, GREEN, YELLOW, WHITE, RESET } from "../utils/colors.js";
+import { RED, GREEN, YELLOW, WHITE } from "../utils/colors.js";
 import { collectProjects } from "../utils/project.js";
 import { getOpenTasks, getTaskUrgency } from "../utils/task.js";
 import { getActiveSession } from "../utils/session.js";
+import { Table } from "../utils/table.js";
 import type { ProjectConfig } from "../types/index.js";
 import type { ProjectEntry } from "../utils/project.js";
 
@@ -94,45 +95,47 @@ export async function status(): Promise<void> {
     return b.totalSeconds - a.totalSeconds;
   });
 
-  const cols = {
-    name: Math.max("Project".length, ...rows.map(r => r.name.length)),
-    hoursWorked: Math.max("Worked".length, ...rows.map(r => r.hoursWorked.length)),
-    hoursBilled: Math.max("Billed".length, ...rows.map(r => r.hoursBilled.length)),
-    tasks: Math.max("Tasks".length, ...rows.map(r => String(r.taskCount).length)),
-    lastSession: Math.max("Last Session".length, ...rows.map(r => r.lastSession.length)),
-    lastCommit: Math.max("Last Commit".length, ...rows.map(r => r.lastCommit.length)),
-  };
+  const rowData = rows.map(r => [r.name, r.hoursWorked, r.hoursBilled, String(r.taskCount), r.lastSession, r.lastCommit]);
 
-  const header = `  ${"Project".padEnd(cols.name)}  ${"Worked".padStart(cols.hoursWorked)}  ${"Billed".padStart(cols.hoursBilled)}  ${"Tasks".padStart(cols.tasks)}  ${"Last Session".padEnd(cols.lastSession)}  ${"Last Commit".padEnd(cols.lastCommit)}`;
-  const divider = `  ${"─".repeat(cols.name)}  ${"─".repeat(cols.hoursWorked)}  ${"─".repeat(cols.hoursBilled)}  ${"─".repeat(cols.tasks)}  ${"─".repeat(cols.lastSession)}  ${"─".repeat(cols.lastCommit)}`;
+  const table = new Table([
+    { label: "Project" },
+    { label: "Worked", align: "right" },
+    { label: "Billed", align: "right" },
+    { label: "Tasks", align: "right" },
+    { label: "Last Session" },
+    { label: "Last Commit" },
+  ], rowData);
 
-  console.log(`${DIM}${header}${RESET}`);
-  console.log(`${DIM}${divider}${RESET}`);
+  table.printHeader();
 
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     const prefix = row.longTerm ? "★ " : "  ";
-    const paddedName = row.name.padEnd(cols.name);
-    let nameDisplay: string;
+    let nameColor: string | undefined;
     if (row.isActive) {
-      nameDisplay = `${prefix}${GREEN}${paddedName}${RESET}`;
+      nameColor = GREEN;
     } else if (row.isDeadlineSoon) {
-      nameDisplay = `${prefix}${RED}${paddedName}${RESET}`;
+      nameColor = RED;
     } else if (row.hasUnbilled) {
-      nameDisplay = `${prefix}${YELLOW}${paddedName}${RESET}`;
+      nameColor = YELLOW;
     } else {
-      nameDisplay = `${prefix}${WHITE}${paddedName}${RESET}`;
+      nameColor = WHITE;
     }
 
-    const taskCountStr = String(row.taskCount).padStart(cols.tasks);
-    let taskDisplay: string;
+    let taskColor: string | undefined;
     if (row.taskUrgency === "overdue") {
-      taskDisplay = `${RED}${taskCountStr}${RESET}`;
+      taskColor = RED;
     } else if (row.taskUrgency === "today") {
-      taskDisplay = `${YELLOW}${taskCountStr}${RESET}`;
-    } else {
-      taskDisplay = taskCountStr;
+      taskColor = YELLOW;
     }
 
-    console.log(`${nameDisplay}  ${row.hoursWorked.padStart(cols.hoursWorked)}  ${row.hoursBilled.padStart(cols.hoursBilled)}  ${taskDisplay}  ${row.lastSession.padEnd(cols.lastSession)}  ${row.lastCommit.padEnd(cols.lastCommit)}`);
+    table.printRow([
+      { text: `${prefix}${row.name}`, color: nameColor },
+      { text: rowData[i][1] },
+      { text: rowData[i][2] },
+      { text: rowData[i][3], color: taskColor },
+      { text: rowData[i][4] },
+      { text: rowData[i][5] },
+    ]);
   }
 }

@@ -9,6 +9,8 @@ import {
   getRemoteBranchList,
   gitDeleteRemoteBranch,
   localBranchExists,
+  listLocalBranches,
+  deleteLocalBranch,
 } from "../utils/git.js";
 import { confirm } from "../utils/prompts.js";
 import { getProjectDirInMainPath, getProjectWorktreePath } from "../utils/paths.js";
@@ -43,27 +45,21 @@ export async function cleanup(
 
   // 2. Find orphaned local branches (no worktree, no config on main)
   const staleLocal: string[] = [];
+  const localBranches = await listLocalBranches(bareRepo);
 
-  // Get all local branches
-  const { $ } = await import("bun");
-  try {
-    const result = await $`git -C ${bareRepo} branch --format="%(refname:short)"`.quiet();
-    const localBranches = result.stdout.toString().trim().split("\n").filter(b => b);
+  for (const branch of localBranches) {
+    if (branch === defaultBranch) continue;
 
-    for (const branch of localBranches) {
-      if (branch === defaultBranch) continue;
+    // Check if worktree exists
+    const wtPath = getProjectWorktreePath(workspaceRoot, branch);
+    if (await fileExists(wtPath)) continue; // has worktree — not orphaned
 
-      // Check if worktree exists
-      const wtPath = getProjectWorktreePath(workspaceRoot, branch);
-      if (await fileExists(wtPath)) continue; // has worktree — not orphaned
+    // Check if config exists on main
+    const projectDir = getProjectDirInMainPath(mainWorktree, branch);
+    if (await fileExists(projectDir)) continue; // has config — not orphaned
 
-      // Check if config exists on main
-      const projectDir = getProjectDirInMainPath(mainWorktree, branch);
-      if (await fileExists(projectDir)) continue; // has config — not orphaned
-
-      staleLocal.push(branch);
-    }
-  } catch {}
+    staleLocal.push(branch);
+  }
 
   if (staleRemote.length === 0 && staleLocal.length === 0) {
     console.log("Nothing to clean up.");
@@ -111,10 +107,10 @@ export async function cleanup(
 
   // 6. Delete orphaned local branches
   for (const branch of staleLocal) {
-    try {
-      await $`git -C ${bareRepo} branch -D ${branch}`.quiet();
+    const deleted = await deleteLocalBranch(bareRepo, branch);
+    if (deleted) {
       console.log(`  Deleted local: ${branch}`);
-    } catch {
+    } else {
       console.log(`  Failed to delete local: ${branch}`);
     }
   }

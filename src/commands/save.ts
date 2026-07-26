@@ -3,16 +3,24 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { requireWorkspace } from "../utils/workspace.js";
-import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
+import { readGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getActiveSession, endSession } from "../utils/session.js";
-import { gitCommit, gitCommitInteractive, hasUncommittedChanges } from "../utils/git.js";
-import { GrindUserError } from "../utils/errors.js";
+import {
+  gitCommit,
+  gitCommitInteractive,
+  hasUncommittedChanges,
+  pushWorkspace,
+  getDefaultBranch,
+  getRemoteUrl,
+  formatShellError,
+} from "../utils/git.js";
+import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 export async function save(
   projectName: string,
-  options?: { quiet?: boolean; time?: string; yes?: boolean },
+  options?: { quiet?: boolean; time?: string; yes?: boolean; noPush?: boolean },
 ): Promise<void> {
-  const { workspaceRoot, mainWorktree } = await requireWorkspace();
+  const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
 
   if (projectName === "grind") {
     console.log("Saving grind worktree...");
@@ -21,6 +29,17 @@ export async function save(
       console.log("Changes committed to main branch");
     } else {
       console.log("No changes to commit.");
+    }
+
+    if (!options?.noPush && await getRemoteUrl(bareRepo)) {
+      try {
+        const config = await readGrindConfig(mainWorktree);
+        const defaultBranch = await getDefaultBranch(bareRepo, config);
+        await pushWorkspace(bareRepo, defaultBranch);
+        console.log("Pushed to remote.");
+      } catch (e) {
+        console.log(`Warning: could not push to remote: ${formatShellError(e)}`);
+      }
     }
     return;
   }
@@ -76,5 +95,17 @@ export async function save(
     console.log(`Changes committed to main branch`);
   } else {
     console.log("No changes to commit.");
+  }
+
+  // Push to remote
+  if (!options?.noPush && await getRemoteUrl(bareRepo)) {
+    try {
+      const grindConfig = await readGrindConfig(mainWorktree);
+      const defaultBranch = await getDefaultBranch(bareRepo, grindConfig);
+      await pushWorkspace(bareRepo, defaultBranch);
+      console.log("Pushed to remote.");
+    } catch (e) {
+      console.log(`Warning: could not push to remote: ${formatShellError(e)}`);
+    }
   }
 }

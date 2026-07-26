@@ -2,11 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { $ } from "bun";
 import path from "node:path";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
-import { getDefaultBranch, hasUncommittedChanges, formatShellError, gitDeleteRemoteBranch } from "../utils/git.js";
+import {
+  getDefaultBranch,
+  hasUncommittedChanges,
+  formatShellError,
+  stageFiles,
+  commitOnly,
+  switchBranch,
+  mergeBranch,
+  removeWorktree,
+  deleteLocalBranch,
+  gitDeleteRemoteBranch,
+} from "../utils/git.js";
 import { readGrindConfig, readProjectConfig, writeProjectConfig } from "../utils/config.js";
 import { getCurrentTimestamp } from "../utils/time.js";
 import { confirmOrExit } from "../utils/prompts.js";
@@ -38,41 +48,36 @@ export async function publishProject(
     throw new GrindUserError(`Project '${projectName}' has uncommitted changes. Please commit or stash them first.`);
   }
 
-  // 4. If a URL was provided, record the publication in .project.json and commit
-  if (options?.url) {
-    const config = await readProjectConfig(workspaceRoot, projectName);
-    if (!config) {
-      throw new GrindUserError(`Could not read .project.json for project '${projectName}'.`);
-    }
+  // 4. Record publication and mark as published (single commit)
+  const configRelPath = path.join("projects", projectName, ".project.json");
+  const config = await readProjectConfig(workspaceRoot, projectName);
+  if (!config) {
+    throw new GrindUserError(`Could not read .project.json for project '${projectName}'.`);
+  }
 
+  if (options?.url) {
     config.publications = config.publications ?? [];
     config.publications.push({ url: options.url, publishedAt: getCurrentTimestamp() });
-    await writeProjectConfig(workspaceRoot, projectName, config);
-
-    const configRelPath = path.join("projects", projectName, ".project.json");
-    await $`git -C ${mainWorktree} add ${configRelPath}`.quiet();
-    await $`git -C ${mainWorktree} commit -m ${"Record publication: " + options.url}`.quiet();
     console.log(`  - Recorded publication: ${options.url}`);
   }
 
-  // 4b. Mark project as published in config
-  const pubConfig = await readProjectConfig(workspaceRoot, projectName);
-  if (pubConfig) {
-    pubConfig.status = 'published';
-    await writeProjectConfig(workspaceRoot, projectName, pubConfig);
-    const configRelPath = path.join("projects", projectName, ".project.json");
-    await $`git -C ${mainWorktree} add ${configRelPath}`.quiet();
-    await $`git -C ${mainWorktree} commit -m ${"Mark project as published: " + projectName}`.quiet();
-    console.log(`  - Marked project as published in config`);
-  }
+  config.status = 'published';
+  await writeProjectConfig(workspaceRoot, projectName, config);
+
+  await stageFiles(mainWorktree, [configRelPath]);
+  const commitMsg = options?.url
+    ? `Publish project: ${projectName} (${options.url})`
+    : `Mark project as published: ${projectName}`;
+  await commitOnly(mainWorktree, commitMsg);
+  console.log(`  - Marked project as published in config`);
 
   // 5. Determine default branch name
-  const config = await readGrindConfig(mainWorktree);
-  const defaultBranch = await getDefaultBranch(bareRepo, config);
+  const grindConfig = await readGrindConfig(mainWorktree);
+  const defaultBranch = await getDefaultBranch(bareRepo, grindConfig);
 
   // 6. Switch to default branch in grind/ worktree
   try {
-    await $`git -C ${mainWorktree} switch ${defaultBranch}`.quiet();
+    await switchBranch(mainWorktree, defaultBranch);
   } catch (e) {
     throw new GrindSystemError(`Could not switch to ${defaultBranch} branch. Is it checked out in another worktree?: ${formatShellError(e)}`);
   }
@@ -82,7 +87,7 @@ export async function publishProject(
   console.log(`Merging branch '${projectName}' into ${defaultBranch}...`);
 
   try {
-    await $`git -C ${mainWorktree} merge ${projectName}`.quiet();
+    await mergeBranch(mainWorktree, projectName);
     console.log("Merge completed successfully.");
   } catch (e) {
     throw new GrindSystemError(`Merge failed. Please resolve conflicts manually in ${mainWorktree}: ${formatShellError(e)}`);
@@ -98,12 +103,14 @@ export async function publishProject(
     }
     await confirmOrExit(deletePrompt, options?.yes ?? false);
 
-    await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
+    await removeWorktree(bareRepo, worktreePath);
     console.log(`  - Removed worktree: ${worktreePath}`);
 
     if (options?.deleteBranch) {
-      await $`git -C ${bareRepo} branch -D ${projectName}`.quiet();
-      console.log(`  - Deleted branch: ${projectName}`);
+      const localDeleted = await deleteLocalBranch(bareRepo, projectName);
+      if (localDeleted) {
+        console.log(`  - Deleted branch: ${projectName}`);
+      }
 
       // Also delete from remote (best-effort)
       if (await gitDeleteRemoteBranch(bareRepo, projectName)) {

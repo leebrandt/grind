@@ -18,10 +18,21 @@ jest.mock("../../src/utils/git.js", () => ({
   hasUncommittedChanges: jest.fn().mockResolvedValue(false),
   gitDeleteRemoteBranch: jest.fn().mockResolvedValue(true),
   formatShellError: jest.fn().mockReturnValue(""),
+  stageFiles: jest.fn().mockResolvedValue(undefined),
+  commitOnly: jest.fn().mockResolvedValue(undefined),
+  switchBranch: jest.fn().mockResolvedValue(undefined),
+  mergeBranch: jest.fn().mockResolvedValue(undefined),
+  removeWorktree: jest.fn().mockResolvedValue(undefined),
+  deleteLocalBranch: jest.fn().mockResolvedValue(true),
 }));
 jest.mock("../../src/utils/config.js", () => ({
   readGrindConfig: jest.fn().mockResolvedValue({}),
-  readProjectConfig: jest.fn().mockResolvedValue(null),
+  readProjectConfig: jest.fn().mockResolvedValue({
+    name: "test-project",
+    status: "active",
+    time: [],
+    billing: { roundTo: "quarter-hour", rate: 150 },
+  }),
   writeProjectConfig: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("../../src/utils/prompts.js");

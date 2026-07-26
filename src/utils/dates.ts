@@ -1,4 +1,4 @@
-import { GrindUserError } from "./errors";
+import { GrindUserError } from "./errors.js";
 
 export function parseDate(input: string, now?: Date): string {
   const raw = input.trim().toLowerCase();

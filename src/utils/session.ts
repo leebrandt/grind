@@ -34,11 +34,4 @@ export function endSession(
   return session;
 }
 
-export function closeOrphanedSession(config: ProjectConfig): void {
-  const activeSession = getActiveSession(config);
-  if (activeSession) {
-    activeSession.end = activeSession.start;
-    activeSession.duration = 0;
-    activeSession.rounded = 0;
-  }
-}
+

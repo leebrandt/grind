@@ -17,6 +17,12 @@ jest.mock("../../src/utils/files.js", () => ({
 }));
 jest.mock("../../src/utils/git.js", () => ({
   gitCommit: jest.fn().mockResolvedValue(undefined),
+  removeProject: jest.fn().mockResolvedValue({
+    worktreeRemoved: true,
+    localDeleted: true,
+    remoteDeleted: true,
+  }),
+  formatShellError: jest.fn().mockReturnValue(""),
 }));
 jest.mock("../../src/utils/config.js", () => ({
   readProjectConfig: jest.fn().mockResolvedValue({ name: "test-project", status: "active" }),
@@ -26,9 +32,7 @@ jest.mock("../../src/utils/prompts.js");
 
 import { confirmOrExit } from "../../src/utils/prompts.js";
 import { fileExists } from "../../src/utils/files.js";
-import * as fs from "node:fs/promises";
-
-const mock$ = jest.requireMock("bun").$ as jest.Mock;
+import { removeProject } from "../../src/utils/git.js";
 
 describe("cancelProject", () => {
   const projectName = "test-project";
@@ -37,20 +41,6 @@ describe("cancelProject", () => {
     jest.clearAllMocks();
     jest.spyOn(console, "log").mockImplementation(() => {});
     jest.spyOn(console, "error").mockImplementation(() => {});
-    jest.spyOn(process, "exit").mockImplementation((() => {}) as () => never);
-
-    mock$.mockImplementation(() => ({
-      nothrow: jest.fn().mockResolvedValue({
-        stdout: Buffer.from(""),
-        exitCode: 0,
-      }),
-      quiet: jest.fn().mockResolvedValue({
-        stdout: Buffer.from(""),
-        exitCode: 0,
-      }),
-    }));
-
-    (fs.rm as jest.Mock).mockResolvedValue(undefined);
   });
 
   it("should skip confirmation when yes flag is true", async () => {
@@ -73,10 +63,15 @@ describe("cancelProject", () => {
     );
   });
 
-  it("should still use --force for worktree removal when -f is passed", async () => {
+  it("should use --force for worktree removal when -f is passed", async () => {
     (confirmOrExit as jest.Mock).mockResolvedValue(undefined);
     await cancelProject(projectName, { force: true, yes: true });
-    expect(mock$).toHaveBeenCalled();
+    expect(removeProject).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      projectName,
+      { force: true, deleteRemote: true },
+    );
   });
 
   it("should throw when project worktree does not exist", async () => {

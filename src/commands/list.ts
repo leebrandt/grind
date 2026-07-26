@@ -5,10 +5,11 @@
 import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
-import { DIM, RED, RESET } from "../utils/colors.js";
+import { RED } from "../utils/colors.js";
 import { getIdeasDirPath } from "../utils/paths.js";
 import { timeAgo } from "../utils/time.js";
 import { collectProjects } from "../utils/project.js";
+import { Table } from "../utils/table.js";
 import type { ProjectConfig } from "../types/index.js";
 import type { ProjectEntry } from "../utils/project.js";
 
@@ -88,40 +89,41 @@ export async function listProjects(): Promise<void> {
     return new Date(aLast).getTime() - new Date(bLast).getTime();
   });
 
-  // Calculate column widths (account for header labels)
-  const nameWidth = Math.max("Project".length, ...projects.map(p => p.config.name.length));
-  const typeWidth = Math.max("Type".length, ...projects.map(p => (p.config.type || "—").length));
-  const hoursWidth = 24;
-  const sessionsWidth = 10;
-
-  const header = `  ${"Project".padEnd(nameWidth)}  ${"Type".padEnd(typeWidth)}  ${"Hours".padEnd(hoursWidth)}  ${"Sessions".padStart(sessionsWidth)}  Last Worked`;
-  const divider = `  ${"─".repeat(nameWidth)}  ${"─".repeat(typeWidth)}  ${"─".repeat(hoursWidth)}  ${"─".repeat(sessionsWidth)}  ${"─".repeat(11)}`;
-  console.log(`${DIM}${header}${RESET}`);
-  console.log(`${DIM}${divider}${RESET}`);
-
-  for (const { config } of projects) {
-    // Check for unsaved work (session with start but no end)
-    const hasOpenSession = config.time.some(s => s.end === null);
-
-    const prefix = config.longTerm ? "★ " : "  ";
-    const displayName = hasOpenSession
-      ? `${prefix}${RED}${config.name.padEnd(nameWidth)}${RESET}`
-      : `${prefix}${config.name.padEnd(nameWidth)}`;
-    const type = (config.type || "—").padEnd(typeWidth);
-
+  const rowData = projects.map(({ config }) => {
+    const sessions = config.time.length;
     const totalSeconds = config.time.reduce((sum, s) => sum + s.rounded, 0);
     const unbilledSeconds = config.time.filter(s => !s.invoiced).reduce((sum, s) => sum + s.rounded, 0);
     const totalHours = (totalSeconds / 3600).toFixed(1);
     const unbilledHours = (unbilledSeconds / 3600).toFixed(1);
-
-    const sessions = config.time.length;
-    const lastSession = sessions > 0 ? config.time[sessions - 1].start : null;
-    const lastWorked = lastSession ? timeAgo(new Date(lastSession)) : "never";
-
     const hoursDisplay = unbilledSeconds > 0
       ? `${totalHours}h (${unbilledHours}h unbilled)`
       : `${totalHours}h`;
+    const lastSession = sessions > 0 ? config.time[sessions - 1].start : null;
+    const lastWorked = lastSession ? timeAgo(new Date(lastSession)) : "never";
+    return [config.name, config.type || "—", hoursDisplay, String(sessions), lastWorked];
+  });
 
-    console.log(`${displayName}  ${type}  ${hoursDisplay.padEnd(hoursWidth)}  ${String(sessions).padStart(sessionsWidth)}  ${lastWorked}`);
+  const table = new Table([
+    { label: "Project" },
+    { label: "Type" },
+    { label: "Hours" },
+    { label: "Sessions", align: "right" },
+    { label: "Last Worked" },
+  ], rowData);
+
+  table.printHeader();
+
+  for (let i = 0; i < projects.length; i++) {
+    const { config } = projects[i];
+    const hasOpenSession = config.time.some(s => s.end === null);
+    const prefix = config.longTerm ? "★ " : "  ";
+
+    table.printRow([
+      { text: `${prefix}${config.name}`, color: hasOpenSession ? RED : undefined },
+      { text: rowData[i][1] },
+      { text: rowData[i][2] },
+      { text: rowData[i][3] },
+      { text: rowData[i][4] },
+    ]);
   }
 }

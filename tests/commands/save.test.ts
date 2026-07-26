@@ -13,11 +13,13 @@ jest.mock("../../src/utils/workspace.js", () => ({
   requireWorkspace: jest.fn().mockResolvedValue({
     workspaceRoot: "/home/user/workspace",
     mainWorktree: "/home/user/workspace/grind",
+    bareRepo: "/home/user/workspace/.grind.repo.git",
   }),
 }));
 jest.mock("../../src/utils/config.js", () => ({
   readProjectConfig: (...args: unknown[]) => mockReadProjectConfig(...args),
   writeProjectConfig: (...args: unknown[]) => mockWriteProjectConfig(...args),
+  readGrindConfig: jest.fn().mockResolvedValue({}),
 }));
 jest.mock("../../src/utils/session.js", () => ({
   getActiveSession: (...args: unknown[]) => mockGetActiveSession(...args),
@@ -27,6 +29,10 @@ jest.mock("../../src/utils/git.js", () => ({
   gitCommit: (...args: unknown[]) => mockGitCommit(...args),
   gitCommitInteractive: (...args: unknown[]) => mockGitCommitInteractive(...args),
   hasUncommittedChanges: (...args: unknown[]) => mockHasUncommittedChanges(...args),
+  getRemoteUrl: jest.fn().mockResolvedValue(null),
+  pushWorkspace: jest.fn().mockResolvedValue(undefined),
+  getDefaultBranch: jest.fn().mockResolvedValue("main"),
+  formatShellError: jest.fn().mockReturnValue(""),
 }));
 jest.mock("../../src/utils/prompts.js");
 

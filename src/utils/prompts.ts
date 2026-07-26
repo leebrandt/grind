@@ -1,5 +1,6 @@
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { GrindUserError } from "./errors.js";
 
 export async function confirmOrExit(prompt: string, skip: boolean): Promise<void> {
   if (skip) return;
@@ -13,8 +14,7 @@ export async function confirmOrExit(prompt: string, skip: boolean): Promise<void
   rl.close();
 
   if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
-    console.log("Aborted.");
-    process.exit(0);
+    throw new GrindUserError("Aborted.");
   }
 }
 

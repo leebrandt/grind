@@ -72,7 +72,7 @@ program
 // grind push [-u <url>]
 program
   .command("push")
-  .description("Push main branch to remote (project worktrees are local-only)")
+  .description("Push all branches to remote")
   .option("-u, --url <url>", "Remote URL (overrides configured remote)")
   .action(async (options: { url?: string }) => {
     await pushProjects(options);
@@ -81,7 +81,7 @@ program
 // grind pull [-u <url>]
 program
   .command("pull")
-  .description("Pull main branch and create worktrees for new projects")
+  .description("Pull all branches and restore project worktrees")
   .option("-u, --url <url>", "Remote URL (overrides configured remote)")
   .action(async (options: { url?: string }) => {
     await pullProjects(options);
@@ -283,7 +283,7 @@ program
   .description("Start working on a project (starts timer, opens editor)")
   .option("-c, --code", "Open code directory instead of project directory")
   .option("-q, --quiet", "Open editor without starting a timer")
-  .option("-s, --save", "Save work (end timer, commit)")
+  .option("-s, --save", "Save work (end timer, commit, push)")
   .action(
     async (
       project: string,
@@ -321,20 +321,21 @@ program
     await openCode(project);
   });
 
-// grind save "project" [-q] [-y] [-t <hours>]
+// grind save "project" [-q] [-y] [-t <hours>] [--no-push]
 program
   .command("save <project>")
-  .description("Save work on a project (stops timer, commits changes)")
+  .description("Save work on a project (stops timer, commits changes, pushes to remote)")
   .option("-q, --quiet", "Use auto-generated commit message (quick save)")
   .option("-y, --yes", "Skip interactive commit (same as --quiet)")
   .option(
     "-t, --time <hours>",
     "Backfill: set session end time to start + N hours",
   )
+  .option("--no-push", "Skip pushing to remote (commit only)")
   .action(
     async (
       project: string,
-      options: { quiet?: boolean; yes?: boolean; time?: string },
+      options: { quiet?: boolean; yes?: boolean; time?: string; noPush?: boolean },
     ) => {
       await save(project, options);
     },

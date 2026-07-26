@@ -8,7 +8,13 @@ import { mkdir, readdir } from "node:fs/promises";
 import { fileExists } from "../utils/files.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 import { readGrindConfig, writeGrindConfig } from "../utils/config.js";
-import { gitAddWorktree } from "../utils/git.js";
+import {
+  cloneBare,
+  setFetchRefspec,
+  gitFetchAll,
+  localBranchExists,
+  gitAddWorktree,
+} from "../utils/git.js";
 import {
   getBareRepoPath,
   getMainWorktreePath,
@@ -59,22 +65,20 @@ export async function clone(url: string, directory?: string): Promise<void> {
   // 2. Clone bare repo
   console.log("Cloning bare repository...");
   try {
-    await $`git clone --bare ${url} ${bareRepoPath}`.quiet();
+    await cloneBare(url, bareRepoPath);
   } catch {
     await cleanup();
     throw new GrindSystemError("Failed to clone repository. Check that the URL is correct and accessible.");
   }
 
   // 3. Fix remote fetch refspec (bare clones use wrong refspec that overwrites local branches)
-  await $`git -C ${bareRepoPath} config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"`.quiet();
+  await setFetchRefspec(bareRepoPath, "+refs/heads/*:refs/remotes/origin/*");
 
   // 3b. Fetch all branches to populate remote tracking refs
-  await $`git -C ${bareRepoPath} fetch --all`.quiet();
+  await gitFetchAll(bareRepoPath);
 
   // 4. Verify main branch exists
-  try {
-    await $`git -C ${bareRepoPath} rev-parse --verify refs/heads/main`.quiet();
-  } catch {
+  if (!(await localBranchExists(bareRepoPath, "main"))) {
     await cleanup();
     throw new GrindUserError("Repository does not have a 'main' branch. Is this a grind workspace?");
   }
@@ -82,7 +86,7 @@ export async function clone(url: string, directory?: string): Promise<void> {
   // 5. Create main worktree (NOT git clone — must be a worktree of the bare repo)
   console.log("Creating main worktree (grind/)...");
   try {
-    await $`git -C ${bareRepoPath} worktree add ${mainWorktreePath} main`.quiet();
+    await gitAddWorktree(bareRepoPath, mainWorktreePath, "main");
   } catch {
     await cleanup();
     throw new GrindSystemError("Failed to create main worktree.");

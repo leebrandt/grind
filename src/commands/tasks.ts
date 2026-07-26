@@ -8,7 +8,8 @@ import { readProjectConfig } from "../utils/config.js";
 import { getOpenTasks, getTasks, addTask, completeTask } from "../utils/task.js";
 import { parseDate } from "../utils/dates.js";
 import { GrindUserError } from "../utils/errors.js";
-import { DIM, RED, GREEN, YELLOW, RESET } from "../utils/colors.js";
+import { DIM, RED, GREEN, YELLOW } from "../utils/colors.js";
+import { Table } from "../utils/table.js";
 import type { Task } from "../types/index.js";
 
 interface TaskRow {
@@ -47,43 +48,37 @@ function getDueColor(dueDate: string | undefined, now: Date): string {
 function printTaskTable(rows: TaskRow[], showProject: boolean, now: Date): void {
   if (rows.length === 0) return;
 
-  const cols = {
-    id: Math.max("#".length, ...rows.map(r => String(r.id).length)),
-    project: Math.max(
-      "Project".length,
-      ...rows.map(r => (r.projectName ?? "").length),
-    ),
-    description: Math.max("Task".length, ...rows.map(r => r.description.length)),
-    due: Math.max("Due".length, ...rows.map(r => r.due.length)),
-  };
+  const columns = showProject
+    ? [{ label: "#", align: "right" as const }, { label: "Project" }, { label: "Task" }, { label: "Due" }]
+    : [{ label: "#", align: "right" as const }, { label: "Task" }, { label: "Due" }];
 
-  const header = showProject
-    ? `  ${"#".padStart(cols.id)}  ${"Project".padEnd(cols.project)}  ${"Task".padEnd(cols.description)}  ${"Due".padEnd(cols.due)}`
-    : `  ${"#".padStart(cols.id)}  ${"Task".padEnd(cols.description)}  ${"Due".padEnd(cols.due)}`;
-  const divider = showProject
-    ? `  ${"─".repeat(cols.id)}  ${"─".repeat(cols.project)}  ${"─".repeat(cols.description)}  ${"─".repeat(cols.due)}`
-    : `  ${"─".repeat(cols.id)}  ${"─".repeat(cols.description)}  ${"─".repeat(cols.due)}`;
+  const rowData = rows.map(r => showProject
+    ? [String(r.id), r.projectName ?? "", r.description, r.due]
+    : [String(r.id), r.description, r.due],
+  );
 
-  console.log(`${DIM}${header}${RESET}`);
-  console.log(`${DIM}${divider}${RESET}`);
+  const table = new Table(columns, rowData);
+  table.printHeader();
 
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     const dueColor = getDueColor(row.dueDate, now);
-    const dimPrefix = row.completed ? DIM : "";
-    const dimSuffix = row.completed ? RESET : "";
+    const dim = row.completed ? DIM : undefined;
 
-    const dueDisplay = dueColor
-      ? `${dimPrefix}${dueColor}${row.due.padEnd(cols.due)}${RESET}${dimSuffix}`
-      : `${dimPrefix}${row.due.padEnd(cols.due)}${dimSuffix}`;
+    const cells = showProject
+      ? [
+          { text: String(row.id) },
+          { text: row.projectName ?? "" },
+          { text: row.description, color: dim },
+          { text: row.due, color: dueColor && dim ? `${dim}${dueColor}` : dueColor || dim },
+        ]
+      : [
+          { text: String(row.id) },
+          { text: row.description, color: dim },
+          { text: row.due, color: dueColor && dim ? `${dim}${dueColor}` : dueColor || dim },
+        ];
 
-    const descDisplay = `${dimPrefix}${row.description.padEnd(cols.description)}${dimSuffix}`;
-
-    if (showProject) {
-      const projectDisplay = `${dimPrefix}${(row.projectName ?? "").padEnd(cols.project)}${dimSuffix}`;
-      console.log(`  ${String(row.id).padStart(cols.id)}  ${projectDisplay}  ${descDisplay}  ${dueDisplay}`);
-    } else {
-      console.log(`  ${String(row.id).padStart(cols.id)}  ${descDisplay}  ${dueDisplay}`);
-    }
+    console.log(table.row(cells));
   }
 }
 

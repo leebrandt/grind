@@ -28,10 +28,6 @@ export async function getCurrentProjectName(): Promise<string | null> {
   return firstSegment;
 }
 
-const BARE_REPO_NAME = ".grind.repo.git";
-const MAIN_WORKTREE_NAME = "grind";
-const CONFIG_FILE_NAME = ".grind.json";
-
 /**
  * Find the bare repo by scanning up from startPath
  * Returns the path to .grind.repo.git or null if not found
@@ -40,12 +36,12 @@ export async function findBareRepo(startPath: string): Promise<string | null> {
   let currentPath = path.resolve(startPath);
 
   while (currentPath !== path.dirname(currentPath)) {
-    const bareRepoPath = path.join(currentPath, BARE_REPO_NAME);
+    const bareRepoPath = getBareRepoPath(currentPath);
     if (await fileExists(bareRepoPath)) {
       return bareRepoPath;
     }
     // Also check parent (worktrees are siblings to bare repo)
-    const parentBareRepoPath = path.join(path.dirname(currentPath), BARE_REPO_NAME);
+    const parentBareRepoPath = getBareRepoPath(path.dirname(currentPath));
     if (await fileExists(parentBareRepoPath)) {
       return parentBareRepoPath;
     }

@@ -3,7 +3,6 @@ import {
   getActiveSession,
   startSession,
   endSession,
-  closeOrphanedSession,
 } from "../../src/utils/session.js";
 
 function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
@@ -116,23 +115,5 @@ describe("endSession", () => {
     const session = endSession(config, "2024-06-15T12:31:00Z");
     expect(session!.duration).toBe(1860);
     expect(session!.rounded).toBe(3600);
-  });
-});
-
-describe("closeOrphanedSession", () => {
-  it("should set end/duration/rounded to zero when active session exists", () => {
-    const config = makeConfig({
-      time: [{ start: "2024-06-15T10:00:00Z", end: null, duration: 0, rounded: 0 }],
-    });
-    closeOrphanedSession(config);
-    const session = config.time[0];
-    expect(session.end).toBe(session.start);
-    expect(session.duration).toBe(0);
-    expect(session.rounded).toBe(0);
-  });
-
-  it("should do nothing when no active session exists", () => {
-    const config = makeConfig();
-    expect(() => closeOrphanedSession(config)).not.toThrow();
   });
 });

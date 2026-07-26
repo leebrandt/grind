@@ -4,7 +4,6 @@ import {
   getBareRepoPath,
   getGrindConfigPath,
   getProjectConfigPath,
-  getMainProjectConfigPath,
   getProjectIdeaFilePath,
   getProjectWorktreePath,
   getProjectFilesPath,
@@ -40,14 +39,6 @@ describe("getGrindConfigPath", () => {
 describe("getProjectConfigPath", () => {
   it("returns project config path under main worktree (single source of truth)", () => {
     expect(getProjectConfigPath(workspaceRoot, projectName)).toBe(
-      "/home/user/work/grind/projects/my-project/.project.json"
-    );
-  });
-});
-
-describe("getMainProjectConfigPath", () => {
-  it("returns project config path under main worktree", () => {
-    expect(getMainProjectConfigPath(mainWorktree, projectName)).toBe(
       "/home/user/work/grind/projects/my-project/.project.json"
     );
   });

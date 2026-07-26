@@ -1,10 +1,9 @@
 import { confirmOrExit } from "../../src/utils/prompts.js";
+import { GrindUserError } from "../../src/utils/errors.js";
 
 jest.mock("node:readline/promises", () => ({
   createInterface: jest.fn(),
 }));
-
-jest.spyOn(process, "exit").mockImplementation((() => {}) as (code?: number) => never);
 
 import { createInterface } from "node:readline/promises";
 
@@ -47,16 +46,16 @@ describe("confirmOrExit", () => {
     await expect(confirmOrExit("Proceed?", false)).resolves.toBeUndefined();
   });
 
-  it("should exit when answer is n", async () => {
+  it("should throw GrindUserError when answer is n", async () => {
     mockRl.question.mockResolvedValue("n");
-    await confirmOrExit("Proceed?", false);
-    expect(process.exit).toHaveBeenCalledWith(0);
+    await expect(confirmOrExit("Proceed?", false)).rejects.toThrow(GrindUserError);
+    await expect(confirmOrExit("Proceed?", false)).rejects.toThrow("Aborted.");
   });
 
-  it("should exit when answer is empty", async () => {
+  it("should throw GrindUserError when answer is empty", async () => {
     mockRl.question.mockResolvedValue("");
-    await confirmOrExit("Proceed?", false);
-    expect(process.exit).toHaveBeenCalledWith(0);
+    await expect(confirmOrExit("Proceed?", false)).rejects.toThrow(GrindUserError);
+    await expect(confirmOrExit("Proceed?", false)).rejects.toThrow("Aborted.");
   });
 
   it("should close readline interface after getting answer", async () => {

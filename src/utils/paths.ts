@@ -25,13 +25,6 @@ export function getProjectConfigPath(workspaceRoot: string, projectName: string)
   return path.join(workspaceRoot, MAIN_WORKTREE_NAME, "projects", projectName, ".project.json");
 }
 
-/**
- * @deprecated Use getProjectConfigPath — kept as alias for backward compat.
- */
-export function getMainProjectConfigPath(mainWorktree: string, projectName: string): string {
-  return path.join(mainWorktree, "projects", projectName, ".project.json");
-}
-
 // Project files
 export function getProjectIdeaFilePath(workspaceRoot: string, projectName: string): string {
   return path.join(workspaceRoot, MAIN_WORKTREE_NAME, "projects", projectName, "the-idea.md");

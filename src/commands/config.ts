@@ -273,8 +273,6 @@ export async function configSet(key: string, value: string, projectName: string 
 
   const useGlobal = projectName === null;
 
-  const grindConfig = await readGrindConfig(mainWorktree);
-
   if (useGlobal) {
     if (!GLOBAL_SETTABLE_KEYS.includes(key as typeof GLOBAL_SETTABLE_KEYS[number])) {
       throw new GrindUserError(
@@ -283,6 +281,7 @@ export async function configSet(key: string, value: string, projectName: string 
       );
     }
 
+    const grindConfig = await readGrindConfig(mainWorktree);
     const parsed = await validateValue(key, value, true, mainWorktree);
     setNestedValue(grindConfig as Record<string, any>, key, parsed);
     await writeGrindConfig(mainWorktree, grindConfig);

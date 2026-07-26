@@ -2,15 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { $ } from "bun";
 import path from "node:path";
-import { rm } from "node:fs/promises";
 import { requireWorkspace } from "../utils/workspace.js";
 import { fileExists } from "../utils/files.js";
-import { gitCommit, formatShellError } from "../utils/git.js";
+import { gitCommit, removeProject, formatShellError } from "../utils/git.js";
 import { confirmOrExit } from "../utils/prompts.js";
-import { GrindUserError, GrindSystemError } from "../utils/errors.js";
-import { getProjectWorktreePath, getProjectDirInMainPath } from "../utils/paths.js";
+import { GrindUserError } from "../utils/errors.js";
+import { getProjectWorktreePath } from "../utils/paths.js";
 import { readProjectConfig, writeProjectConfig } from "../utils/config.js";
 
 /**
@@ -45,36 +43,28 @@ export async function cancelProject(
     options?.yes ?? false,
   );
 
-  // 5. Remove the worktree
+  // 5. Remove worktree, local branch, and remote branch (best-effort)
   console.log(`Cancelling project '${projectName}'...`);
-  try {
-    if (options?.force) {
-      await $`git -C ${bareRepo} worktree remove --force ${worktreePath}`.quiet();
-    } else {
-      await $`git -C ${bareRepo} worktree remove ${worktreePath}`.quiet();
-    }
+  const result = await removeProject(bareRepo, worktreePath, projectName, {
+    force: options?.force,
+    deleteRemote: true,
+  });
+
+  if (result.worktreeRemoved) {
     console.log(`  - Removed worktree: ${projectName}/`);
-  } catch (e) {
-    throw new GrindSystemError(
+  } else {
+    throw new GrindUserError(
       "Could not remove worktree. It may have uncommitted changes.\n" +
-      `Use --force to remove anyway: ${formatShellError(e)}`
+      "Use --force to remove anyway."
     );
   }
 
-  // 5. Delete the branch
-  try {
-    await $`git -C ${bareRepo} branch -D ${projectName}`.quiet();
+  if (result.localDeleted) {
     console.log(`  - Deleted branch: ${projectName}`);
-  } catch (e) {
-    console.error(`Warning: Could not delete branch '${projectName}': ${formatShellError(e)}`);
   }
 
-  // 5b. Push branch deletion to remote (best-effort)
-  try {
-    await $`git -C ${bareRepo} push origin --delete ${projectName}`.quiet();
+  if (result.remoteDeleted) {
     console.log(`  - Deleted remote branch: ${projectName}`);
-  } catch {
-    // Branch may not exist on remote, or origin may not be configured — not fatal
   }
 
   // 6. Mark project as canceled in config (keep config as record)
