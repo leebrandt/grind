@@ -7,8 +7,9 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { $ } from "bun";
 import type { GrindConfig } from "../types/index.js";
-import { getProjectsDirPath, getProjectWorktreePath } from "./paths.js";
+import { getProjectWorktreePath } from "./paths.js";
 import { readProjectConfig } from "./config.js";
+import { GrindSystemError } from "./errors.js";
 import { fileExists } from "./files.js";
 
 /**
@@ -20,9 +21,20 @@ export async function gitInit(repoPath: string): Promise<void> {
 
 /**
  * Create a git commit with message (stages all changes first)
+ * Refuses to commit if there are unmerged paths, so a conflicted merge
+ * can never be committed verbatim (which would corrupt tracked configs).
  */
 export async function gitCommit(worktreePath: string, message: string): Promise<void> {
   await $`git -C ${worktreePath} add -A`.quiet();
+
+  const unmerged = await $`git -C ${worktreePath} ls-files -u`.quiet().nothrow();
+  if (unmerged.stdout.toString().trim().length > 0) {
+    throw new GrindSystemError(
+      "Refusing to commit: there are unmerged paths in this worktree.\n" +
+      "Resolve the conflicts first (git status), then retry."
+    );
+  }
+
   await $`git -C ${worktreePath} commit -m ${message}`.quiet();
 }
 
@@ -80,7 +92,10 @@ export async function gitInitialCommit(repoPath: string, branchName: string = "m
 }
 
 /**
- * Add a git worktree, creating a new branch or using an existing one
+ * Add a git worktree, creating a new branch or using an existing one.
+ * When the local branch doesn't exist but a remote tracking branch does,
+ * the worktree is created from origin/<branch> so it stays connected to
+ * the project's real branch instead of branching off HEAD (main).
  */
 export async function gitAddWorktree(
   repoPath: string,
@@ -92,8 +107,15 @@ export async function gitAddWorktree(
     await $`git -C ${repoPath} rev-parse --verify refs/heads/${branch}`.quiet();
     // Branch exists - just add worktree without -b
     await $`git -C ${repoPath} worktree add ${worktreePath} ${branch}`.quiet();
+    return;
   } catch {
-    // Branch doesn't exist - create it
+    // Branch doesn't exist - create it from the remote tracking branch if available
+  }
+
+  const remoteExists = await $`git -C ${repoPath} rev-parse --verify refs/remotes/origin/${branch}`.quiet().nothrow();
+  if (remoteExists.exitCode === 0) {
+    await $`git -C ${repoPath} worktree add ${worktreePath} -b ${branch} origin/${branch}`.quiet();
+  } else {
     await $`git -C ${repoPath} worktree add ${worktreePath} -b ${branch}`.quiet();
   }
 }
@@ -496,9 +518,23 @@ export async function pullWorkspace(
       continue;
     }
 
-    // Skip canceled or published projects
-    const projectConfig = await readProjectConfig(workspaceRoot, branch);
-    if (projectConfig?.status === "canceled" || projectConfig?.status === "published") {
+    // Skip canceled or published projects.
+    // The config lives in the main worktree (single source of truth) — never
+    // read it from the project worktree, which won't exist for archived projects.
+    let status: string | undefined;
+    const mainConfig = await readProjectConfig(workspaceRoot, branch);
+    if (mainConfig) {
+      status = mainConfig.status;
+    } else {
+      // Fallback: read the config from main's branch tree (not yet checked out).
+      const mainBranch = await getCurrentBranch(mainWorktreePath);
+      const raw = await showFile(bareRepoPath, mainBranch, `projects/${branch}/.project.json`);
+      if (raw) {
+        try { status = JSON.parse(raw).status; } catch { /* not a config */ }
+      }
+    }
+
+    if (status === "canceled" || status === "published") {
       skipped++;
       continue;
     }
