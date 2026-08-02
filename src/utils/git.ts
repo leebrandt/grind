@@ -380,9 +380,10 @@ export async function setRemoteUrl(bareRepoPath: string, url: string): Promise<v
  * List remote branches (refs/remotes/origin/*) excluding HEAD
  */
 export async function getRemoteBranchList(bareRepoPath: string): Promise<string[]> {
-  const result = await $`git -C ${bareRepoPath} branch -r --format="%(refname:short)"`.quiet();
+  const result = await $`git -C ${bareRepoPath} branch -r --format="%(refname)"`.quiet();
   return result.stdout.toString().trim().split("\n")
-    .filter(b => b && b !== "origin/HEAD");
+    .map(r => r.replace("refs/remotes/", ""))
+    .filter(b => b && !b.endsWith("/HEAD"));
 }
 
 /**

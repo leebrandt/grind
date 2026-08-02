@@ -315,4 +315,26 @@ describe("pullWorkspace", () => {
     expect(result.updated).not.toContain("proj");
     expect(result.diverged).toContain("proj");
   });
+
+  it("does not treat the symbolic origin/HEAD ref as a project branch", async () => {
+    shellMock({
+      "fetch --all": { stdout: "" },
+      "branch -r --format": { stdout: "origin/HEAD\norigin/main\norigin/proj\n" },
+      "branch --format": { stdout: "main\nproj\n" },
+      "rev-parse --verify origin/": { stdout: "abc123", exitCode: 0 },
+      "rev-parse --verify refs/heads/": { stdout: "abc123", exitCode: 0 },
+      "merge origin/main": { stdout: "" },
+      "worktree list --porcelain": {
+        stdout: "worktree /home/user/work/grind\nworktree /home/user/work/proj\n",
+      },
+    });
+    (fs.stat as jest.Mock).mockRejectedValue(new Error("ENOENT"));
+    (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({ name: "proj", time: [] }));
+
+    const result = await pullWorkspace(bareRepo, mainWorktree, workspaceRoot);
+
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("worktree add"))).toBe(false);
+    expect(result.created).toBe(0);
+  });
 });
