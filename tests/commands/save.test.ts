@@ -8,6 +8,8 @@ const mockEndSession = jest.fn();
 const mockGitCommit = jest.fn().mockResolvedValue(undefined);
 const mockGitCommitInteractive = jest.fn().mockResolvedValue(undefined);
 const mockHasUncommittedChanges = jest.fn().mockResolvedValue(true);
+const mockGetRemoteUrl = jest.fn().mockResolvedValue(null);
+const mockPushWorkspace = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("../../src/utils/workspace.js", () => ({
   requireWorkspace: jest.fn().mockResolvedValue({
@@ -29,8 +31,8 @@ jest.mock("../../src/utils/git.js", () => ({
   gitCommit: (...args: unknown[]) => mockGitCommit(...args),
   gitCommitInteractive: (...args: unknown[]) => mockGitCommitInteractive(...args),
   hasUncommittedChanges: (...args: unknown[]) => mockHasUncommittedChanges(...args),
-  getRemoteUrl: jest.fn().mockResolvedValue(null),
-  pushWorkspace: jest.fn().mockResolvedValue(undefined),
+  getRemoteUrl: (...args: unknown[]) => mockGetRemoteUrl(...args),
+  pushWorkspace: (...args: unknown[]) => mockPushWorkspace(...args),
   getDefaultBranch: jest.fn().mockResolvedValue("main"),
   formatShellError: jest.fn().mockReturnValue(""),
 }));
@@ -52,6 +54,22 @@ describe("save", () => {
     mockReadProjectConfig.mockResolvedValue(baseConfig);
     mockGetActiveSession.mockReturnValue(null);
     mockEndSession.mockReturnValue(undefined);
+    mockGetRemoteUrl.mockResolvedValue(null);
+    mockPushWorkspace.mockClear();
+  });
+
+  describe("push behavior", () => {
+    it("should push when no remote or --no-push not given", async () => {
+      mockGetRemoteUrl.mockResolvedValue("git@github.com:user/repo.git");
+      await save(projectName, { quiet: true });
+      expect(mockPushWorkspace).toHaveBeenCalledTimes(1);
+    });
+
+    it("should skip push when --no-push given (push: false)", async () => {
+      mockGetRemoteUrl.mockResolvedValue("git@github.com:user/repo.git");
+      await save(projectName, { quiet: true, push: false });
+      expect(mockPushWorkspace).not.toHaveBeenCalled();
+    });
   });
 
   describe("auto-commit behavior", () => {

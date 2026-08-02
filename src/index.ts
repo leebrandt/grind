@@ -335,7 +335,7 @@ program
   .action(
     async (
       project: string,
-      options: { quiet?: boolean; yes?: boolean; time?: string; noPush?: boolean },
+      options: { quiet?: boolean; yes?: boolean; time?: string; push?: boolean },
     ) => {
       await save(project, options);
     },

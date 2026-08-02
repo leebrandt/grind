@@ -18,7 +18,7 @@ import { GrindUserError, GrindSystemError } from "../utils/errors.js";
 
 export async function save(
   projectName: string,
-  options?: { quiet?: boolean; time?: string; yes?: boolean; noPush?: boolean },
+  options?: { quiet?: boolean; time?: string; yes?: boolean; push?: boolean },
 ): Promise<void> {
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
 
@@ -31,7 +31,7 @@ export async function save(
       console.log("No changes to commit.");
     }
 
-    if (!options?.noPush && await getRemoteUrl(bareRepo)) {
+    if (options?.push !== false && await getRemoteUrl(bareRepo)) {
       try {
         const config = await readGrindConfig(mainWorktree);
         const defaultBranch = await getDefaultBranch(bareRepo, config);
@@ -98,7 +98,7 @@ export async function save(
   }
 
   // Push to remote
-  if (!options?.noPush && await getRemoteUrl(bareRepo)) {
+  if (options?.push !== false && await getRemoteUrl(bareRepo)) {
     try {
       const grindConfig = await readGrindConfig(mainWorktree);
       const defaultBranch = await getDefaultBranch(bareRepo, grindConfig);
