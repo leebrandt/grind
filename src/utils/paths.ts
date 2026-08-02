@@ -22,7 +22,7 @@ export function getGrindConfigPath(mainWorktree: string): string {
  * All reads and writes of project config go through this path.
  */
 export function getProjectConfigPath(workspaceRoot: string, projectName: string): string {
-  return path.join(workspaceRoot, MAIN_WORKTREE_NAME, "projects", projectName, ".project.json");
+  return path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");
 }
 
 // Project files

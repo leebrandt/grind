@@ -100,7 +100,7 @@ export async function listProjects(): Promise<void> {
       : `${totalHours}h`;
     const lastSession = sessions > 0 ? config.time[sessions - 1].start : null;
     const lastWorked = lastSession ? timeAgo(new Date(lastSession)) : "never";
-    return [config.name, config.type || "—", hoursDisplay, String(sessions), lastWorked];
+    return [`${config.longTerm ? "★ " : "  "}${config.name}`, config.type || "—", hoursDisplay, String(sessions), lastWorked];
   });
 
   const table = new Table([
@@ -116,10 +116,9 @@ export async function listProjects(): Promise<void> {
   for (let i = 0; i < projects.length; i++) {
     const { config } = projects[i];
     const hasOpenSession = config.time.some(s => s.end === null);
-    const prefix = config.longTerm ? "★ " : "  ";
 
     table.printRow([
-      { text: `${prefix}${config.name}`, color: hasOpenSession ? RED : undefined },
+      { text: rowData[i][0], color: hasOpenSession ? RED : undefined },
       { text: rowData[i][1] },
       { text: rowData[i][2] },
       { text: rowData[i][3] },

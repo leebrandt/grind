@@ -95,7 +95,7 @@ export async function status(): Promise<void> {
     return b.totalSeconds - a.totalSeconds;
   });
 
-  const rowData = rows.map(r => [r.name, r.hoursWorked, r.hoursBilled, String(r.taskCount), r.lastSession, r.lastCommit]);
+  const rowData = rows.map(r => [`${r.longTerm ? "★ " : "  "}${r.name}`, r.hoursWorked, r.hoursBilled, String(r.taskCount), r.lastSession, r.lastCommit]);
 
   const table = new Table([
     { label: "Project" },
@@ -110,7 +110,6 @@ export async function status(): Promise<void> {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const prefix = row.longTerm ? "★ " : "  ";
     let nameColor: string | undefined;
     if (row.isActive) {
       nameColor = GREEN;
@@ -130,7 +129,7 @@ export async function status(): Promise<void> {
     }
 
     table.printRow([
-      { text: `${prefix}${row.name}`, color: nameColor },
+      { text: rowData[i][0], color: nameColor },
       { text: rowData[i][1] },
       { text: rowData[i][2] },
       { text: rowData[i][3], color: taskColor },
