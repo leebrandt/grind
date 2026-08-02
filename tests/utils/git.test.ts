@@ -261,4 +261,58 @@ describe("pullWorkspace", () => {
     const calls = mock$.mock.calls.map(c => cmdOf(c));
     expect(calls.some(c => c.includes("worktree add") && c.includes("origin/active-proj"))).toBe(true);
   });
+
+  it("fast-forwards a branch checked out in a worktree so its files are refreshed", async () => {
+    shellMock({
+      "fetch --all": { stdout: "" },
+      "branch -r --format": { stdout: "origin/main\norigin/proj\n" },
+      "branch --format": { stdout: "main\nproj\n" },
+      "rev-parse --verify origin/": { stdout: "new123", exitCode: 0 },
+      "rev-parse --verify refs/heads/": { stdout: "old456", exitCode: 0 },
+      "merge-base --is-ancestor": { stdout: "", exitCode: 0 },
+      "merge --ff-only": { stdout: "" },
+      "merge origin/main": { stdout: "" },
+      "worktree list --porcelain": { stdout: "worktree /home/user/work/grind\n" },
+    });
+    (fs.stat as jest.Mock).mockImplementation((p: string) =>
+      p === `${workspaceRoot}/proj`
+        ? Promise.resolve({} as never)
+        : Promise.reject(new Error("ENOENT")),
+    );
+    (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({ name: "proj", time: [] }));
+
+    const result = await pullWorkspace(bareRepo, mainWorktree, workspaceRoot);
+
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("merge --ff-only origin/proj"))).toBe(true);
+    expect(calls.some(c => c.includes("update-ref refs/heads/proj"))).toBe(false);
+    expect(result.updated).toContain("proj");
+  });
+
+  it("flags a branch whose worktree blocks fast-forward as diverged instead of desyncing files", async () => {
+    shellMock({
+      "fetch --all": { stdout: "" },
+      "branch -r --format": { stdout: "origin/main\norigin/proj\n" },
+      "branch --format": { stdout: "main\nproj\n" },
+      "rev-parse --verify origin/": { stdout: "new123", exitCode: 0 },
+      "rev-parse --verify refs/heads/": { stdout: "old456", exitCode: 0 },
+      "merge-base --is-ancestor": { stdout: "", exitCode: 0 },
+      "merge --ff-only": { reject: true },
+      "merge origin/main": { stdout: "" },
+      "worktree list --porcelain": { stdout: "worktree /home/user/work/grind\n" },
+    });
+    (fs.stat as jest.Mock).mockImplementation((p: string) =>
+      p === `${workspaceRoot}/proj`
+        ? Promise.resolve({} as never)
+        : Promise.reject(new Error("ENOENT")),
+    );
+    (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({ name: "proj", time: [] }));
+
+    const result = await pullWorkspace(bareRepo, mainWorktree, workspaceRoot);
+
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("update-ref refs/heads/proj"))).toBe(false);
+    expect(result.updated).not.toContain("proj");
+    expect(result.diverged).toContain("proj");
+  });
 });

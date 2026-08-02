@@ -478,13 +478,27 @@ export async function pullWorkspace(
       const localHash = (await $`git -C ${bareRepoPath} rev-parse --verify refs/heads/${branch}`.quiet().nothrow()).stdout.toString().trim();
       if (!localHash || localHash === remoteHash) continue;
 
-      const check = await $`git -C ${bareRepoPath} merge-base --is-ancestor ${localHash} ${remoteHash}`.quiet().nothrow();
-      if (check.exitCode === 0) {
+    const check = await $`git -C ${bareRepoPath} merge-base --is-ancestor ${localHash} ${remoteHash}`.quiet().nothrow();
+    if (check.exitCode === 0) {
+      const wtPath = getProjectWorktreePath(workspaceRoot, branch);
+      if (await fileExists(wtPath)) {
+        // Branch is checked out in a worktree — refresh the working files too, so
+        // pull leaves existing worktrees in a workable state instead of just moving
+        // the ref (which would desync the files and show phantom diffs).
+        if (await fastForwardWorktree(wtPath, branch)) {
+          updated.push(branch);
+        } else {
+          // Worktree has local changes blocking the fast-forward — leave the ref
+          // alone and flag it for a manual merge.
+          diverged.push(branch);
+        }
+      } else {
         await $`git -C ${bareRepoPath} update-ref refs/heads/${branch} ${remoteHash}`.quiet();
         updated.push(branch);
-      } else {
-        diverged.push(branch);
       }
+    } else {
+      diverged.push(branch);
+    }
     } catch {
       // Skip on error
     }
