@@ -131,6 +131,28 @@ describe("save", () => {
       await save(projectName, { time: "1" });
       expect(mockEndSession).toHaveBeenCalled();
     });
+
+    it("should warn when -t is given but no active session, and still commit/push", async () => {
+      mockGetActiveSession.mockReturnValue(null);
+      mockGetRemoteUrl.mockResolvedValue("git@github.com:user/repo.git");
+      await save(projectName, { time: "1", quiet: true });
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "ignored — no active session found to backfill for 'test-project'",
+        ),
+      );
+      expect(mockGitCommit).toHaveBeenCalledTimes(1);
+      expect(mockPushWorkspace).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not print the -t warning when -t is not given", async () => {
+      mockGetActiveSession.mockReturnValue(null);
+      await save(projectName, { quiet: true });
+
+      const logCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      expect(logCalls.some((l: string) => l.includes("ignored"))).toBe(false);
+    });
   });
 
   describe("error handling", () => {

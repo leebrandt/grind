@@ -15,6 +15,17 @@ import { GrindUserError } from "../utils/errors.js";
 import { getInvoiceDirPath } from "../utils/paths.js";
 
 /**
+ * Map a payment-terms string to the number of days until the invoice is due.
+ * "Net 30" → 30, "net 7" → 7, "Due on receipt" → 0, anything else → 30.
+ */
+export function daysFromPaymentTerms(terms: string): number {
+  const netMatch = /^net\s+(\d+)$/i.exec(terms.trim());
+  if (netMatch) return parseInt(netMatch[1], 10);
+  if (/due on receipt/i.test(terms)) return 0;
+  return 30;
+}
+
+/**
  * Generate invoice for a project
  * grind invoice <project-name>
  */
@@ -78,7 +89,9 @@ export async function invoiceProject(projectName: string): Promise<void> {
   const invoiceDate = formatDate(now.toISOString());
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // 2026-01-27T14-30-15
   const paymentTerms = grindConfig.paymentTerms ?? "Net 30";
-  const dueDate = formatDate(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()); // 30 days from now
+  const dueDate = formatDate(
+    new Date(now.getTime() + daysFromPaymentTerms(paymentTerms) * 24 * 60 * 60 * 1000).toISOString(),
+  );
   const currency = grindConfig.currency ?? "USD";
   const currencySymbol = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
 
