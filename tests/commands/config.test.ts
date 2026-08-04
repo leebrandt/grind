@@ -1,4 +1,4 @@
-import { configSet, configList } from "../../src/commands/config.js";
+import { configSet, configList, resolveProjectArg } from "../../src/commands/config.js";
 import { GrindUserError } from "../../src/utils/errors.js";
 
 const mockReadProjectConfig = jest.fn();
@@ -101,5 +101,48 @@ describe("config command — deadline", () => {
       const calls = (console.log as jest.Mock).mock.calls.map(c => c[0]);
       expect(calls).not.toContainEqual(expect.stringContaining("deadline"));
     });
+  });
+});
+
+describe("resolveProjectArg", () => {
+  it("should return the positional project when only positional is set", () => {
+    expect(resolveProjectArg("my-project", undefined, false)).toBe("my-project");
+  });
+
+  it("should return the -p/--project flag when only the flag is set", () => {
+    expect(resolveProjectArg(undefined, "my-project", false)).toBe("my-project");
+  });
+
+  it("should return the value when both forms are set to the same value", () => {
+    expect(resolveProjectArg("my-project", "my-project", false)).toBe("my-project");
+  });
+
+  it("should throw GrindUserError when both forms are set to different values", () => {
+    let error: GrindUserError | undefined;
+    try {
+      resolveProjectArg("positional-project", "flag-project", false);
+    } catch (e) {
+      error = e as GrindUserError;
+    }
+    expect(error).toBeInstanceOf(GrindUserError);
+    expect(error?.message).toContain("positional-project");
+    expect(error?.message).toContain("flag-project");
+    expect(error?.exitCode).toBe(1);
+  });
+
+  it("should throw GrindUserError when -p/--project is combined with -g/--global", () => {
+    let error: GrindUserError | undefined;
+    try {
+      resolveProjectArg(undefined, "my-project", true);
+    } catch (e) {
+      error = e as GrindUserError;
+    }
+    expect(error).toBeInstanceOf(GrindUserError);
+    expect(error?.message).toBe("Cannot use -p/--project with -g/--global");
+    expect(error?.exitCode).toBe(1);
+  });
+
+  it("should return undefined when no project and not global", () => {
+    expect(resolveProjectArg(undefined, undefined, false)).toBeUndefined();
   });
 });

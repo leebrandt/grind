@@ -18,7 +18,7 @@ import { listIdeas, listProjects } from "./commands/list.js";
 import { workStart } from "./commands/work.js";
 import { save } from "./commands/save.js";
 import { init } from "./commands/init.js";
-import { configList, configGet, configSet } from "./commands/config.js";
+import { configList, configGet, configSet, resolveProjectArg } from "./commands/config.js";
 import { rejectIdea } from "./commands/reject.js";
 import { pruneIdeas } from "./commands/prune.js";
 import { publishProject } from "./commands/publish-project.js";
@@ -119,6 +119,7 @@ program
     "Use workspace config (.grind.json) instead of project config",
   )
   .option("-l, --list", "List all config values")
+  .option("-p, --project <name>", "Project name (alternative to positional [project])")
   .addHelpText(
     "after",
     `
@@ -156,8 +157,10 @@ Settable keys (workspace-level, use -g):
       project: string | undefined,
       key: string | undefined,
       value: string | undefined,
-      options: { global?: boolean; list?: boolean },
+      options: { global?: boolean; list?: boolean; project?: string },
     ) => {
+      const resolvedProject = resolveProjectArg(project, options.project, !!options.global);
+
       if (options.global) {
         if (options.list || (!key && !value)) {
           await configList(null, options);
@@ -167,15 +170,15 @@ Settable keys (workspace-level, use -g):
           await configSet(key, value, null, options);
         }
       } else {
-        if (!project) {
+        if (!resolvedProject) {
           throw new GrindError("Project name is required (or use -g for workspace config)", 1);
         }
         if (options.list || (!key && !value)) {
-          await configList(project, options);
+          await configList(resolvedProject, options);
         } else if (key && !value) {
-          await configGet(key, project, options);
+          await configGet(key, resolvedProject, options);
         } else if (key && value) {
-          await configSet(key, value, project, options);
+          await configSet(key, value, resolvedProject, options);
         }
       }
     },

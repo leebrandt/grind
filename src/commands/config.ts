@@ -5,12 +5,15 @@
 /**
  * Get or set configuration values
  *
- * grind config <project> <key> <value>  # Set project config
- * grind config <project> <key>          # Get project config
- * grind config <project> --list         # Show project config
- * grind config -g <key> <value>         # Set workspace config
- * grind config -g <key>                 # Get workspace config
- * grind config -g --list                # Show workspace config
+ * grind config <project> <key> <value>    # Set project config
+ * grind config -p <project> <key> <value> # Set project config (same as positional)
+ * grind config <project> <key>            # Get project config
+ * grind config -p <project> <key>         # Get project config (same as positional)
+ * grind config <project> --list           # Show project config
+ * grind config -p <project> --list        # Show project config (same as positional)
+ * grind config -g <key> <value>           # Set workspace config
+ * grind config -g <key>                   # Get workspace config
+ * grind config -g --list                  # Show workspace config
  *
  * Keys (workspace-level, -g):
  *   billing.roundTo            - quarter-hour | half-hour | hour
@@ -49,6 +52,26 @@ import { GrindUserError } from "../utils/errors.js";
 
 export interface ConfigOptions {
   list?: boolean;
+}
+
+/**
+ * Resolve the project name from the positional [project] arg, the -p/--project
+ * flag, or neither. Throws when the forms conflict or when -p is combined with -g.
+ */
+export function resolveProjectArg(
+  positional: string | undefined,
+  flag: string | undefined,
+  isGlobal: boolean,
+): string | undefined {
+  if (isGlobal && flag) {
+    throw new GrindUserError("Cannot use -p/--project with -g/--global");
+  }
+  if (positional && flag && positional !== flag) {
+    throw new GrindUserError(
+      `Project specified twice: "${positional}" (positional) and "${flag}" (-p/--project). Use only one form.`,
+    );
+  }
+  return flag ?? positional;
 }
 
 const GLOBAL_SETTABLE_KEYS = [
