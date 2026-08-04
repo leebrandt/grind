@@ -8,27 +8,6 @@ import { GrindUserError } from "./errors.js";
 import { getMainWorktreePath, getGrindConfigPath, getBareRepoPath } from "./paths.js";
 
 /**
- * Derive the current project name from the working directory.
- * Returns the directory name immediately under the workspace root,
- * or null if not inside a project worktree.
- */
-export async function getCurrentProjectName(): Promise<string | null> {
-  const cwd = process.cwd();
-  const workspaceRoot = await getWorkspaceRoot(cwd);
-  if (!workspaceRoot) return null;
-
-  const relative = path.relative(workspaceRoot, cwd);
-  if (!relative || relative.startsWith("..")) return null;
-
-  const firstSegment = relative.split(path.sep)[0];
-
-  // The "grind" directory is the main worktree, not a project
-  if (firstSegment === "grind" || firstSegment === ".grind.repo.git") return null;
-
-  return firstSegment;
-}
-
-/**
  * Find the bare repo by scanning up from startPath
  * Returns the path to .grind.repo.git or null if not found
  */
