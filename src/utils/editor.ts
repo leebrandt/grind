@@ -21,13 +21,25 @@ export async function openEditor(filePath: string): Promise<void> {
   }
 }
 
-export async function openEditorDetached(filePath: string): Promise<void> {
-  const editor = spawn(editorBinary, [filePath], { stdio: "inherit" });
+export function openEditorDetached(filePath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const editor = spawn(editorBinary, [filePath], { stdio: "inherit" });
 
-  editor.on("close", (code) => {
-    if (code !== 0) {
-      console.error(`Editor exited with code ${code}`);
-    }
+    editor.on("error", (err) => {
+      reject(
+        new GrindSystemError(
+          `Failed to launch editor "${editorBinary}"`,
+          err instanceof Error ? err : undefined,
+        ),
+      );
+    });
+
+    editor.on("close", (code) => {
+      if (code !== 0) {
+        console.error(`Editor exited with code ${code}`);
+      }
+      resolve();
+    });
   });
 }
 

@@ -49,6 +49,10 @@ export async function pruneIdeas(options?: { yes?: boolean }): Promise<void> {
   }
 
   // Commit the changes
-  await gitCommit(mainWorktree, `Prune ${rejectedFiles.length} rejected idea(s)`);
+  await gitCommit(
+    mainWorktree,
+    `Prune ${rejectedFiles.length} rejected idea(s)`,
+    rejectedFiles.map(f => path.join(ideasDir, f)),
+  );
   console.log(`\nPruned ${rejectedFiles.length} rejected idea(s) and committed to main branch`);
 }

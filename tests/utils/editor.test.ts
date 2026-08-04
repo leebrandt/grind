@@ -4,6 +4,9 @@ let writeFileMock: jest.Mock;
 let readFileMock: jest.Mock;
 let unlinkMock: jest.Mock;
 
+import { EventEmitter } from "node:events";
+import type { GrindSystemError } from "../../src/utils/errors.js";
+
 jest.mock("node:child_process", () => {
   execSyncMock = jest.fn();
   spawnMock = jest.fn();
@@ -55,24 +58,53 @@ describe("editor module", () => {
   });
 
   describe("openEditorDetached", () => {
-    it("should spawn editor with file path", async () => {
-      spawnMock.mockReturnValue({ on: jest.fn() });
-      await openEditorDetached("/path/to/file.md");
+    it("spawns the editor with the file path", async () => {
+      const child = new EventEmitter();
+      spawnMock.mockReturnValue(child);
+
+      const p = openEditorDetached("/path/to/file.md");
+
       expect(spawnMock).toHaveBeenCalledWith("nvim", ["/path/to/file.md"], { stdio: "inherit" });
+      child.emit("close", 0);
+      await p;
     });
 
-    it("should log on non-zero exit code", async () => {
+    it("resolves when the editor exits", async () => {
+      const child = new EventEmitter();
+      spawnMock.mockReturnValue(child);
+
+      const p = openEditorDetached("/path/to/file.md");
+      child.emit("close", 0);
+
+      await expect(p).resolves.toBeUndefined();
+    });
+
+    it("logs on non-zero exit code", async () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-      let closeHandler: (code: number) => void = () => {};
-      spawnMock.mockReturnValue({
-        on: jest.fn((event: string, handler: (code: number) => void) => {
-          if (event === "close") closeHandler = handler;
-        }),
-      });
-      await openEditorDetached("/path/to/file.md");
-      closeHandler(1);
+      const child = new EventEmitter();
+      spawnMock.mockReturnValue(child);
+
+      const p = openEditorDetached("/path/to/file.md");
+      child.emit("close", 1);
+
+      await expect(p).resolves.toBeUndefined();
       expect(consoleSpy).toHaveBeenCalledWith("Editor exited with code 1");
       consoleSpy.mockRestore();
+    });
+
+    it("rejects with GrindSystemError on spawn failure", async () => {
+      // Import from the same (post-resetModules) module registry as editor.js
+      const { GrindSystemError: FreshGrindSystemError } = await import("../../src/utils/errors.js");
+      const child = new EventEmitter();
+      spawnMock.mockReturnValue(child);
+
+      const p = openEditorDetached("/path/to/file.md");
+      child.emit("error", new Error("ENOENT"));
+
+      const err = await p.catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(FreshGrindSystemError);
+      expect((err as GrindSystemError).message).toContain("Failed to launch editor");
+      expect((err as GrindSystemError).exitCode).toBe(2);
     });
   });
 
