@@ -22,6 +22,7 @@ interface ProjectRow {
   lastSession: string;
   lastCommit: string;
   isActive: boolean;
+  isDeadlineOverdue: boolean;
   isDeadlineSoon: boolean;
   hasUnbilled: boolean;
   longTerm: boolean;
@@ -63,12 +64,14 @@ export async function status(): Promise<void> {
     const isActive = getActiveSession(config) !== undefined;
 
     const now = new Date();
+    let isDeadlineOverdue = false;
     let isDeadlineSoon = false;
     if (config.deadline) {
       const deadline = new Date(config.deadline + "T23:59:59Z");
       const diffMs = deadline.getTime() - now.getTime();
       const diffDays = diffMs / (1000 * 60 * 60 * 24);
-      isDeadlineSoon = diffDays <= 7;
+      isDeadlineOverdue = diffDays < 0;
+      isDeadlineSoon = diffDays >= 0 && diffDays <= 7;
     }
 
     return {
@@ -80,6 +83,7 @@ export async function status(): Promise<void> {
       lastSession: lastSessionDisplay,
       lastCommit: lastCommitDate ? timeAgo(new Date(lastCommitDate)) : "never",
       isActive,
+      isDeadlineOverdue,
       isDeadlineSoon,
       hasUnbilled,
       longTerm: config.longTerm === true,
@@ -113,8 +117,10 @@ export async function status(): Promise<void> {
     let nameColor: string | undefined;
     if (row.isActive) {
       nameColor = GREEN;
-    } else if (row.isDeadlineSoon) {
+    } else if (row.isDeadlineOverdue) {
       nameColor = RED;
+    } else if (row.isDeadlineSoon) {
+      nameColor = YELLOW;
     } else if (row.hasUnbilled) {
       nameColor = YELLOW;
     } else {

@@ -92,7 +92,7 @@ describe("status", () => {
       expect(line).not.toContain(YELLOW);
     });
 
-    it("red when deadline within 7 days and no active session", async () => {
+    it("yellow when deadline within 7 days and no active session", async () => {
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + 3);
       const deadlineStr = deadline.toISOString().slice(0, 10);
@@ -109,7 +109,8 @@ describe("status", () => {
 
       const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
       const line = rawCalls.find((l: string) => l.includes("deadline-proj"));
-      expect(line).toContain(RED);
+      expect(line).toContain(YELLOW);
+      expect(line).not.toContain(RED);
       expect(line).not.toContain(GREEN);
     });
 
@@ -211,7 +212,7 @@ describe("status", () => {
       expect(line).not.toContain(YELLOW);
     });
 
-    it("deadline within 7 days + unbilled → red (deadline beats unbilled)", async () => {
+    it("deadline within 7 days + unbilled → yellow (deadline and unbilled both yellow)", async () => {
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + 2);
       const deadlineStr = deadline.toISOString().slice(0, 10);
@@ -228,8 +229,9 @@ describe("status", () => {
 
       const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
       const line = rawCalls.find((l: string) => l.includes("deadline-unbilled"));
-      expect(line).toContain(RED);
-      expect(line).not.toContain(YELLOW);
+      expect(line).toContain(YELLOW);
+      expect(line).not.toContain(RED);
+      expect(line).not.toContain(GREEN);
     });
   });
 
@@ -260,10 +262,10 @@ describe("status", () => {
       expect(line).not.toContain(RED);
     });
 
-    it("deadline exactly 7 days away → red", async () => {
+    it("deadline exactly 7 days away → yellow", async () => {
       // now = 2026-07-17T12:00:00Z (frozen)
       // deadline "2026-07-23" → code: new Date("2026-07-23T23:59:59Z")
-      // diff = 6.5 days <= 7 ✓
+      // diff = 6.5 days, 0 <= diff <= 7 → soon ✓
       const config = makeConfig({
         name: "exact-seven",
         deadline: "2026-07-23",
@@ -275,7 +277,8 @@ describe("status", () => {
 
       const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
       const line = rawCalls.find((l: string) => l.includes("exact-seven"));
-      expect(line).toContain(RED);
+      expect(line).toContain(YELLOW);
+      expect(line).not.toContain(RED);
     });
 
     it("deadline 8 days away → not red", async () => {
@@ -312,6 +315,87 @@ describe("status", () => {
       const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
       const line = rawCalls.find((l: string) => l.includes("past-deadline"));
       expect(line).toContain(RED);
+    });
+
+    it("deadline 2 days ago → red (overdue)", async () => {
+      // now = 2026-07-17T12:00:00Z (frozen)
+      // deadline "2026-07-15" → code: new Date("2026-07-15T23:59:59Z")
+      // diff = negative → overdue
+      const config = makeConfig({
+        name: "two-days-overdue",
+        deadline: "2026-07-15",
+      });
+      mockCollectProjects.mockResolvedValue([makeProjectEntry(config)]);
+      mockGetActiveSession.mockReturnValue(undefined);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const line = rawCalls.find((l: string) => l.includes("two-days-overdue"));
+      expect(line).toContain(RED);
+      expect(line).not.toContain(GREEN);
+    });
+
+    it("deadline in 3 days → yellow (soon)", async () => {
+      // now = 2026-07-17T12:00:00Z (frozen)
+      // deadline "2026-07-20" → code: new Date("2026-07-20T23:59:59Z")
+      // diff = 3.5 days, 0 <= diff <= 7 → soon
+      const config = makeConfig({
+        name: "three-days",
+        deadline: "2026-07-20",
+      });
+      mockCollectProjects.mockResolvedValue([makeProjectEntry(config)]);
+      mockGetActiveSession.mockReturnValue(undefined);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const line = rawCalls.find((l: string) => l.includes("three-days"));
+      expect(line).toContain(YELLOW);
+      expect(line).not.toContain(RED);
+    });
+
+    it("deadline in 10 days → no deadline color, white when invoiced", async () => {
+      // now = 2026-07-17T12:00:00Z (frozen)
+      // deadline "2026-07-27" → code: new Date("2026-07-27T23:59:59Z")
+      // diff = 10.5 days → neither overdue nor soon
+      const config = makeConfig({
+        name: "ten-days",
+        deadline: "2026-07-27",
+        time: [
+          { start: "2026-07-10T10:00:00Z", end: "2026-07-10T11:00:00Z", duration: 3600, rounded: 3600, invoiced: true },
+        ],
+      });
+      mockCollectProjects.mockResolvedValue([makeProjectEntry(config)]);
+      mockGetActiveSession.mockReturnValue(undefined);
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const line = rawCalls.find((l: string) => l.includes("ten-days"));
+      expect(line).toContain(WHITE);
+      expect(line).not.toContain(RED);
+      expect(line).not.toContain(YELLOW);
+    });
+
+    it("active project stays green even when overdue", async () => {
+      // now = 2026-07-17T12:00:00Z (frozen)
+      // deadline "2026-07-15" → overdue, but active session → green wins
+      const config = makeConfig({
+        name: "active-overdue",
+        deadline: "2026-07-15",
+        time: [{ start: "2026-07-17T10:00:00Z", end: null, duration: 0, rounded: 0 }],
+      });
+      mockCollectProjects.mockResolvedValue([makeProjectEntry(config)]);
+      mockGetActiveSession.mockReturnValue({ start: "2026-07-17T10:00:00Z", end: null, duration: 0, rounded: 0 });
+
+      await status();
+
+      const rawCalls = (console.log as jest.Mock).mock.calls.map((c: unknown[]) => c[0]);
+      const line = rawCalls.find((l: string) => l.includes("active-overdue"));
+      expect(line).toContain(GREEN);
+      expect(line).not.toContain(RED);
+      expect(line).not.toContain(YELLOW);
     });
   });
 

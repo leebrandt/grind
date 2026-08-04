@@ -74,6 +74,11 @@ export async function save(
     console.log(`Stopped work session on '${projectName}'`);
     console.log(`Duration: ${hours} hours (${roundedHours} hours rounded)`);
   } else {
+    if (options?.time) {
+      console.log(
+        `Warning: -t ${options.time} ignored — no active session found to backfill for '${projectName}'.`,
+      );
+    }
     console.log("No active sessions found.");
   }
 
