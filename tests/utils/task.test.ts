@@ -20,10 +20,12 @@ describe("task utilities", () => {
   const workspaceRoot = "/home/user/grind";
   const projectName = "test-project";
   const configPath = path.join(workspaceRoot, projectName, "projects", projectName, ".project.json");
+  const prevTZ = process.env.TZ;
 
   afterEach(() => {
     jest.restoreAllMocks();
     jest.useRealTimers();
+    process.env.TZ = prevTZ;
   });
 
   describe("getTasks", () => {
@@ -218,7 +220,9 @@ describe("task utilities", () => {
       };
     }
 
-    const now = new Date("2026-06-15T12:00:00.000Z");
+    // Local-noon instant so "today" resolves to 2026-06-15 in any timezone
+    // (midday-UTC instants can cross midnight in far-east zones).
+    const now = new Date(2026, 5, 15, 12);
 
     it("returns overdue when any task is past due", () => {
       const tasks = [makeTask({ dueDate: "2026-06-14" })];
@@ -258,6 +262,17 @@ describe("task utilities", () => {
     it("ignores completed tasks", () => {
       const tasks = [makeTask({ dueDate: "2026-06-10", done: true })];
       expect(getTaskUrgency(tasks, now)).toBe("none");
+    });
+
+    it("uses the local date across a UTC-midnight boundary", () => {
+      process.env.TZ = "America/Los_Angeles"; // UTC-7 in August
+      // Local 2026-08-02 17:30 — in America/Los_Angeles this is 2026-08-03T00:30:00Z,
+      // i.e. local today differs from the UTC date.
+      const localNow = new Date(2026, 7, 2, 17, 30);
+
+      expect(getTaskUrgency([makeTask({ dueDate: "2026-08-02" })], localNow)).toBe("today");
+      expect(getTaskUrgency([makeTask({ dueDate: "2026-08-01" })], localNow)).toBe("overdue");
+      expect(getTaskUrgency([makeTask({ dueDate: "2026-08-03" })], localNow)).toBe("soon");
     });
   });
 });

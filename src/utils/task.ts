@@ -1,6 +1,7 @@
 import type { Task } from "../types/index.js";
 import { readProjectConfig, writeProjectConfig } from "./config.js";
 import { GrindUserError } from "./errors.js";
+import { toLocalDateString } from "./time.js";
 
 export async function getTasks(workspaceRoot: string, projectName: string): Promise<Task[]> {
   const config = await readProjectConfig(workspaceRoot, projectName);
@@ -71,7 +72,7 @@ export async function completeTask(
 
 export function getTaskUrgency(tasks: Task[], now?: Date): "overdue" | "today" | "soon" | "none" {
   const today = now ?? new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = toLocalDateString(today);
 
   let highest: "overdue" | "today" | "soon" | "none" = "none";
 

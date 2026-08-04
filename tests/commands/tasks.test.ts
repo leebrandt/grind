@@ -1,5 +1,6 @@
-import { listAllTasks, listProjectTasks, addTaskToProject, completeProjectTask } from "../../src/commands/tasks.js";
+import { listAllTasks, listProjectTasks, addTaskToProject, completeProjectTask, getDueColor } from "../../src/commands/tasks.js";
 import { GrindUserError } from "../../src/utils/errors.js";
+import { RED, GREEN, YELLOW } from "../../src/utils/colors.js";
 
 const mockReadProjectConfig = jest.fn();
 const mockWriteProjectConfig = jest.fn().mockResolvedValue(undefined);
@@ -245,6 +246,27 @@ describe("tasks commands", () => {
       });
 
       await expect(completeProjectTask("test-project", "99")).rejects.toThrow(GrindUserError);
+    });
+  });
+
+  describe("getDueColor", () => {
+    const prevTZ = process.env.TZ;
+
+    afterEach(() => {
+      process.env.TZ = prevTZ;
+    });
+
+    it("colors due dates relative to the local date", () => {
+      process.env.TZ = "America/Los_Angeles"; // UTC-7 in August
+      // Local 2026-08-02 17:30 — in America/Los_Angeles this is 2026-08-03T00:30:00Z,
+      // i.e. local today differs from the UTC date.
+      const now = new Date(2026, 7, 2, 17, 30);
+
+      expect(getDueColor("2026-08-02", now)).toBe(RED);
+      expect(getDueColor("2026-08-03", now)).toBe(YELLOW);
+      expect(getDueColor("2026-08-05", now)).toBe(YELLOW);
+      expect(getDueColor("2026-08-06", now)).toBe(GREEN);
+      expect(getDueColor(undefined, now)).toBe("");
     });
   });
 });

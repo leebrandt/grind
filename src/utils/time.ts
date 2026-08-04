@@ -73,3 +73,15 @@ export function getTimestampFilename(): string {
   const seconds = String(now.getSeconds()).padStart(2, '0');
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
+
+/**
+ * Current (or given) date as a local-timezone YYYY-MM-DD string.
+ * Unlike toISOString().slice(0, 10), this uses local getters, so the result
+ * matches the user's clock, not UTC.
+ */
+export function toLocalDateString(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
