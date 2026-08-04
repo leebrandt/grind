@@ -21,6 +21,7 @@ jest.mock("../../src/utils/project.js", () => ({
 
 jest.mock("../../src/utils/git.js", () => ({
   getCommitCount: jest.fn().mockResolvedValue(5),
+  getDefaultBranch: jest.fn().mockResolvedValue("main"),
   getLastCommitDate: jest.fn().mockResolvedValue("2026-07-10T12:00:00Z"),
 }));
 
