@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { $ } from "bun";
@@ -24,8 +24,12 @@ export async function gitInit(repoPath: string): Promise<void> {
  * Refuses to commit if there are unmerged paths, so a conflicted merge
  * can never be committed verbatim (which would corrupt tracked configs).
  */
-export async function gitCommit(worktreePath: string, message: string): Promise<void> {
-  await $`git -C ${worktreePath} add -A`.quiet();
+export async function gitCommit(worktreePath: string, message: string, paths?: string[]): Promise<void> {
+  if (paths) {
+    await $`git -C ${worktreePath} add ${paths}`.quiet();
+  } else {
+    await $`git -C ${worktreePath} add -A`.quiet();
+  }
 
   const unmerged = await $`git -C ${worktreePath} ls-files -u`.quiet().nothrow();
   if (unmerged.stdout.toString().trim().length > 0) {
@@ -46,9 +50,16 @@ export async function gitCommitInteractive(worktreePath: string): Promise<void> 
   // Stage all changes first
   await $`git -C ${worktreePath} add -A`.quiet();
 
-  // Run git commit without -m to open editor
-  // execSync properly forwards the TTY for interactive editors like vi
-  execSync(`git -C ${JSON.stringify(worktreePath)} commit`, { stdio: "inherit" });
+  const unmerged = await $`git -C ${worktreePath} ls-files -u`.quiet().nothrow();
+  if (unmerged.stdout.toString().trim().length > 0) {
+    throw new GrindSystemError(
+      "Refusing to commit: there are unmerged paths in this worktree.\n" +
+      "Resolve the conflicts first (git status), then retry."
+    );
+  }
+
+  // No shell → no quoting/injection. stdio "inherit" keeps the TTY for interactive editors.
+  execFileSync("git", ["-C", worktreePath, "commit"], { stdio: "inherit" });
 }
 
 /**

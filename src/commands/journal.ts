@@ -21,5 +21,5 @@ export async function journal(): Promise<void> {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const filePath = path.join(journalDir, `${today}.md`);
 
-  openEditorDetached(filePath);
+  await openEditorDetached(filePath);
 }

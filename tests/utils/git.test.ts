@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import * as fs from "node:fs/promises";
-import { getDefaultBranch, getFirstCommitDate, gitAddWorktree, gitCommit, pullWorkspace } from "../../src/utils/git.ts";
+import { getDefaultBranch, getFirstCommitDate, gitAddWorktree, gitCommit, gitCommitInteractive, pullWorkspace } from "../../src/utils/git.ts";
 import type { GrindConfig } from "../../src/types/index.js";
 
 jest.mock("bun");
@@ -169,6 +169,44 @@ describe("gitCommit", () => {
     await expect(gitCommit(worktreePath, "msg")).resolves.toBeUndefined();
     const calls = mock$.mock.calls.map(c => cmdOf(c));
     expect(calls.some(c => c.includes("commit -m"))).toBe(true);
+  });
+
+  it("stages exactly the given paths when paths are provided", async () => {
+    shellMock({ "ls-files -u": { stdout: "" } });
+
+    await gitCommit(worktreePath, "msg", ["/fake/worktree/a.md", "/fake/worktree/b.md"]);
+
+    const addCall = mock$.mock.calls.find(c => cmdOf(c).includes(" add "));
+    expect(addCall).toBeDefined();
+    // paths is the second interpolated value (after worktreePath)
+    expect(addCall![2]).toEqual(["/fake/worktree/a.md", "/fake/worktree/b.md"]);
+    expect(cmdOf(addCall!)).not.toContain("-A");
+  });
+
+  it("refuses to commit when paths are provided and there are unmerged paths", async () => {
+    shellMock({
+      "ls-files -u": { stdout: "100644 abc 1\tprojects/x/.project.json\n" },
+    });
+
+    await expect(gitCommit(worktreePath, "msg", ["/fake/worktree/a.md"])).rejects.toThrow("unmerged");
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("commit -m"))).toBe(false);
+  });
+});
+
+describe("gitCommitInteractive", () => {
+  const worktreePath = "/fake/worktree";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("refuses to commit when there are unmerged paths", async () => {
+    shellMock({
+      "ls-files -u": { stdout: "100644 abc 1\tprojects/x/.project.json\n" },
+    });
+
+    await expect(gitCommitInteractive(worktreePath)).rejects.toThrow("unmerged");
   });
 });
 

@@ -48,6 +48,6 @@ export async function rejectIdea(ideaNumber: string): Promise<void> {
   console.log(`Renamed: ${idea.filename} → ${newFilename}`);
 
   // Commit the change
-  await gitCommit(mainWorktree, `Reject idea: ${title}`);
+  await gitCommit(mainWorktree, `Reject idea: ${title}`, [oldPath, newPath]);
   console.log("Changes committed to main branch");
 }

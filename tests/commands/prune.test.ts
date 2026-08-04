@@ -1,5 +1,7 @@
 import { pruneIdeas } from "../../src/commands/prune.js";
 
+const mockGitCommit = jest.fn().mockResolvedValue(undefined);
+
 jest.mock("node:fs/promises");
 jest.mock("../../src/utils/workspace.js", () => ({
   requireWorkspace: jest.fn().mockResolvedValue({
@@ -7,7 +9,7 @@ jest.mock("../../src/utils/workspace.js", () => ({
   }),
 }));
 jest.mock("../../src/utils/git.js", () => ({
-  gitCommit: jest.fn().mockResolvedValue(undefined),
+  gitCommit: (...args: unknown[]) => mockGitCommit(...args),
 }));
 jest.mock("../../src/utils/prompts.js");
 
@@ -57,5 +59,27 @@ describe("pruneIdeas", () => {
     await pruneIdeas();
     expect(confirmOrExit).not.toHaveBeenCalled();
     expect(fs.unlink).not.toHaveBeenCalled();
+  });
+
+  it("commits only the rejected-idea files when unrelated WIP is present", async () => {
+    (fs.readdir as jest.Mock).mockResolvedValue([
+      "rejected-a.md",
+      "rejected-b.md",
+      "unrelated.md",
+    ]);
+    (confirmOrExit as jest.Mock).mockResolvedValue(undefined);
+
+    await pruneIdeas();
+
+    expect(mockGitCommit).toHaveBeenCalledWith(
+      expect.any(String),
+      "Prune 2 rejected idea(s)",
+      expect.arrayContaining([
+        expect.stringContaining("rejected-a.md"),
+        expect.stringContaining("rejected-b.md"),
+      ]),
+    );
+    const paths = mockGitCommit.mock.calls[0][2] as string[];
+    expect(paths.some(p => p.includes("unrelated.md"))).toBe(false);
   });
 });

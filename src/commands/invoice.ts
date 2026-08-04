@@ -186,7 +186,7 @@ ${tableRows}
   await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
 
   // 12. Commit changes to the main worktree
-  await gitCommit(mainWorktree, `Invoice ${timestamp} for ${projectName}`);
+  await gitCommit(mainWorktree, `Invoice ${timestamp} for ${projectName}`, [invoiceDir, configPath]);
 
   console.log(`\nInvoice generated:`);
   console.log(`  Markdown: ${markdownPath}`);
