@@ -5,6 +5,7 @@ import {
   formatDate,
   getTimestampFilename,
   toLocalDateString,
+  parseDuration,
 } from "../../src/utils/time.js";
 
 describe("calculateDuration", () => {
@@ -98,6 +99,42 @@ describe("formatDate", () => {
 
   it("should handle string with no time component", () => {
     expect(formatDate("2024-12-25")).toBe("2024-12-25");
+  });
+});
+
+describe("parseDuration", () => {
+  it("parses bare decimal hours", () => {
+    expect(parseDuration("5")).toBe(5);
+    expect(parseDuration("2.5")).toBe(2.5);
+  });
+
+  it("parses hours with h suffix", () => {
+    expect(parseDuration("5h")).toBe(5);
+    expect(parseDuration("1.5h")).toBe(1.5);
+    expect(parseDuration("8h")).toBe(8);
+  });
+
+  it("parses minutes with m suffix", () => {
+    expect(parseDuration("90m")).toBe(1.5);
+    expect(parseDuration("30m")).toBe(0.5);
+  });
+
+  it("parses combined hours and minutes", () => {
+    expect(parseDuration("1h30m")).toBe(1.5);
+    expect(parseDuration("1h 30m")).toBe(1.5);
+  });
+
+  it("is case-insensitive for suffixes", () => {
+    expect(parseDuration("5H")).toBe(5);
+    expect(parseDuration("90M")).toBe(1.5);
+  });
+
+  it("returns null for invalid input", () => {
+    expect(parseDuration("abc")).toBeNull();
+    expect(parseDuration("")).toBeNull();
+    expect(parseDuration("1x")).toBeNull();
+    expect(parseDuration("h")).toBeNull();
+    expect(parseDuration("  ")).toBeNull();
   });
 });
 

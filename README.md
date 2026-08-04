@@ -72,7 +72,7 @@ grind cancel rust-memory-management -y  # Skip confirmation prompt
 # Save work (stops timer, commits changes)
 grind save rust-memory-management
 grind save rust-memory-management -q  # Quick save with auto-generated commit message
-grind save rust-memory-management -t 2.5  # Backfill: end session at start + 2.5h
+grind save rust-memory-management 8h  # Backfill: end session at start + 8h (also: -t 8h, 90m, 1h30m)
 grind save rust-memory-management -y  # Skip interactive commit (same as -q)
 
 # Show project info

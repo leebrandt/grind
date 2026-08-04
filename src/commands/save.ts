@@ -15,10 +15,17 @@ import {
   formatShellError,
 } from "../utils/git.js";
 import { GrindUserError, GrindSystemError } from "../utils/errors.js";
+import { parseDuration } from "../utils/time.js";
 
 export async function save(
   projectName: string,
-  options?: { quiet?: boolean; time?: string; yes?: boolean; push?: boolean },
+  options?: {
+    quiet?: boolean;
+    time?: string;
+    hours?: string;
+    yes?: boolean;
+    push?: boolean;
+  },
 ): Promise<void> {
   const { workspaceRoot, mainWorktree, bareRepo } = await requireWorkspace();
 
@@ -50,10 +57,16 @@ export async function save(
   }
 
   let endTime: string | undefined;
-  if (options?.time) {
-    const hours = parseFloat(options.time);
-    if (isNaN(hours) || hours <= 0) {
-      throw new GrindUserError("Backfill time (-t) must be a positive number (hours as decimal).");
+  if (options?.hours && options?.time) {
+    throw new GrindUserError("Cannot combine positional [hours] with the -t flag.");
+  }
+  const backfillInput = options?.hours ?? options?.time;
+  if (backfillInput) {
+    const hours = parseDuration(backfillInput);
+    if (hours === null || hours <= 0) {
+      throw new GrindUserError(
+        `Backfill time must be a positive duration (e.g. 5, 5h, 1h30m, 90m). Got '${backfillInput}'.`,
+      );
     }
     const activeSession = getActiveSession(config);
     if (activeSession) {
@@ -74,9 +87,9 @@ export async function save(
     console.log(`Stopped work session on '${projectName}'`);
     console.log(`Duration: ${hours} hours (${roundedHours} hours rounded)`);
   } else {
-    if (options?.time) {
+    if (options?.time || options?.hours) {
       console.log(
-        `Warning: -t ${options.time} ignored — no active session found to backfill for '${projectName}'.`,
+        `Warning: backfill of ${backfillInput} ignored — no active session found to backfill for '${projectName}'.`,
       );
     }
     console.log("No active sessions found.");

@@ -90,11 +90,11 @@ describe("save", () => {
     });
   });
 
-  describe("backfill time (-t flag)", () => {
+  describe("backfill time (-t flag and positional [hours])", () => {
     it("should throw GrindUserError when -t is not a positive number", async () => {
       await expect(save(projectName, { time: "0" })).rejects.toThrow(GrindUserError);
       await expect(save(projectName, { time: "0" })).rejects.toThrow(
-        "Backfill time (-t) must be a positive number",
+        "Backfill time must be a positive duration",
       );
     });
 
@@ -123,6 +123,62 @@ describe("save", () => {
       expect(mockEndSession).toHaveBeenCalledWith(
         expect.any(Object),
         "2024-01-15T12:30:00.000Z",
+      );
+    });
+
+    it("should accept positional [hours] like the -t flag", async () => {
+      mockGetActiveSession.mockReturnValue({
+        start: "2024-01-15T10:00:00Z",
+        end: null,
+        duration: 0,
+        rounded: 0,
+      });
+      mockEndSession.mockReturnValue({
+        start: "2024-01-15T10:00:00Z",
+        end: "2024-01-15T15:00:00Z",
+        duration: 18000,
+        rounded: 18000,
+      });
+      await save(projectName, { hours: "5" });
+      expect(mockEndSession).toHaveBeenCalledWith(
+        expect.any(Object),
+        "2024-01-15T15:00:00.000Z",
+      );
+    });
+
+    it("should parse combined h+m format for positional [hours]", async () => {
+      mockGetActiveSession.mockReturnValue({
+        start: "2024-01-15T10:00:00Z",
+        end: null,
+        duration: 0,
+        rounded: 0,
+      });
+      mockEndSession.mockReturnValue({
+        start: "2024-01-15T10:00:00Z",
+        end: "2024-01-15T11:30:00Z",
+        duration: 5400,
+        rounded: 5400,
+      });
+      await save(projectName, { hours: "1h30m" });
+      expect(mockEndSession).toHaveBeenCalledWith(
+        expect.any(Object),
+        "2024-01-15T11:30:00.000Z",
+      );
+    });
+
+    it("should throw for invalid positional [hours]", async () => {
+      await expect(save(projectName, { hours: "banana" })).rejects.toThrow(GrindUserError);
+      await expect(save(projectName, { hours: "banana" })).rejects.toThrow(
+        "Backfill time must be a positive duration",
+      );
+    });
+
+    it("should throw when both positional [hours] and -t are given", async () => {
+      await expect(save(projectName, { hours: "5", time: "5" })).rejects.toThrow(
+        GrindUserError,
+      );
+      await expect(save(projectName, { hours: "5", time: "5" })).rejects.toThrow(
+        "Cannot combine positional [hours] with the -t flag",
       );
     });
 

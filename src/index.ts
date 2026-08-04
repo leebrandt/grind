@@ -324,23 +324,25 @@ program
     await openCode(project);
   });
 
-// grind save "project" [-q] [-y] [-t <hours>] [--no-push]
+// grind save "project" [hours] [-q] [-y] [-t <hours>] [--no-push]
 program
-  .command("save <project>")
+  .command("save <project> [hours]")
   .description("Save work on a project (stops timer, commits changes, pushes to remote)")
   .option("-q, --quiet", "Use auto-generated commit message (quick save)")
   .option("-y, --yes", "Skip interactive commit (same as --quiet)")
   .option(
     "-t, --time <hours>",
-    "Backfill: set session end time to start + N hours",
+    "Backfill: set session end time to start + N hours (e.g. -t 5, -t 1h30m)",
   )
   .option("--no-push", "Skip pushing to remote (commit only)")
+  .allowExcessArguments(false)
   .action(
     async (
       project: string,
+      hours: string | undefined,
       options: { quiet?: boolean; yes?: boolean; time?: string; push?: boolean },
     ) => {
-      await save(project, options);
+      await save(project, { ...options, hours });
     },
   );
 

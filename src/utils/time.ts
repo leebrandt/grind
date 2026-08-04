@@ -35,6 +35,37 @@ export function roundTimeByStrategy(seconds: number, roundTo: RoundTo): number {
 }
 
 /**
+ * Parse a human-friendly duration string into hours (decimal).
+ * Accepts: "5", "5h", "1.5h", "90m", "1h30m". Returns null if invalid.
+ */
+export function parseDuration(input: string): number | null {
+  const value = input.trim();
+  if (!value) return null;
+
+  const hoursMinutes = /^(\d+(?:\.\d+)?)h\s*(\d+(?:\.\d+)?)m$/i.exec(value);
+  if (hoursMinutes) {
+    return Number(hoursMinutes[1]) + Number(hoursMinutes[2]) / 60;
+  }
+
+  const minutes = /^(\d+(?:\.\d+)?)m$/i.exec(value);
+  if (minutes) {
+    return Number(minutes[1]) / 60;
+  }
+
+  const hours = /^(\d+(?:\.\d+)?)h$/i.exec(value);
+  if (hours) {
+    return Number(hours[1]);
+  }
+
+  const plain = /^\d+(?:\.\d+)?$/.exec(value);
+  if (plain) {
+    return Number(plain[0]);
+  }
+
+  return null;
+}
+
+/**
  * Human-readable relative time (e.g., "3d ago", "2mo ago")
  */
 export function timeAgo(date: Date): string {

@@ -71,7 +71,7 @@ workspace-root/
 
 **Error handling:** All errors use the `GrindError` hierarchy defined in `src/utils/errors.ts`. `src/index.ts` wraps `program.parseAsync()` in a single try/catch — no `process.exit` calls exist in any command file. Errors exit with code 1 (user error) or 2 (system error), with stack traces for unexpected errors (exit 99).
 
-**Workflow consolidation:** `grind work <project>` is the unified daily-driver command, supporting `-c` (code editor), `-q` (quiet, no timer), and `-s` (save). `grind edit <project>` and `grind code <project>` are thin aliases calling `workStart()` with appropriate flags. `grind save` accepts `-t <hours>` for time backfill and `-y`/`-q` for auto-commit.
+**Workflow consolidation:** `grind work <project>` is the unified daily-driver command, supporting `-c` (code editor), `-q` (quiet, no timer), and `-s` (save). `grind edit <project>` and `grind code <project>` are thin aliases calling `workStart()` with appropriate flags. `grind save` accepts a positional `[hours]` or `-t <hours>` for time backfill (formats: `5`, `5h`, `90m`, `1h30m`) and `-y`/`-q` for auto-commit.
 
 **Sync commands:** `grind push` and `grind pull` sync the main branch with a remote (configured via `GrindConfig.remote.url` or `-u` flag). `grind pull` also creates worktrees for any new project branches found on the remote.
 
