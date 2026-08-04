@@ -131,7 +131,7 @@ Settable keys (project-level):
   client.address        client address
   client.phone          client phone number
   client.email          client email address
-  repo                  GitHub repository (owner/repo format)
+  repo                  git remote URL (e.g. git@github.com:owner/repo.git)
   code                  code directory (relative to project, e.g. "src")
   longTerm              true/false (mark as long-running project, shows ★)
   deadline              project deadline (YYYY-MM-DD)
@@ -428,10 +428,13 @@ program
     await status();
   });
 
-// grind wwd (undocumented — "Wha we doin?")
-program.command("wwd").action(async () => {
-  await wwd();
-});
+// grind wwd (status + tasks dashboard)
+program
+  .command("wwd")
+  .description("What we doing? — status + tasks dashboard")
+  .action(async () => {
+    await wwd();
+  });
 
 // grind tasks list [project]
 // grind tasks add <project> "description" [-d <date>]

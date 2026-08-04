@@ -8,6 +8,9 @@ node_modules/
 # Build output
 dist/
 
+# Test coverage output
+coverage/
+
 # macOS
 .DS_Store
 
