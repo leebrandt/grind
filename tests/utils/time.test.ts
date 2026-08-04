@@ -4,6 +4,7 @@ import {
   timeAgo,
   formatDate,
   getTimestampFilename,
+  toLocalDateString,
 } from "../../src/utils/time.js";
 
 describe("calculateDuration", () => {
@@ -118,5 +119,29 @@ describe("getTimestampFilename", () => {
   it("should start with the current year", () => {
     const result = getTimestampFilename();
     expect(result.startsWith("2024")).toBe(true);
+  });
+});
+
+describe("toLocalDateString", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("formats a local-time constructor date with zero-padded month", () => {
+    expect(toLocalDateString(new Date(2026, 0, 1))).toBe("2026-01-01");
+  });
+
+  it("formats a local-time constructor date in mid-year", () => {
+    expect(toLocalDateString(new Date(2026, 6, 4))).toBe("2026-07-04");
+  });
+
+  it("formats a local-time constructor date at year end", () => {
+    expect(toLocalDateString(new Date(2026, 11, 31))).toBe("2026-12-31");
+  });
+
+  it("uses the current date when no argument is given", () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 3, 9));
+    expect(toLocalDateString()).toBe("2026-04-09");
   });
 });

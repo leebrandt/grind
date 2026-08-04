@@ -9,6 +9,7 @@ import { getOpenTasks, getTasks, addTask, completeTask } from "../utils/task.js"
 import { parseDate } from "../utils/dates.js";
 import { GrindUserError } from "../utils/errors.js";
 import { DIM, RED, GREEN, YELLOW } from "../utils/colors.js";
+import { toLocalDateString } from "../utils/time.js";
 import { Table } from "../utils/table.js";
 import type { Task } from "../types/index.js";
 
@@ -35,9 +36,9 @@ function getDueDisplay(task: Task): string {
   return task.dueDate;
 }
 
-function getDueColor(dueDate: string | undefined, now: Date): string {
+export function getDueColor(dueDate: string | undefined, now: Date): string {
   if (!dueDate) return "";
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = toLocalDateString(now);
   if (dueDate < todayStr) return RED;
   if (dueDate === todayStr) return RED;
   const diff = (new Date(dueDate).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24);
