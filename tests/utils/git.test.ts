@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import * as fs from "node:fs/promises";
-import { getDefaultBranch, getFirstCommitDate, gitAddWorktree, gitCommit, pullWorkspace } from "../../src/utils/git.ts";
+import { getCommitCount, getDefaultBranch, gitAddWorktree, gitCommit, pullWorkspace } from "../../src/utils/git.ts";
 import type { GrindConfig } from "../../src/types/index.js";
 
 jest.mock("bun");
@@ -102,47 +102,46 @@ describe("getDefaultBranch", () => {
   });
 });
 
-describe("getFirstCommitDate", () => {
+describe("getCommitCount", () => {
   const repoPath = "/fake/repo.git";
   const branch = "my-project";
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mock$.mockImplementation(() => ({
-      quiet: jest.fn().mockResolvedValue({ stdout: Buffer.from("") }),
-    }));
   });
 
-  it("returns null when no project-specific commits exist", async () => {
-    const result = await getFirstCommitDate(repoPath, branch);
-    expect(result).toBeNull();
+  it("excludes the main branch commits by default", async () => {
+    shellMock({
+      "rev-list --count": { stdout: "12\n" },
+    });
+
+    const count = await getCommitCount(repoPath, branch);
+
+    expect(count).toBe(12);
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("--not main"))).toBe(true);
   });
 
-  it("returns the first commit date when project-specific commits exist", async () => {
-    mock$.mockImplementation(() => ({
-      quiet: jest.fn().mockResolvedValue({
-        stdout: Buffer.from("2026-06-01T10:00:00+00:00\n2026-06-02T12:00:00+00:00\n"),
-      }),
-    }));
+  it("uses the custom default branch for the exclusion", async () => {
+    shellMock({
+      "rev-list --count": { stdout: "7\n" },
+    });
 
-    const result = await getFirstCommitDate(repoPath, branch);
-    expect(result).toBe("2026-06-01T10:00:00+00:00");
+    const count = await getCommitCount(repoPath, branch, "develop");
+
+    expect(count).toBe(7);
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("--not develop"))).toBe(true);
   });
 
-  it("returns null on git error", async () => {
-    mock$.mockImplementation(() => ({
-      quiet: jest.fn().mockRejectedValue(new Error("git error")),
-    }));
+  it("returns 0 on git error", async () => {
+    shellMock({
+      "rev-list --count": { reject: true },
+    });
 
-    const result = await getFirstCommitDate(repoPath, branch);
-    expect(result).toBeNull();
-  });
+    const count = await getCommitCount(repoPath, branch);
 
-  it("excludes commits already on main when finding the first commit date", async () => {
-    await getFirstCommitDate(repoPath, branch);
-
-    const templateStrings = mock$.mock.calls[0][0] as string[];
-    expect(templateStrings.join("")).toContain("--not main");
+    expect(count).toBe(0);
   });
 });
 
@@ -336,5 +335,28 @@ describe("pullWorkspace", () => {
     const calls = mock$.mock.calls.map(c => cmdOf(c));
     expect(calls.some(c => c.includes("worktree add"))).toBe(false);
     expect(result.created).toBe(0);
+  });
+
+  it("uses the custom default branch for the merge and project filtering", async () => {
+    shellMock({
+      "symbolic-ref HEAD": { stdout: "refs/heads/develop\n" },
+      "fetch --all": { stdout: "" },
+      "branch -r --format": { stdout: "origin/develop\norigin/proj\n" },
+      "branch --format": { stdout: "develop\n" },
+      "rev-parse --verify origin/": { stdout: "abc123", exitCode: 0 },
+      "rev-parse --verify refs/heads/": { stdout: "abc123", exitCode: 0 },
+      "merge origin/develop": { stdout: "" },
+      "worktree list --porcelain": { stdout: "worktree /home/user/work/grind\n" },
+    });
+    (fs.stat as jest.Mock).mockRejectedValue(new Error("ENOENT"));
+    (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({ name: "proj", time: [] }));
+
+    const result = await pullWorkspace(bareRepo, mainWorktree, workspaceRoot);
+
+    const calls = mock$.mock.calls.map(c => cmdOf(c));
+    expect(calls.some(c => c.includes("merge origin/develop"))).toBe(true);
+    expect(calls.some(c => c.includes("merge origin/main"))).toBe(false);
+    // develop is the default branch, not a project — only "proj" is created
+    expect(result.created).toBe(1);
   });
 });

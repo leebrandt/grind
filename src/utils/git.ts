@@ -121,27 +121,18 @@ export async function gitAddWorktree(
 }
 
 /**
- * Get the number of commits on a branch
+ * Get the number of commits on a branch (excluding the default branch)
  */
-export async function getCommitCount(repoPath: string, branch: string): Promise<number> {
+export async function getCommitCount(
+  repoPath: string,
+  branch: string,
+  defaultBranch: string = "main",
+): Promise<number> {
   try {
-    const result = await $`git -C ${repoPath} rev-list --count ${branch} --not main`.quiet();
+    const result = await $`git -C ${repoPath} rev-list --count ${branch} --not ${defaultBranch}`.quiet();
     return parseInt(result.stdout.toString().trim(), 10);
   } catch {
     return 0;
-  }
-}
-
-/**
- * Get the date of the first commit on a branch (ISO format)
- */
-export async function getFirstCommitDate(repoPath: string, branch: string): Promise<string | null> {
-  try {
-    const result = await $`git -C ${repoPath} log ${branch} --not main --reverse --format=%aI`.quiet();
-    const firstLine = result.stdout.toString().trim().split("\n")[0];
-    return firstLine || null;
-  } catch {
-    return null;
   }
 }
 
@@ -463,6 +454,8 @@ export async function pullWorkspace(
   mainWorktreePath: string,
   workspaceRoot: string,
 ): Promise<{ fastForwarded: boolean; created: number; skipped: number; updated: string[]; diverged: string[] }> {
+  const defaultBranch = await getDefaultBranch(bareRepoPath);
+
   // 1. Fetch all branches
   await gitFetchAll(bareRepoPath);
 
@@ -505,10 +498,10 @@ export async function pullWorkspace(
     }
   }
 
-  // 3. Merge main (non-ff-only to handle divergence)
+  // 3. Merge default branch (non-ff-only to handle divergence)
   let fastForwarded = false;
   try {
-    await $`git -C ${mainWorktreePath} merge origin/main --no-edit`.quiet();
+    await $`git -C ${mainWorktreePath} merge origin/${defaultBranch} --no-edit`.quiet();
     fastForwarded = true;
   } catch {
     // Merge conflicts — let user know but don't fail
@@ -518,7 +511,7 @@ export async function pullWorkspace(
   const remoteBranches = await getRemoteBranchList(bareRepoPath);
   const projectBranches = remoteBranches
     .map(b => b.replace("origin/", ""))
-    .filter(b => b !== "main" && b !== "HEAD");
+    .filter(b => b !== defaultBranch && b !== "HEAD");
 
   // 5. Get existing worktrees
   const existingWorktrees = new Set(await getActiveWorktrees(bareRepoPath, workspaceRoot));

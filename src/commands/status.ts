@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { requireWorkspace } from "../utils/workspace.js";
-import { getCommitCount, getLastCommitDate } from "../utils/git.js";
+import { getCommitCount, getDefaultBranch, getLastCommitDate } from "../utils/git.js";
 import { timeAgo } from "../utils/time.js";
 import { RED, GREEN, YELLOW, WHITE } from "../utils/colors.js";
 import { collectProjects } from "../utils/project.js";
@@ -30,6 +30,7 @@ interface ProjectRow {
 
 export async function status(): Promise<void> {
   const { workspaceRoot, bareRepo } = await requireWorkspace();
+  const defaultBranch = await getDefaultBranch(bareRepo);
 
   const allProjects = await collectProjects(workspaceRoot);
   const projects = allProjects.filter((p): p is ProjectEntry & { config: ProjectConfig } => p.config !== null);
@@ -42,7 +43,7 @@ export async function status(): Promise<void> {
   const rowPromises = projects.map(async ({ config, name }): Promise<ProjectRow> => {
     const branch = name;
     const [commitCount, lastCommitDate, openTasks] = await Promise.all([
-      getCommitCount(bareRepo, branch),
+      getCommitCount(bareRepo, branch, defaultBranch),
       getLastCommitDate(bareRepo, branch),
       getOpenTasks(workspaceRoot, name),
     ]);
