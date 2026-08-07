@@ -6,6 +6,7 @@ import {
   getTimestampFilename,
   toLocalDateString,
   parseDuration,
+  formatLongDate,
 } from "../../src/utils/time.js";
 
 describe("calculateDuration", () => {
@@ -180,5 +181,23 @@ describe("toLocalDateString", () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(2026, 3, 9));
     expect(toLocalDateString()).toBe("2026-04-09");
+  });
+});
+
+describe("formatLongDate", () => {
+  it("formats a YYYY-MM-DD string as a long-form date header", () => {
+    expect(formatLongDate("2026-08-04")).toBe("Tuesday, August 4, 2026");
+  });
+
+  it("formats the first day of the year", () => {
+    expect(formatLongDate("2026-01-01")).toBe("Thursday, January 1, 2026");
+  });
+
+  it("formats a Christmas date", () => {
+    expect(formatLongDate("2024-12-25")).toBe("Wednesday, December 25, 2024");
+  });
+
+  it("passes through non-matching input unchanged", () => {
+    expect(formatLongDate("notes")).toBe("notes");
   });
 });

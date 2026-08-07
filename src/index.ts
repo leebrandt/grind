@@ -27,6 +27,7 @@ import { invoiceProject } from "./commands/invoice.js";
 import { editIdea, editProject } from "./commands/edit.js";
 import { openCode } from "./commands/code.js";
 import { journal } from "./commands/journal.js";
+import { readJournal } from "./commands/read.js";
 import { status } from "./commands/status.js";
 import { clone } from "./commands/clone.js";
 import { pushProjects } from "./commands/push.js";
@@ -424,6 +425,23 @@ program
   .action(async () => {
     await journal();
   });
+
+// grind read journal [-r]
+const readCmd = program
+  .command("read")
+  .description("Review journal, ideas, and projects");
+
+readCmd
+  .command("journal")
+  .description("Print all journal entries to stdout (oldest first)")
+  .option("-r, --reverse", "Print newest first")
+  .action(async (options: { reverse?: boolean }) => {
+    await readJournal(options);
+  });
+
+readCmd.action(() => {
+  readCmd.help();
+});
 
 // grind status
 program
