@@ -199,7 +199,21 @@ Mock `node:fs/promises` (`readdir`, `readFile`).
 
 Mock `requireWorkspace` (return `{ mainWorktree: "/w/grind" }`) and `node:fs/promises`; spy on `console.log` to capture output.
 
-- **Oldest → newest with headers:** mock `readdir` → `["2026-08-03.md", "2026-08-04.md"]`, `readFile` → `"Monday entry."` / `"Wrote the spec.\n\nDone.\n"`. Assert the captured output is exactly:
+- **Oldest → newest with headers:** mock `readdir` → `["2026-08-03.md", "2026-08-04.md"]`, `readFile` → `"Monday entry."` / `"Wrote the spec.\n\nDone.\n"`. `listJournalEntries` sorts ascending, so the `2026-08-03` (Monday) block prints first. Assert the captured output is exactly:
+
+```
+─── Monday, August 3, 2026 ───
+
+Monday entry.
+
+─── Tuesday, August 4, 2026 ───
+
+Wrote the spec.
+
+Done.
+```
+
+- **Reverse (`-r`):** same mocks, `readJournal({ reverse: true })` → `entries.reverse()` puts `2026-08-04` (Tuesday) first. The Tuesday content ends with a trailing `\n`; per the "do not trim content" rule that raw newline yields an extra blank line before the Monday header. Assert the captured output is exactly:
 
 ```
 ─── Tuesday, August 4, 2026 ───
@@ -208,12 +222,13 @@ Wrote the spec.
 
 Done.
 
+
 ─── Monday, August 3, 2026 ───
 
 Monday entry.
 ```
 
-- **Reverse (`-r`):** same mocks, `readJournal({ reverse: true })` → the `2026-08-03` block comes first
+(Note the two blank lines between `Done.` and the Monday header — expected from the unmodified trailing newline in `2026-08-04.md`.)
 - **No ANSI:** assert `expect(output).not.toContain("\x1b[")`
 - **Empty journal:** `readdir` → `[]` → `console.log` spy never called; no throw
 - **Empty entry file:** `readFile` → `""` → header for that date still appears in output
